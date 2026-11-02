@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Main menu / 20 UI directions</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#100d12;color:#f1ebef}*{box-sizing:border-box}body{margin:0}
+header{padding:32px 4vw 22px;border-bottom:1px solid #34242e}header small{letter-spacing:.18em;color:#c9a4bc}h1{font:36px Georgia,serif;margin:10px 0}p{color:#b7aab2;line-height:1.5}
+a{color:#e7b9d7}header nav{display:flex;flex-wrap:wrap;gap:20px}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;padding:22px 4vw}
+h2{grid-column:1/-1;font:28px Georgia,serif;scroll-margin-top:20px;margin:24px 0 0}
+article{border:1px solid #3c2b36;border-radius:8px;overflow:hidden;background:#1a141b}
+button{font:inherit;color:inherit;cursor:pointer}article button{padding:0;width:100%;border:0;text-align:left;background:transparent}
+article button:hover{background:#2b1e2a}article img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#050405}
+.meta{padding:15px 18px}.meta b{color:#d2a3c2;margin-right:12px}.meta p{font-size:13px;margin:8px 0 0}
+footer{padding:20px 4vw 32px;color:#aa9ba6;font-size:13px}
+dialog{border:1px solid #58404f;background:#100c12;color:#fff;padding:12px;width:97vw;max-width:1900px;max-height:97vh}
+dialog::backdrop{background:#000e}dialog nav{display:flex;align-items:center;gap:10px;padding:0 0 10px;flex-wrap:wrap}
+dialog strong{flex:1;min-width:180px}dialog button{border:1px solid #58404f;background:#2a1d28;border-radius:5px;padding:8px 13px}
+#compare[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#large{width:100%;height:calc(91vh - 110px);object-fit:contain;display:block;background:#060406}#detail{font-size:13px;margin:9px 4px 0}
+button:focus-visible,a:focus-visible{outline:2px solid #e4b0d7;outline-offset:3px}
+@media(min-width:1900px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){main{grid-template-columns:1fr}h1{font-size:29px}#large{height:auto;max-height:70vh}}
+</style></head>
+<body>
+<header><small>UI EXPLORATION / 27 OCTOBER 2026</small>
+<h1>Main menu / 20 UI directions</h1>
+<p>Your selected scene and lighting, with twenty distinct approaches to the menu.</p>
+<nav><a href="#typography">01–05 Typography</a><a href="#layout">06–10 Layout</a><a href="#materials">11–15 Materials</a><a href="#graphic">16–20 Graphic</a></nav>
+<p>Click to enlarge. Arrow keys browse. Press <b>B</b> or use <b>Compare reference</b> to switch to your selected image. Esc closes.</p>
+</header>
+<main id="grid"></main>
+<footer><a href="reference-selected.png">Your selected reference</a> · <a href="manifest.json">Full prompts and provenance</a> · Generated with built-in imagegen.</footer>
+<dialog id="viewer" aria-label="Concept preview">
+<nav><button id="prev" aria-label="Previous concept">←</button><strong id="caption"></strong><button id="next" aria-label="Next concept">→</button><button id="compare" aria-pressed="false">Compare reference (B)</button><a id="original" target="_blank">Open image</a><button id="close">Close</button></nav>
+<img id="large" alt=""><p id="detail"></p></dialog>
+<script>
+const items=[{"id":"01","title":"Monumental sans","group":"Typography","detail":"An oversized solid sans serif headline with a tiny violet side marker.","file":"01-monumental-sans.png"},{"id":"02","title":"Literary spread","group":"Typography","detail":"Fine book typography, an italic focal point and an asymmetric secondary grid.","file":"02-literary-spread.png"},{"id":"03","title":"Condensed poster","group":"Typography","detail":"Tall condensed lettering with a stark outline-to-solid hierarchy.","file":"03-condensed-poster.png"},{"id":"04","title":"Technical precision","group":"Typography","detail":"A crisp monospaced index with a boxed selection cursor.","file":"04-technical-precision.png"},{"id":"05","title":"Calligraphic contrast","group":"Typography","detail":"A fluid italic primary action against compact geometric secondary type.","file":"05-calligraphic-contrast.png"},{"id":"06","title":"Bottom navigation","group":"Layout","detail":"A slim horizontal menu across the lower safe area.","file":"06-bottom-navigation.png"},{"id":"07","title":"Floating left island","group":"Layout","detail":"A compact centred menu in open space, with generous surrounding silence.","file":"07-floating-left-island.png"},{"id":"08","title":"Descending steps","group":"Layout","detail":"The actions follow a deliberate diagonal staircase.","file":"08-descending-steps.png"},{"id":"09","title":"Horizontal action cards","group":"Layout","detail":"A large primary card beside a compact four-card grid.","file":"09-horizontal-action-cards.png"},{"id":"10","title":"Open arc","group":"Layout","detail":"Five labels follow an open arc around a small selection point.","file":"10-open-arc.png"},{"id":"11","title":"Smoked glass","group":"Materials","detail":"A restrained translucent slab with a precise luminous selection edge.","file":"11-smoked-glass.png"},{"id":"12","title":"Ivory folio","group":"Materials","detail":"An ivory editorial card gives a strong light-on-dark contrast.","file":"12-ivory-folio.png"},{"id":"13","title":"Geometric deco","group":"Materials","detail":"Fine angular framing and compact engraved-style lettering.","file":"13-geometric-deco.png"},{"id":"14","title":"Obsidian slats","group":"Materials","detail":"Five dark sculptural slats with a fine selected edge.","file":"14-obsidian-slats.png"},{"id":"15","title":"Fine wire panel","group":"Materials","detail":"An almost invisible frame and suspended labels.","file":"15-fine-wire-panel.png"},{"id":"16","title":"Split hierarchy","group":"Graphic","detail":"A large primary action and two distant secondary navigation groups.","file":"16-split-hierarchy.png"},{"id":"17","title":"Negative-space selection","group":"Graphic","detail":"A solid ivory selection block anchors four quiet text rows.","file":"17-negative-space-selection.png"},{"id":"18","title":"Vertical mast","group":"Graphic","detail":"A rotated primary action with upright secondary options beside it.","file":"18-vertical-mast.png"},{"id":"19","title":"Ink contour","group":"Graphic","detail":"A single flowing line guides a sparse, asymmetric menu.","file":"19-ink-contour.png"},{"id":"20","title":"Cinematic horizon","group":"Graphic","detail":"A low horizontal wordmark-like primary action with a separate utility corner.","file":"20-cinematic-horizon.png"}];
+const byId=id=>document.getElementById(id);
+const grid=byId('grid'),viewer=byId('viewer'),large=byId('large'),caption=byId('caption'),original=byId('original'),compare=byId('compare'),detail=byId('detail');
+let active=0,comparing=false;
+const reference=new Image();reference.src='reference-selected.png';
+function render(){
+ const item=items[active];
+ large.src=comparing?'reference-selected.png':item.file;
+ large.alt=comparing?'Selected reference':item.id+' — '+item.title;
+ caption.textContent=comparing?'Selected reference · comparing with '+item.id:item.id+' — '+item.title;
+ original.href=large.getAttribute('src');
+ compare.setAttribute('aria-pressed',String(comparing));
+ compare.textContent=comparing?'Back to variation (B)':'Compare reference (B)';
+ detail.textContent=item.detail;
+}
+function show(index){
+ active=(index+items.length)%items.length;comparing=false;render();
+ if(!viewer.open)viewer.showModal();
+ const preload=new Image();preload.src=items[(active+1)%items.length].file;
+}
+function toggleCompare(){comparing=!comparing;render();}
+items.forEach((item,i)=>{
+ if(i===0||items[i-1].group!==item.group){
+  const heading=document.createElement('h2');heading.id=item.group.toLowerCase();
+  heading.textContent=item.id+'–'+items[Math.min(i+4,items.length-1)].id+' / '+item.group;grid.append(heading);
+ }
+ const card=document.createElement('article'),button=document.createElement('button'),img=document.createElement('img'),meta=document.createElement('div'),number=document.createElement('b'),description=document.createElement('p');
+ img.src=item.file;img.alt=item.id+' — '+item.title;img.loading='lazy';img.width=1672;img.height=941;img.style.height='auto';
+ meta.className='meta';number.textContent=item.id;description.textContent=item.detail;
+ meta.append(number,document.createTextNode(item.title),description);button.append(img,meta);button.onclick=()=>show(i);card.append(button);grid.append(card);
+});
+byId('prev').onclick=()=>show(active-1);byId('next').onclick=()=>show(active+1);
+compare.onclick=toggleCompare;byId('close').onclick=()=>viewer.close();
+document.addEventListener('keydown',e=>{
+ if(!viewer.open||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key==='ArrowRight'){e.preventDefault();show(active+1);}
+ if(e.key==='ArrowLeft'){e.preventDefault();show(active-1);}
+ if(e.key.toLowerCase()==='b'&&!e.repeat){e.preventDefault();toggleCompare();}
+});
+viewer.addEventListener('click',e=>{if(e.target===viewer){const r=viewer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)viewer.close();}});
+</script></body></html>
+

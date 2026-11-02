@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "recorded_observations": 516,
+  "tested_batches": [
+    516,
+    1,
+    7,
+    64
+  ],
+  "max_absolute_errors": [
+    0.0007190704345703125,
+    7.867813110351562e-06
+  ],
+  "cases": [
+    {
+      "kind": "recorded",
+      "batch": 516,
+      "max_absolute_errors": [
+        1.430511474609375e-05,
+        7.867813110351562e-06
+      ],
+      "atol": 3e-05,
+      "rtol": 3e-05
+    },
+    {
+      "kind": "synthetic_std100",
+      "batch": 1,
+      "max_absolute_errors": [
+        0.0,
+        4.284083843231201e-07
+      ],
+      "atol": 0.001,
+      "rtol": 3e-05
+    },
+    {
+      "kind": "synthetic_std100",
+      "batch": 7,
+      "max_absolute_errors": [
+        0.0,
+        5.364418029785156e-07
+      ],
+      "atol": 0.001,
+      "rtol": 3e-05
+    },
+    {
+      "kind": "synthetic_std100",
+      "batch": 64,
+      "max_absolute_errors": [
+        0.0007190704345703125,
+        1.4007091522216797e-06
+      ],
+      "atol": 0.001,
+      "rtol": 3e-05
+    }
+  ],
+  "checkpoint_zip_sha256": "0dc58150f87f1cb25816235f9e565638e9972d262b9203c5da0d14c0ea736a2b",
+  "model_sha256": "566ca447fbe141050d3c8b88c331f671d3743b73fe1bb12fdf07e37f179f1376",
+  "onnx_sha256": "e4fd7becb45c85d71220b11985ec5a6f103054f05fc636decf1221a42c685832",
+  "scope": "CPU ONNX Runtime versus frozen PyTorch inference. ONNX not yet run inside Unreal."
+}

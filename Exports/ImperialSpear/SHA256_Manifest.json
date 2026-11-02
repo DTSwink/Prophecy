@@ -1,0 +1,400 @@
+{
+  "status": "FOUR_LOBE_LOTUS_BUD_REBUILD_REVIEW_BUILD",
+  "files": [
+    {
+      "path": "Angular_S_Relief_Verification.json",
+      "bytes": 2433,
+      "sha256": "486958c1c14fde7440c13afc9de95f84f3b5bdaf0f76ff58436ed1e1f75ed289"
+    },
+    {
+      "path": "Asset_Report.json",
+      "bytes": 37809,
+      "sha256": "68cccc75bf52fbff80a857582f8c1149b180841e1233bffad4908b11f0a9b7f2"
+    },
+    {
+      "path": "Candidate_Handle_Full.png",
+      "bytes": 463403,
+      "sha256": "596eb1546283f730d4efeb22a8888079260f8f7fc7ae6600f33a3b5bb6b059c5"
+    },
+    {
+      "path": "Candidate_Handle_Transition.png",
+      "bytes": 679920,
+      "sha256": "080dbb74e6c951790a817a0e3a50c11df9994dd4ba1b00a40c6793f83f0b72d2"
+    },
+    {
+      "path": "Candidate_SevenFix_Front.png",
+      "bytes": 702265,
+      "sha256": "24bb884cca4ed01d6ed7ac33970559ee4fc721d0fa0fbb7d06dc47ea1f439438"
+    },
+    {
+      "path": "Candidate_SevenFix_Oblique.png",
+      "bytes": 698426,
+      "sha256": "8f6e4d27d1923330ef534b7f32c4acf25b3fea0da44605cf054bc8e458427133"
+    },
+    {
+      "path": "Cast_Body_Atlas_Verification.json",
+      "bytes": 2586,
+      "sha256": "01939d23cc2b16dd7c7dd53a53756ee964fc6a25b1729ed775c1ce5880dd3556"
+    },
+    {
+      "path": "Comparison_Before.png",
+      "bytes": 351364,
+      "sha256": "ca31e8be6f31e81e1bc4a1a0769785017eb85e7a961374cea8f763b48769591b"
+    },
+    {
+      "path": "Comparison_Current.png",
+      "bytes": 1305799,
+      "sha256": "072e1627be77680c7ef66b8ec243939b4694b5c8c40a7ed85f4549043e6155fc"
+    },
+    {
+      "path": "Comparison_DetailMacro.png",
+      "bytes": 640509,
+      "sha256": "be065270009faef637e0b9989b4c94367852f995acb1f406861c67fdeb64a579"
+    },
+    {
+      "path": "Comparison_GoldOblique.png",
+      "bytes": 697142,
+      "sha256": "853982f710d04618937c04bc72556305924f2b193b69d93834183a6c8d7f1f4d"
+    },
+    {
+      "path": "Comparison_WoodDetail.png",
+      "bytes": 440314,
+      "sha256": "6e1e919b779532efc5aea0b52616f7e97d7bffcea11bd937ef3f29c3f7fe1526"
+    },
+    {
+      "path": "Connected_Socket_Verification.json",
+      "bytes": 1508,
+      "sha256": "e81794dbd76c133247920891d56474757229e2d66292b448ba4ba6ad7d0156e3"
+    },
+    {
+      "path": "Current_Detail_Audit.json",
+      "bytes": 7346,
+      "sha256": "83d5ca74d55596c7f043e46616a70cb676c80b112855e030fc94a5801b380a0f"
+    },
+    {
+      "path": "DELIVERY_STATUS.json",
+      "bytes": 3917,
+      "sha256": "3385a4c0f6aaf8d898002f8ef397d2a8275f0d3d15ed6700a397187ab3f811ec"
+    },
+    {
+      "path": "Detail_UV_Diagnosis.json",
+      "bytes": 12158,
+      "sha256": "3ac58e70ab07c4d79a03126d5270c9ef281936e5bad431c7c03f71ae2b502392"
+    },
+    {
+      "path": "Diagnostic_BaseColorMacro.png",
+      "bytes": 583269,
+      "sha256": "50f5be0878becaa60ebc73c0bd95dfacfe8bf5859f55533a286d486fdce67276"
+    },
+    {
+      "path": "Diagnostic_CastingConstantMetal.png",
+      "bytes": 407018,
+      "sha256": "8cbcd319a8518593f225515d5dc27db9378925d86b76f03e62b090a86e720985"
+    },
+    {
+      "path": "Diagnostic_Wood64_Denoised.png",
+      "bytes": 25892,
+      "sha256": "6ad870a5c38e858ca6be2e668fbe383be36732cc33974fa4a688c396d49591ef"
+    },
+    {
+      "path": "Diagnostic_Wood64_Raw.png",
+      "bytes": 26446,
+      "sha256": "d4aaf4bb9a4414c59190425c90e293a6b889b0773d49ba79d41db3d63349c1c5"
+    },
+    {
+      "path": "Export_Verification.json",
+      "bytes": 18009,
+      "sha256": "f551ea528bd7826372ca6e650ebaf330b2642e539bcf69288416d874a56ee831"
+    },
+    {
+      "path": "Final_Grip_Finish.json",
+      "bytes": 5897,
+      "sha256": "a414c64755fbdc08e7f17b6a53aaeb4d0b5530160c18c139bee30a73b6b773de"
+    },
+    {
+      "path": "Final_Wood_Finish.json",
+      "bytes": 9174,
+      "sha256": "886ae24af707d46984ca9a6985c03fe9b0ce825957b9f27ae88c2ff28c1faa02"
+    },
+    {
+      "path": "Gold_Detail_Verification.json",
+      "bytes": 11972,
+      "sha256": "87946835f07c23c1b10850e360d577b0905773c2928b3811bfe4e5dbc4142e48"
+    },
+    {
+      "path": "Handle_Finish_Verification.json",
+      "bytes": 7160,
+      "sha256": "d64d797c517f56606be7f111262ae4f02f68950cec6ad0a2ce1a8f4499931636"
+    },
+    {
+      "path": "Handle_Geometry_Report.json",
+      "bytes": 1209,
+      "sha256": "7f70ad54129ccf4cad58e5a4acc3ba60ab0efffe73e92e065f573a33005ac2e2"
+    },
+    {
+      "path": "Handle_Texture_Application.json",
+      "bytes": 1300,
+      "sha256": "c340310980b5359dfaf50eb4149859a4c4ffc6e4183a258285e39cebe170ad4a"
+    },
+    {
+      "path": "Housing_Bevel_Verification.json",
+      "bytes": 4263,
+      "sha256": "f5b5789821e757c21927d1ef8f32248ff4afac26952a8c28e68b66b1e2f60c9f"
+    },
+    {
+      "path": "Housing_UV_Probe.json",
+      "bytes": 451,
+      "sha256": "36576077a8989557e7b0275891f51b555a2d34b09597c3447c78796f1dc60a72"
+    },
+    {
+      "path": "ImperialSpear_Game.blend",
+      "bytes": 4771238,
+      "sha256": "a180be634a9075182c17d832bdbdd5f909bf4202774bb9de1c0b42eaf3e19287"
+    },
+    {
+      "path": "ImperialSpear_Source.blend",
+      "bytes": 4768359,
+      "sha256": "1d69bb28858582582b621293a7ecf0ea8b20e5a588a48514f0f276db0a25b2f4"
+    },
+    {
+      "path": "LOD_Normal_Probe.json",
+      "bytes": 13890,
+      "sha256": "81439be630b1c6814c061b936a5815f6b00e8f719a16328f99693c961ea4c667"
+    },
+    {
+      "path": "Material_Probe.json",
+      "bytes": 43925,
+      "sha256": "1b7b030db38486ef6ca46150aaa4aeed20090a2fa419913946944de9e8958731"
+    },
+    {
+      "path": "Pommel_Leaf_Geometry.json",
+      "bytes": 1012,
+      "sha256": "d151da89a1c3ac55bcd2e7385fbbdead749523fbe2049d66bf5d37de6fa8ee34"
+    },
+    {
+      "path": "Pommel_Leaf_Verification.json",
+      "bytes": 27826,
+      "sha256": "b544d3d45f935baf278fa3ae00f34ef365d3962c0b4089adfdf3ad94478fd8b9"
+    },
+    {
+      "path": "Pommel_Lotus_Geometry.json",
+      "bytes": 4291,
+      "sha256": "fc9238891360e8f644f5079b0a07f113de8014e18b16d855593003bf3b39522e"
+    },
+    {
+      "path": "Pommel_Lotus_Preflight.json",
+      "bytes": 14144,
+      "sha256": "3a20890c7caa466a0bcc46a5ad3a8463d1dc23a32c52b30cec01d32b033bbe48"
+    },
+    {
+      "path": "Pommel_Lotus_Verification.json",
+      "bytes": 39864,
+      "sha256": "5b408fea5227a19da5904e9640a9ba21ef753c658b725a4a427bd118ee9be032"
+    },
+    {
+      "path": "Preview_Back.png",
+      "bytes": 503408,
+      "sha256": "ee356e90b709442f1f3b80c6d45dc107403d16702893508fd0e209faa6dade40"
+    },
+    {
+      "path": "Preview_Full.png",
+      "bytes": 420495,
+      "sha256": "b1460ce99c8b99edce119bd33138816247374328f14e0f44de284d653aa7ca56"
+    },
+    {
+      "path": "Preview_Gold_Detail.png",
+      "bytes": 698426,
+      "sha256": "8f6e4d27d1923330ef534b7f32c4acf25b3fea0da44605cf054bc8e458427133"
+    },
+    {
+      "path": "Preview_Head.png",
+      "bytes": 1305799,
+      "sha256": "072e1627be77680c7ef66b8ec243939b4694b5c8c40a7ed85f4549043e6155fc"
+    },
+    {
+      "path": "Preview_Pommel.png",
+      "bytes": 788792,
+      "sha256": "b1fdb7efdfa79f5cd94ec554b867545ddb182230b034ce99ac75d5f051522436"
+    },
+    {
+      "path": "Preview_Pommel_Detail.png",
+      "bytes": 865927,
+      "sha256": "f931faf40e38ed264beacb123447bb25a4080b546e670e0d2eec47ff9383f2a9"
+    },
+    {
+      "path": "Preview_Pommel_Diagonal.png",
+      "bytes": 748193,
+      "sha256": "59a27e2e1dafb45b832eb317fbecd990f7a3cb636b7125c3534f3192b3748455"
+    },
+    {
+      "path": "Preview_Pommel_End.png",
+      "bytes": 536652,
+      "sha256": "84302e35f7726f1f8d4d086abf482c9319d0998bd81cc615b486b8ba0bc7879e"
+    },
+    {
+      "path": "Preview_Pommel_Front.png",
+      "bytes": 785166,
+      "sha256": "bdd97d734796b412b71a174dbf7038c2af7a05c31b9e33e8e46a16a902699eea"
+    },
+    {
+      "path": "Preview_Recess_Detail.png",
+      "bytes": 756327,
+      "sha256": "20fcbf7d7576650eb797277942afcdb030fedb46d606c999af309cedaf53fec3"
+    },
+    {
+      "path": "Preview_ThreeQuarter.png",
+      "bytes": 400731,
+      "sha256": "cad319582255a21e3acc8dbb8107f3fae0457d48b65311521161da194245d95d"
+    },
+    {
+      "path": "README.txt",
+      "bytes": 4379,
+      "sha256": "3aa8c204f8bf7802fb44bf8cec523a7536160eaf7aadfe23e366befb6a022e04"
+    },
+    {
+      "path": "Reference_Camera.json",
+      "bytes": 308,
+      "sha256": "9251553bd0671ed3fe73fe843727b973d5b07a6de0603df0ddc4751c9ceadef2"
+    },
+    {
+      "path": "Reference_Comparison.html",
+      "bytes": 4181,
+      "sha256": "73c3532a7e44b9b1f997b9167073f1678ad0780c3b8ff37db8817ccfadaa36b2"
+    },
+    {
+      "path": "Reference_Finish_Verification.json",
+      "bytes": 4217,
+      "sha256": "9e06b1ad3d408a558b1bece6d03132e1303d2df1ec4920f65e11d904c12d6786"
+    },
+    {
+      "path": "Reference_Rebuild_Verification.json",
+      "bytes": 4990,
+      "sha256": "4fa42e2c0a35f9b3117c674f1537a0315d8b0bc7660047a52c937f34b5a974c2"
+    },
+    {
+      "path": "Reference_Specular_Verification.json",
+      "bytes": 1503,
+      "sha256": "ebd7d0f552d0fe228715bb29c6dabf622dc0140bda4e7dde003d0776ab76edd4"
+    },
+    {
+      "path": "References/01_Blade.png",
+      "bytes": 253003,
+      "sha256": "3a7dac3b925bc41e58b41a1e929e7442d7dd3cdbf84dc5b129297f4a33c94b84"
+    },
+    {
+      "path": "References/02_GripPlacement.png",
+      "bytes": 100325,
+      "sha256": "3c677a58e63ab3a7b0e46135cb00d701e2122e13202438364c1a0c8f9514428c"
+    },
+    {
+      "path": "References/03_Pommel.png",
+      "bytes": 26307,
+      "sha256": "cbdeaf90c976b72239cc32e0ad292b049eb5ef9180b0ee62c94d293aaa666162"
+    },
+    {
+      "path": "References/Reference_Target.png",
+      "bytes": 253003,
+      "sha256": "3a7dac3b925bc41e58b41a1e929e7442d7dd3cdbf84dc5b129297f4a33c94b84"
+    },
+    {
+      "path": "Ring_Fan_Verification.json",
+      "bytes": 1334,
+      "sha256": "c0bce8bc73cee8ef5f9eee3b692c9fae305939bbf499ff126a1b88c94f713a96"
+    },
+    {
+      "path": "Seven_Point_Fit_Corrections.json",
+      "bytes": 985,
+      "sha256": "ed575b06832ecf8e06c667d6bccd8ce442968d84c05b88a77ecdbccccbd8923d"
+    },
+    {
+      "path": "Seven_Point_Fit_Probe.json",
+      "bytes": 987380,
+      "sha256": "ea1541f542911642b6f5117978484998f395a40561b7dcf89eca556161feeecf"
+    },
+    {
+      "path": "Seven_Point_Live_Audit.json",
+      "bytes": 3162,
+      "sha256": "d0350e71d0dd4bf6217e2d5bde3fc467a18fc3f2635009836859a563aec462ea"
+    },
+    {
+      "path": "Shape_Preservation.json",
+      "bytes": 16061,
+      "sha256": "8914d3b6207dd31fa3f25760dd9742323bf0afc1e4b625cd655d958461a40cc5"
+    },
+    {
+      "path": "SM_ImperialSpear.fbx",
+      "bytes": 5918236,
+      "sha256": "a355146de0e85d73fbde5213de1913d0b0c8509885f3896e818a8f5a47d2848b"
+    },
+    {
+      "path": "SM_ImperialSpear.glb",
+      "bytes": 35565952,
+      "sha256": "c03c78dc2b39b02deb17c8fe9a63bee873315816a4566b06af1aaf549f5e8eb8"
+    },
+    {
+      "path": "SM_ImperialSpear_LOD1.fbx",
+      "bytes": 3415004,
+      "sha256": "216b12d0a5c9c134b42282249cea6d17730dcf0d47799741f63c27ccda4168fb"
+    },
+    {
+      "path": "SM_ImperialSpear_LOD2.fbx",
+      "bytes": 1856172,
+      "sha256": "22a103c981abbda70173dc0b85139021e5b6dff62f2567f62652b56029e2d808"
+    },
+    {
+      "path": "Socket_Texture_Verification.json",
+      "bytes": 1508,
+      "sha256": "2e477154401c761fab665910bfd084142bcf2d05db8178273062a8f296d701dc"
+    },
+    {
+      "path": "Soft_Gold_Verification.json",
+      "bytes": 3970,
+      "sha256": "f8fc0f7bfa34009436b7589db9ce5ae944b8d7f78939a29702b250c57fab1643"
+    },
+    {
+      "path": "Steel_Texture_Verification.json",
+      "bytes": 1440,
+      "sha256": "f4d38e604511d427cd70e399bdcbeb975e76fe6241219d73bc1cdff3c337282d"
+    },
+    {
+      "path": "Textures/T_ImperialSpear_BaseColor.png",
+      "bytes": 11247031,
+      "sha256": "b2c73dd6ffa5937a04d749aabf165313f21957c919d8bb173893a60c41c9dd97"
+    },
+    {
+      "path": "Textures/T_ImperialSpear_NormalDX.png",
+      "bytes": 12372207,
+      "sha256": "70e8aacbc8ff464017448c19a85fb11c88c462966c4f583985043d1230930f79"
+    },
+    {
+      "path": "Textures/T_ImperialSpear_NormalGL.png",
+      "bytes": 12373355,
+      "sha256": "0b36392a4865b6bb07b09b56c4470b8398f6bb595144bba90a36234ac6e3d76c"
+    },
+    {
+      "path": "Textures/T_ImperialSpear_ORM.png",
+      "bytes": 10007127,
+      "sha256": "9bf9381c1c6be06f45bec1cbdd7cb4fe4f6f2a7c06a9d834fd67325ba5fc97d0"
+    },
+    {
+      "path": "Unified_Crown_Verification.json",
+      "bytes": 26032,
+      "sha256": "da9d9e38073a45cf8b3cbad26a43ec198a86dd584e14168c04864193d47cb390"
+    },
+    {
+      "path": "Visible_Grain_Verification.json",
+      "bytes": 454,
+      "sha256": "bca82049a857a32b0004b4160c91968450766f66d070860a0aca01793c618566"
+    },
+    {
+      "path": "Wood_Structure_Verification.json",
+      "bytes": 2530,
+      "sha256": "c8eb044e844dccef401ae5ba030cf2f06899d905164932d39e0c48b04d057fcf"
+    },
+    {
+      "path": "Wood_UV_Repack_Verification.json",
+      "bytes": 2472,
+      "sha256": "d5a90c65072ea16054260554a09e277838f0561cf17e226efcbabbb15a31d89f"
+    }
+  ]
+}

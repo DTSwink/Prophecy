@@ -1,4 +1,5 @@
 #include "ProphecyArmedPoseLibrary.h"
+#include "ProphecyBodyflipRuntime.h"
 #include "ProphecyForearmConvention.h"
 #include "ProphecyNNModifierDebug.h"
 #include "ProphecyArmedPose.h"
@@ -246,6 +247,7 @@ bool UProphecyArmedPoseLibrary::SetUpperBodyArmedPose(AProphecyAgent* A,bool Ena
     if(!IsInGameThread()||!IsValid(A)||A->IsActorBeingDestroyed()||!A->GetWorld()||A->GetWorld()->bIsTearingDown)
     {Error=TEXT("Agent is unavailable.");return false;}
     if(!Enabled){Cancel(A);return true;}
+    if(ProphecyBodyflip::Active(A)){Error=TEXT("Stop this agent's Bodyflip controller before enabling an Armed pose");return false;}
     if(!FMath::IsFinite(Speed)||Speed<=0){Error=TEXT("Max joint speed must be positive and finite.");return false;}
     if(!FMath::IsFinite(BlendInTime)||BlendInTime<0){Error=TEXT("Blend In Time must be nonnegative and finite.");return false;}
     const float Profile[]={Spine01,Spine02,Spine03,Spine04,Spine05,Neck01,Neck02,Head,

@@ -1,3 +1,5 @@
+from walking_height import height_excess
+from walking_airborne import foot_box_bottoms, airborne_cost
 """Opt-in normal/perturbed curriculum with a frozen motion prior."""
 import json
 import math
@@ -208,10 +210,37 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         targets = [entries[Path(self._motion_lib.get_motion_file(i)).stem]['average_xy_m_s']
                    for i in range(self._motion_lib.get_num_motions())]
         self._com2_targets = torch.tensor(targets, device=self._device)
+        self._com2_loss_weight = float(cfg.get('com2_loss_weight', 0.))
+        if self._com2_loss_weight:
+            loss_table = json.loads(Path(cfg['com2_loss_reference']).read_text())
+            loss_entries = {row['id']:row for row in loss_table['motions']}
+            loss_rows = [loss_entries[Path(self._motion_lib.get_motion_file(i)).stem]
+                         for i in range(self._motion_lib.get_num_motions())]
+            for i, row in enumerate(loss_rows):
+                if hashlib.sha256(Path(self._motion_lib.get_motion_file(i)).read_bytes()).hexdigest() != row['motion_sha256']:
+                    raise ValueError('Stale COM2 loss reference')
+            self._com2_loss_basis = torch.tensor([row['basis_xy'] for row in loss_rows], device=self._device)
+            self._com2_loss_leeway = torch.tensor([row['leeway_m_s'] for row in loss_rows], device=self._device)
+            loss_targets = torch.tensor([row['constant_target_xy_m_s'] for row in loss_rows], device=self._device)
+            if not torch.allclose(loss_targets, self._com2_targets):
+                raise ValueError('COM2 loss target differs from termination target')
+        self._idle_speed_ratio = float(cfg.get('idle_speed_walk_f_ratio', 0.))
+        self._idle_speed_limits_sq = None
+        if self._idle_speed_ratio:
+            if not math.isfinite(self._idle_speed_ratio) or self._idle_speed_ratio <= 0:
+                raise ValueError('Invalid perturbed idle speed ratio')
+            # Reference trunk COM2 mean speed, matching drawn/unarmed equipment.
+            limits = [float(entries['M_Neutral_Walk_Loop_F_' +
+                ('Drawn' if bool(self._equipment[i]) else 'Unarmed')]['speed_m_s']) * self._idle_speed_ratio
+                for i in range(self._motion_lib.get_num_motions())]
+            self._idle_speed_limits_sq = torch.tensor(limits, device=self._device).square()
         self._extremity_speed_enabled = bool(cfg.get('extremity_speed_reference'))
         if self._extremity_speed_enabled:
             speed_table = json.loads(Path(cfg['extremity_speed_reference']).read_text())
             speed_names = speed_table['bodies']
+            self._extremity_speed_names = speed_names
+            if cfg.get('extremity_speed_translation_only', False):
+                assert speed_table['measurement'] == 'body-origin speed relative to pelvis translation only: norm(v-v_p)'
             self._extremity_speed_ids = torch.tensor([names.index('pelvis')] + [names.index(n) for n in speed_names], device=self._device)
             entries_speed = {r['id']: r for r in speed_table['motions']}
             limits = [entries_speed[Path(self._motion_lib.get_motion_file(i)).stem]['limits_m_s'] for i in range(self._motion_lib.get_num_motions())]
@@ -362,6 +391,39 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         if self._pelvis_horizontal_enabled:
             self.loss_term_names = (*self.loss_term_names, 'pelvis_horizontal_speed_excess')
             self.loss_weights['pelvis_horizontal_speed_excess'] = self._pelvis_horizontal_weight
+        self._walking_airborne_weight = float(cfg.get('walking_airborne_weight', 0.))
+        if not math.isfinite(self._walking_airborne_weight) or self._walking_airborne_weight < 0:
+            raise ValueError('Walking airborne weight must be finite and nonnegative')
+        if self._walking_airborne_weight:
+            boxes = cfg['walking_foot_boxes']
+            self._walking_foot_ids = torch.tensor([names.index(b['bone']) for b in boxes], device=self._device)
+            self._walking_foot_centers = torch.tensor([b['center'] for b in boxes], device=self._device, dtype=torch.float32)
+            self._walking_foot_half_axes = torch.tensor([b['half_axes'] for b in boxes], device=self._device, dtype=torch.float32)
+            self.loss_term_names = (*self.loss_term_names, 'walking_airborne')
+            self.loss_weights['walking_airborne'] = self._walking_airborne_weight
+        self._walking_height_weight = float(cfg.get('walking_height_weight', 0.))
+        if not math.isfinite(self._walking_height_weight) or self._walking_height_weight < 0:
+            raise ValueError('Walking height weight must be finite and nonnegative')
+        if self._walking_height_weight:
+            if not self._walking_airborne_weight:
+                raise ValueError('Walking height requires the configured foot-box detector')
+            table = cfg['walking_height_reference']['motions']
+            limits = []
+            for i in range(self._motion_lib.get_num_motions()):
+                path = Path(self._motion_lib.get_motion_file(i))
+                entry = table.get(path.stem)
+                if self._gaits[i] == 0:
+                    if entry is None or hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
+                        raise ValueError('Walking height reference is stale: ' + str(path))
+                    limits.append(entry['max_height_m'])
+                else:
+                    limits.append(0.)
+            self._walking_height_limits = torch.tensor(limits, device=self._device)
+            self.loss_term_names = (*self.loss_term_names, 'walking_height_excess')
+            self.loss_weights['walking_height_excess'] = self._walking_height_weight
+        if self._com2_loss_weight:
+            self.loss_term_names = (*self.loss_term_names, 'com2_velocity')
+            self.loss_weights['com2_velocity'] = self._com2_loss_weight
         self.loss_terms = torch.zeros((n, len(self.loss_term_names)), device=self._device)
         self._completed_loss_totals = torch.zeros(len(self.loss_term_names)+1, device=self._device)
         self._perturb_ready = True
@@ -538,8 +600,9 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             return terms
         ids = self._extremity_speed_ids[1:]
         # Reward already supplies body-origin world velocities, not COM velocities.
-        relative = vel[:, ids] - vel[:, :1] - torch.cross(
-            ang[:, :1].expand(-1, 4, -1), pos[:, ids] - pos[:, :1], dim=-1)
+        relative = vel[:, ids] - vel[:, :1]
+        if not self._perturb_cfg.get('extremity_speed_translation_only', False):
+            relative = relative - torch.cross(ang[:, :1].expand_as(relative), pos[:, ids] - pos[:, :1], dim=-1)
         excess = (relative.norm(dim=-1) - self._extremity_speed_limits[self._motion_ids]).clamp_min(0.)
         cost = excess.square().mean(-1) * weight
         cost = torch.where(self._perturbed_rows & ~self._recovery_rows, cost, 0.)
@@ -549,6 +612,18 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         command = self._engine._controls.target_vel[self._get_char_id()][:, self._foot_command_ids]
         return getup_foot_costs(command, rot[:, self._foot_cost_ids], rot[:, self._foot_calf_ids],
                                self._foot_idle_local[self._motion_ids])
+
+    def _append_walking_airborne_loss(self, terms, pos, rot):
+        if not self._walking_airborne_weight:
+            return terms
+        ids = self._walking_foot_ids
+        bottoms = foot_box_bottoms(pos[:, ids], rot[:, ids], self._walking_foot_centers, self._walking_foot_half_axes)
+        walking = (self._gaits[self._motion_ids] == 0) & ~self._recovery_rows
+        cost = airborne_cost(bottoms, walking) * self._walking_airborne_weight
+        if self._walking_height_weight:
+            high = height_excess(bottoms, self._walking_height_limits[self._motion_ids], walking) * self._walking_height_weight
+            return torch.cat((terms, cost[:, None], high[:, None]), -1)
+        return torch.cat((terms, cost[:, None]), -1)
 
     def _tracking_losses(self, pos, rot, vel, ang, target_vel, target_ang):
         terms = self._base_perturbed_tracking_losses(pos, rot, vel, ang, target_vel, target_ang)
@@ -562,6 +637,14 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             # absolute_walk already subtracts omega x COM-offset from engine COM velocity.
             raw = getup_pelvis_horizontal_cost(vel[:, 0], self._pelvis_horizontal_limits[self._recovery_motion])
             cost = torch.where(self._perturbed_getup, raw*self._pelvis_horizontal_weight, 0.)
+            terms = torch.cat((terms, cost[:, None]), -1)
+        if self._com2_loss_weight:
+            velocity = com2_velocity(self._engine.get_body_vel(self._get_char_id())[:, self._com2_ids], self._com2_masses)
+            difference = velocity - self._com2_targets[self._motion_ids]
+            projected = (self._com2_loss_basis[self._motion_ids] * difference[:, None, :]).sum(-1)
+            excess = (projected.abs() - self._com2_loss_leeway[self._motion_ids]).clamp_min(0.)
+            # Independent of AE handoff, phase, cohort and termination grace.
+            cost = excess.square().mean(-1) * self._com2_loss_weight
             terms = torch.cat((terms, cost[:, None]), -1)
         return terms
 
@@ -615,11 +698,11 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             self._ae_diagnostics[0].add_(raw.sum())
             self._ae_diagnostics[1].add_(len(prior_ids))
         if self._additive_head_reward or self._idle_position_getup:
-            return self._append_extremity_speed_loss(torch.cat((terms, ae[:, None]), -1), pos, vel, ang)
+            return self._append_walking_airborne_loss(self._append_extremity_speed_loss(torch.cat((terms, ae[:, None]), -1), pos, vel, ang), pos, rot)
         head_loss = getup_head_height_loss(pos[:, self._head_id, 2], self._idle_head_height[self._motion_ids],
             torch.round(self._time_buf*30), self._perturbed_getup)
         head_loss *= self.loss_weights['getup_head_height']
-        return self._append_extremity_speed_loss(torch.cat((terms, ae[:, None], head_loss[:, None]), -1), pos, vel, ang)
+        return self._append_walking_airborne_loss(self._append_extremity_speed_loss(torch.cat((terms, ae[:, None], head_loss[:, None]), -1), pos, vel, ang), pos, rot)
 
     def _update_reward(self):
         super()._update_reward()
@@ -658,8 +741,9 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         ang = self._engine.get_body_ang_vel(char)[:, ids]
         vel = self._engine.get_body_vel(char)[:, ids] - torch.cross(
             ang, q.quat_rotate(rot, self._body_com[:, ids]), dim=-1)
-        relative = vel[:, 1:] - vel[:, :1] - torch.cross(
-            ang[:, :1].expand(-1, 4, -1), pos[:, 1:] - pos[:, :1], dim=-1)
+        relative = vel[:, 1:] - vel[:, :1]
+        if not self._perturb_cfg.get('extremity_speed_translation_only', False):
+            relative = relative - torch.cross(ang[:, :1].expand_as(relative), pos[:, 1:] - pos[:, :1], dim=-1)
         # Squared norms avoid a square root; rotation does not change length.
         too_fast = (relative.square().sum(-1) > self._extremity_speed_limits_sq[self._motion_ids]).any(-1)
         return too_fast & self._perturbed_rows & ~self._recovery_rows & (self._time_buf > 0)
@@ -689,7 +773,14 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         flags = torch.where(head_reset, DoneFlags.SUCC.value if success_value else DoneFlags.TIME.value, flags)
         velocity = com2_velocity(self._engine.get_body_vel(self._get_char_id())[:, self._com2_ids], self._com2_masses)
         failed = com2_failure(velocity, self._com2_targets[self._motion_ids], self._perturb_cfg['min_speed_ratio'])
-        failed &= (self._gaits[self._motion_ids] != -1) & (ticks > self._perturb_cfg['grace_ticks'])
+        failed &= self._gaits[self._motion_ids] != -1
+        idle_speed_failed = torch.zeros_like(failed)
+        if self._idle_speed_limits_sq is not None:
+            idle_speed_failed = (self._perturbed_rows & ~self._recovery_rows &
+                (self._gaits[self._motion_ids] == -1) &
+                (velocity.square().sum(-1) > self._idle_speed_limits_sq[self._motion_ids]))
+            failed |= idle_speed_failed
+        failed &= ticks > self._perturb_cfg['grace_ticks']
         if self._extremity_speed_enabled and self._perturb_cfg.get('extremity_speed_termination', True):
             failed |= self._extremity_speed_failure()
         if self._perturb_cfg.get('getup_low_head_failure_fraction', 0.) > 0:
@@ -718,10 +809,17 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
         if loco_penalty:
             loco_failed = self._perturbed_rows & (self._gaits[self._motion_ids] != -1) & failed
             self._reward_buf.sub_(loco_failed.to(self._reward_buf.dtype) * loco_penalty)
+        if loco_penalty:
+            # Same one-time cost as locomotion, after the common velocity gate.
+            self._reward_buf.sub_((idle_speed_failed & failed).to(self._reward_buf.dtype) * loco_penalty)
         normal_penalty = float(self._perturb_cfg.get('normal_getup_failure_penalty', 0.))
         if normal_penalty:
             normal_failed = self._recovery_rows & ~self._perturbed_rows & (self._done_buf == DoneFlags.FAIL.value)
             self._reward_buf.sub_(normal_failed.to(self._reward_buf.dtype) * normal_penalty)
+        idle_penalty = float(self._perturb_cfg.get('pushed_idle_failure_penalty', 0.))
+        if idle_penalty and hasattr(self, '_final'):
+            idle_failed = self._final.minus & (self._done_buf == DoneFlags.FAIL.value)
+            self._reward_buf.sub_(idle_failed.to(self._reward_buf.dtype) * idle_penalty)
         if self._mode == EnvMode.TRAIN:
             # Per-world counters only; reduce/copy to CPU at the logging cadence.
             self._outcome_ends.add_(self._done_buf != DoneFlags.NULL.value)
@@ -750,6 +848,12 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
 
     def recovery_row_metadata(self, world):
         result = super().recovery_row_metadata(world)
+        if self._com2_loss_weight:
+            motion = self._motion_ids[world]
+            result['com2_loss'] = dict(weight=self._com2_loss_weight,
+                target_xy_m_s=self._com2_targets[motion].cpu().tolist(),
+                basis_xy=self._com2_loss_basis[motion].cpu().tolist(),
+                leeway_m_s=self._com2_loss_leeway[motion].cpu().tolist(), active='all rows, all ticks')
         perturbed = bool(self._perturbed_rows[world])
         if not perturbed:
             result['perturbed_row'] = False
@@ -781,9 +885,9 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
             com2_termination=loco, com2_target_xy_m_s=self._com2_targets[self._motion_ids[world]].cpu().tolist(),
             com2_grace_ticks=self._perturb_cfg['grace_ticks'], com2_speed_ratios=[self._perturb_cfg['min_speed_ratio'], 1.7])
         if self._extremity_speed_enabled and not getup:
-            result.update(timeout_only=not loco and not self._perturb_cfg.get('extremity_speed_termination', True), extremity_speed_bodies=['right_foot','left_foot','right_hand','left_hand'],
+            result.update(timeout_only=not loco and not self._perturb_cfg.get('extremity_speed_termination', True), extremity_speed_bodies=self._extremity_speed_names,
                 extremity_speed_limits_m_s=self._extremity_speed_limits[self._motion_ids[world]].cpu().tolist(),
-                extremity_speed_frame='body origins relative to translating and rotating pelvis', extremity_speed_first_tick=1)
+                extremity_speed_frame=('body origins relative to pelvis translation only' if self._perturb_cfg.get('extremity_speed_translation_only', False) else 'body origins relative to translating and rotating pelvis'), extremity_speed_first_tick=1)
         result['perturbed_plus_row'] = bool(self._perturbed_plus[world])
         if getup:
             result['getup_low_head_failure_tick'] = int(self._getup_low_head_ticks[world])
@@ -796,6 +900,13 @@ class PerturbedOmniEnv(RecoveryOmniEnv):
                 initial_joint_velocity=self._motion_lib._frame_dof_vel[self._plus_joint_frame[world]].cpu().tolist())
         if loco:
             result['loco_failure_penalty'] = float(self._perturb_cfg.get('loco_failure_penalty', 0.))
+        if not loco and not getup and self._idle_speed_limits_sq is not None:
+            result.update(timeout_only=False, com2_termination=True,
+                com2_termination_mode='speed_only', com2_direction_check=False,
+                com2_speed_limit_m_s=float(self._idle_speed_limits_sq[self._motion_ids[world]].sqrt()),
+                com2_speed_reference='M_Neutral_Walk_Loop_F_' + ('Drawn' if bool(self._equipment[self._motion_ids[world]]) else 'Unarmed'),
+                com2_speed_reference_ratio=self._idle_speed_ratio, com2_speed_ratios=None,
+                idle_velocity_failure_penalty=float(self._perturb_cfg.get('loco_failure_penalty', 0.)))
         if self._mse_only:
             result.update(ae_only=False, ae_tracking_only=False, ae_disabled=True,
                 ae_ticks=0, blend_ticks=0, perturbed_max_ticks=int(self._perturb_cfg.get('episode_ticks',self._episode_length*30)))

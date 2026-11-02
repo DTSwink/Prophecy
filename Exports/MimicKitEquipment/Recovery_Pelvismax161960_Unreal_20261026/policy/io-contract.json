@@ -1,0 +1,293 @@
+{
+  "input": {
+    "name": "observations",
+    "dtype": "float32",
+    "shape": [
+      "batch",
+      154
+    ],
+    "slices": {
+      "0:1": "pelvis body-origin world Z metres",
+      "1:7": "pelvis quaternion to tangent/normal 6D",
+      "7:10": "pelvis COM world linear velocity m/s",
+      "10:13": "pelvis world angular velocity rad/s",
+      "13:97": "14 joint-relative rotations, tangent/normal 6D each",
+      "97:131": "34 joint velocities, child-local rad/s",
+      "131:146": "head, right hand, left hand, right foot, left foot body-origin position minus pelvis origin, world axes",
+      "146:154": "[-1, 1, 0, sword_drawn, arm_enabled[0], arm_enabled[1], phase_cos, phase_sin]; both reserved arm inputs are 1 in this checkpoint"
+    }
+  },
+  "outputs": {
+    "joint_velocity_rad_s": [
+      "batch",
+      34
+    ],
+    "next_phase": [
+      "batch",
+      2
+    ]
+  },
+  "normalization": "Embedded frozen observation normalization/clamp, action unnormalization/per-axis bounds and unit phase; do not apply twice",
+  "coordinates": "Training coordinates: Z up, metres, quaternion xyzw. Convert Unreal coordinates consistently with the rig fixture.",
+  "body_order": [
+    "pelvis",
+    "torso",
+    "head",
+    "right_upper_arm",
+    "right_lower_arm",
+    "right_hand",
+    "left_upper_arm",
+    "left_lower_arm",
+    "left_hand",
+    "right_thigh",
+    "right_shin",
+    "right_foot",
+    "left_thigh",
+    "left_shin",
+    "left_foot"
+  ],
+  "action_map": [
+    {
+      "index": 0,
+      "body": "torso",
+      "parent": "pelvis",
+      "child_local_axis": "x",
+      "bound_rad_s": 6.2831854820251465
+    },
+    {
+      "index": 1,
+      "body": "torso",
+      "parent": "pelvis",
+      "child_local_axis": "y",
+      "bound_rad_s": 6.2831854820251465
+    },
+    {
+      "index": 2,
+      "body": "torso",
+      "parent": "pelvis",
+      "child_local_axis": "z",
+      "bound_rad_s": 6.2831854820251465
+    },
+    {
+      "index": 3,
+      "body": "head",
+      "parent": "torso",
+      "child_local_axis": "x",
+      "bound_rad_s": 9.682888984680176
+    },
+    {
+      "index": 4,
+      "body": "head",
+      "parent": "torso",
+      "child_local_axis": "y",
+      "bound_rad_s": 7.286954879760742
+    },
+    {
+      "index": 5,
+      "body": "head",
+      "parent": "torso",
+      "child_local_axis": "z",
+      "bound_rad_s": 6.2831854820251465
+    },
+    {
+      "index": 6,
+      "body": "right_upper_arm",
+      "parent": "torso",
+      "child_local_axis": "x",
+      "bound_rad_s": 7.21360969543457
+    },
+    {
+      "index": 7,
+      "body": "right_upper_arm",
+      "parent": "torso",
+      "child_local_axis": "y",
+      "bound_rad_s": 6.2831854820251465
+    },
+    {
+      "index": 8,
+      "body": "right_upper_arm",
+      "parent": "torso",
+      "child_local_axis": "z",
+      "bound_rad_s": 6.2831854820251465
+    },
+    {
+      "index": 9,
+      "body": "right_lower_arm",
+      "parent": "right_upper_arm",
+      "child_local_axis": "z",
+      "bound_rad_s": 6.750253200531006
+    },
+    {
+      "index": 10,
+      "body": "right_hand",
+      "parent": "right_lower_arm",
+      "child_local_axis": "x",
+      "bound_rad_s": 8.430426597595215
+    },
+    {
+      "index": 11,
+      "body": "right_hand",
+      "parent": "right_lower_arm",
+      "child_local_axis": "y",
+      "bound_rad_s": 7.458969593048096
+    },
+    {
+      "index": 12,
+      "body": "right_hand",
+      "parent": "right_lower_arm",
+      "child_local_axis": "z",
+      "bound_rad_s": 9.143205642700195
+    },
+    {
+      "index": 13,
+      "body": "left_upper_arm",
+      "parent": "torso",
+      "child_local_axis": "x",
+      "bound_rad_s": 6.821036338806152
+    },
+    {
+      "index": 14,
+      "body": "left_upper_arm",
+      "parent": "torso",
+      "child_local_axis": "y",
+      "bound_rad_s": 6.8757643699646
+    },
+    {
+      "index": 15,
+      "body": "left_upper_arm",
+      "parent": "torso",
+      "child_local_axis": "z",
+      "bound_rad_s": 11.258878707885742
+    },
+    {
+      "index": 16,
+      "body": "left_lower_arm",
+      "parent": "left_upper_arm",
+      "child_local_axis": "z",
+      "bound_rad_s": 7.1458659172058105
+    },
+    {
+      "index": 17,
+      "body": "left_hand",
+      "parent": "left_lower_arm",
+      "child_local_axis": "x",
+      "bound_rad_s": 8.835118293762207
+    },
+    {
+      "index": 18,
+      "body": "left_hand",
+      "parent": "left_lower_arm",
+      "child_local_axis": "y",
+      "bound_rad_s": 7.808321952819824
+    },
+    {
+      "index": 19,
+      "body": "left_hand",
+      "parent": "left_lower_arm",
+      "child_local_axis": "z",
+      "bound_rad_s": 8.802521705627441
+    },
+    {
+      "index": 20,
+      "body": "right_thigh",
+      "parent": "pelvis",
+      "child_local_axis": "x",
+      "bound_rad_s": 21.600605010986328
+    },
+    {
+      "index": 21,
+      "body": "right_thigh",
+      "parent": "pelvis",
+      "child_local_axis": "y",
+      "bound_rad_s": 16.427608489990234
+    },
+    {
+      "index": 22,
+      "body": "right_thigh",
+      "parent": "pelvis",
+      "child_local_axis": "z",
+      "bound_rad_s": 21.82979965209961
+    },
+    {
+      "index": 23,
+      "body": "right_shin",
+      "parent": "right_thigh",
+      "child_local_axis": "z",
+      "bound_rad_s": 24.186147689819336
+    },
+    {
+      "index": 24,
+      "body": "right_foot",
+      "parent": "right_shin",
+      "child_local_axis": "x",
+      "bound_rad_s": 16.347806930541992
+    },
+    {
+      "index": 25,
+      "body": "right_foot",
+      "parent": "right_shin",
+      "child_local_axis": "y",
+      "bound_rad_s": 16.506013870239258
+    },
+    {
+      "index": 26,
+      "body": "right_foot",
+      "parent": "right_shin",
+      "child_local_axis": "z",
+      "bound_rad_s": 25.930198669433594
+    },
+    {
+      "index": 27,
+      "body": "left_thigh",
+      "parent": "pelvis",
+      "child_local_axis": "x",
+      "bound_rad_s": 14.308231353759766
+    },
+    {
+      "index": 28,
+      "body": "left_thigh",
+      "parent": "pelvis",
+      "child_local_axis": "y",
+      "bound_rad_s": 15.22179889678955
+    },
+    {
+      "index": 29,
+      "body": "left_thigh",
+      "parent": "pelvis",
+      "child_local_axis": "z",
+      "bound_rad_s": 21.076082229614258
+    },
+    {
+      "index": 30,
+      "body": "left_shin",
+      "parent": "left_thigh",
+      "child_local_axis": "z",
+      "bound_rad_s": 24.545351028442383
+    },
+    {
+      "index": 31,
+      "body": "left_foot",
+      "parent": "left_shin",
+      "child_local_axis": "x",
+      "bound_rad_s": 10.087644577026367
+    },
+    {
+      "index": 32,
+      "body": "left_foot",
+      "parent": "left_shin",
+      "child_local_axis": "y",
+      "bound_rad_s": 15.971644401550293
+    },
+    {
+      "index": 33,
+      "body": "left_foot",
+      "parent": "left_shin",
+      "child_local_axis": "z",
+      "bound_rad_s": 28.42849349975586
+    }
+  ],
+  "phase": "Use next_phase as phase input on the NEXT policy tick for autoregressive recovery.",
+  "physics_hz": 240,
+  "policy_hz": 30,
+  "exploration_noise": 0
+}

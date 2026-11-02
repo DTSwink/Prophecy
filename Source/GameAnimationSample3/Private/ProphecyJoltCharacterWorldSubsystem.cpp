@@ -1,6 +1,7 @@
 #include "ProphecyJoltCharacterWorldSubsystem.h"
 #include "ProphecyJoltConstraintRuntime.h"
 #include "ProphecySwordHolster.h"
+#include "ProphecyBodyflipProjectiles.h"
 
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltSceneCollisionComponent.h"
@@ -387,7 +388,9 @@ bool UProphecyJoltCharacterWorldSubsystem::StepRegisteredClients(float DeltaSeco
     const int32 CollisionSteps = ProphecyJolt::StepTiming::Count(DeltaSeconds, PhysicsSettings, GetWorld());
     {
         Profile::FScope StepTiming(Profile::EPhase::NativeStep);
-        const FProphecyJoltWorldStatus Stepped = PhysicsOwner->Step(DeltaSeconds, CollisionSteps);
+        FProphecyJoltStepSchedule Schedule;
+        const bool bScheduled=ProphecyBodyflip::ProjectileStepSchedule(GetWorld(),Schedule);
+        const FProphecyJoltWorldStatus Stepped = PhysicsOwner->Step(DeltaSeconds,CollisionSteps,bScheduled?&Schedule:nullptr);
         if (!Stepped.IsSuccess()) return StopWithError(OutError, Stepped.Message);
     }
     ++ExpectedWorldSteps;

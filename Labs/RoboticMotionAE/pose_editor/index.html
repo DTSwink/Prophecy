@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sitting pose editor</title>
+<script type="importmap">{"imports":{"three":"/Labs/MimicKitUEFN/vendor/three.module.js"}}</script>
+<link rel="stylesheet" href="/Labs/RoboticMotionAE/pose_editor/style.css"></head><body>
+<header><strong>Sitting pose editor</strong><span>Choose the pose directly</span><button id="undo" title="Ctrl+Z">Undo</button><button id="redo" title="Ctrl+Y">Redo</button><button id="reset">Reset pose</button><button id="save" class="primary">Save pose</button></header>
+<main><div id="viewport"><canvas id="scene"></canvas><div class="camera"><button data-camera="three">3/4</button><button data-camera="front">Front</button><button data-camera="left">Left</button><button data-camera="right">Right</button><button data-camera="back">Back</button><button id="capture">Save image</button></div><div id="hint">Click a body part. Drag a ring to rotate it, or an arrow to move it.</div><div id="overlay">Loading pose…</div></div>
+<aside><label>Selected part<select id="body"></select></label><div class="modes"><button id="rotate" class="active">Rotate · R</button><button id="move">Move · W</button></div><label>Gizmo axes<select id="space"><option value="world">World</option><option value="local">Local joint</option></select></label>
+<p id="modehint"></p><h3>Torso lean</h3><div class="pair"><button id="lean-forward">Forward 2°</button><button id="lean-back">Back 2°</button></div><label class="check"><input id="pin" type="checkbox" checked>Keep hands in place when leaning</label>
+<h3>Fine adjustment</h3><label>Rotation step (degrees)<input id="angle-step" type="number" value="2" min="0.1" max="45" step="0.5"></label><div id="rotate-buttons" class="steps"></div>
+<label>Move step (cm)<input id="move-step" type="number" value="1" min="0.1" max="20" step="0.5"></label><div id="move-buttons" class="steps"></div>
+<label class="check"><input id="limits" type="checkbox">Limit edited joints to PHAT range</label><label class="check"><input id="reference" type="checkbox">Show starting pose outline</label>
+<h3>Pose checks</h3><div id="checks">Checking…</div><button id="validate">Check pose</button>
+<h3>Saved pose</h3><div id="saved">Local draft is kept automatically. Save pose writes a file for training preparation.</div><button id="load-saved" disabled>Load last saved pose</button>
+<p class="muted">Mouse: orbit on empty space; right drag to pan; wheel to zoom. Hands/feet move with IK; elbows/knees move the bend direction. Bone lengths stay fixed.</p></aside></main>
+<script type="module" src="/Labs/RoboticMotionAE/pose_editor/editor.js"></script></body></html>

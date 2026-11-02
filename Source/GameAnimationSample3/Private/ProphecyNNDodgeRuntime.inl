@@ -75,6 +75,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNDodge(FProphecyAgentHandle Handle
 {
     using namespace ProphecyDefense;
     AProphecyAgent* Actor=ResolveAgent(Handle);
+    if(ProphecyBodyflip::Active(Actor)){Error=TEXT("Stop this agent's Bodyflip controller before dodging");return false;}
     if (!Actor || !IsValid(Attacker) || Actor==Attacker || ResolveAgent(Attacker->GetAgentHandle())!=Attacker
         || !Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled || !FMath::IsFinite(MaximumSeconds) || MaximumSeconds<=0)
     { Error=TEXT("Dodge needs two distinct, initialized agents in this manager and a positive duration.");return false; }

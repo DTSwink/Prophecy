@@ -1,0 +1,102 @@
+{
+  "object": "01 \u2022 rosewood shaft.001",
+  "old_vertices": 192,
+  "new_vertices": 288,
+  "added_vertices": 96,
+  "old_triangles": 380,
+  "new_triangles": 572,
+  "added_triangles": 192,
+  "old_rings": 6,
+  "new_rings": 9,
+  "added_ring_z_m": [
+    0.4825,
+    0.875,
+    1.2675
+  ],
+  "protected_components_identical": 85,
+  "original_vertices_unchanged": true,
+  "maximum_interpolation_error_m": 4.291985503963128e-08,
+  "maximum_original_face_plane_error_m": 2.3283064365386963e-09,
+  "minimum_triangle_corner_normal_dot": 0.9951341223277268,
+  "maximum_original_normal_angle_error_degrees": 0.0,
+  "maximum_interpolated_normal_angle_error_degrees": 0.01978234059262607,
+  "closed_manifold": true,
+  "positive_volume_m3": 0.001211476229008449,
+  "atlas": {
+    "atlas_size_px": 4096,
+    "wood_tile_png_xyxy": [
+      0,
+      2048,
+      2048,
+      4096
+    ],
+    "columns": 4,
+    "gutter_px": 8,
+    "active_column_width_px": 496,
+    "active_column_height_px": 2032
+  },
+  "density": {
+    "axial_px_per_mm": 5.177070063694268,
+    "circumferential_px_per_mm_min": 4.941737710536494,
+    "circumferential_px_per_mm_max": 5.64770029222546
+  },
+  "seam_padding_passed": true,
+  "columns": [
+    {
+      "column": 0,
+      "z_bottom_top_m": [
+        1.2675,
+        1.66
+      ],
+      "active_bounds_png_xyxy": [
+        8.0,
+        2056.0,
+        504.0,
+        4088.0
+      ]
+    },
+    {
+      "column": 1,
+      "z_bottom_top_m": [
+        0.875,
+        1.2675
+      ],
+      "active_bounds_png_xyxy": [
+        520.0,
+        2056.0,
+        1016.0,
+        4088.0
+      ]
+    },
+    {
+      "column": 2,
+      "z_bottom_top_m": [
+        0.4825,
+        0.875
+      ],
+      "active_bounds_png_xyxy": [
+        1032.0,
+        2056.0,
+        1528.0,
+        4088.0
+      ]
+    },
+    {
+      "column": 3,
+      "z_bottom_top_m": [
+        0.09,
+        0.4825
+      ],
+      "active_bounds_png_xyxy": [
+        1544.0,
+        2056.0,
+        2040.0,
+        4088.0
+      ]
+    }
+  ],
+  "cap_islands": "2-pixel radius, centered at PNG (4,4092) and (4,2052), wholly in gutter",
+  "old_geometry_sha256": "b2b4b83501abd82c8480066e826eee682e32175831deec9bc78266b2367f9471",
+  "new_geometry_sha256": "015d881f0ec1e238cff3f928b082db8cd7d13c956155e2d002d926a59a09f709",
+  "new_uv_sha256": "e23464a48b81e7e25bae127b58ce645f06d9debfedfaac46edc556b53517541b"
+}

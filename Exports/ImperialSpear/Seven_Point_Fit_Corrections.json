@@ -1,0 +1,35 @@
+{
+  "guard_seat_z_m": 1.6684,
+  "collar_z_m": [
+    1.6632,
+    1.6684
+  ],
+  "sleeve_top_z_m": 1.664,
+  "sleeve_clearance_below_guard_mm": 4.4000000000001815,
+  "first_bead_sphere_radius_mm": 9.8,
+  "middle_ring_section": "rounded ellipse",
+  "middle_ring_axial_width_mm": 18.4,
+  "near_guard_collar": "straight sides, 0.4mm edge ease",
+  "objects": {
+    "05 \u2022 long engraved socket and short end cuff": {
+      "closed": true,
+      "volume_m3": 0.00015033739483609465,
+      "triangles": 476
+    },
+    "Socket \u2022 thin flared neck ring": {
+      "closed": true,
+      "volume_m3": 9.902191383928563e-06,
+      "triangles": 572
+    },
+    "Socket \u2022 broad asymmetrical middle ring": {
+      "closed": true,
+      "volume_m3": 1.6926559804442104e-05,
+      "triangles": 1920
+    },
+    "Tassel \u2022 pierced small dark lacquer bead": {
+      "closed": true,
+      "volume_m3": 3.5156508351371458e-06,
+      "triangles": 1088
+    }
+  }
+}

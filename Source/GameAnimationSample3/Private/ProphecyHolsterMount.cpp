@@ -3,6 +3,7 @@
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltCharacterComponent.h"
 #include "ProphecyJoltConstraintRuntime.h"
+#include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyJoltStandardPhysicsLibrary.h"
 #include "ProphecySwordHolsterPose.h"
 #include "Components/SkeletalMeshComponent.h"

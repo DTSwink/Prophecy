@@ -154,8 +154,10 @@ def convert(recording, geom, run):
                     result['mse_target_basis'].append(axes.tolist())
     for row in result['rows']:
         metrics=row.get('evaluation',{})
-        if 'perturbed_row' in metrics:
-            row['clip_name'] += ' | '+('perturbed+' if metrics.get('perturbed_plus_row') else 'perturbed' if metrics['perturbed_row'] else 'normal')
+        if metrics.get('replay_row_label'):
+            row['clip_name'] = metrics['replay_row_label']
+        elif 'perturbed_row' in metrics:
+            row['clip_name'] += ' | '+metrics.get('final_phase_cohort', ('perturbed+' if metrics.get('perturbed_plus_row') else 'perturbed' if metrics['perturbed_row'] else 'normal'))
     return result
 
 
@@ -179,7 +181,7 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
         # Legacy captures list their columns in rollout_losses insertion order.
         names=meta.get('loss_term_names') or [key for key in meta['rollout_losses'] if key != 'total']
         assert frame_terms.shape == (n,len(names)) and np.isfinite(frame_terms).all()
-        if meta.get('reward_from_loss') in ('exp_negative_sum','reciprocal_sum','reciprocal_tracking_minus_termination_remaining','reciprocal_sum_plus_getup_head_height','linear_cost'):
+        if meta.get('reward_from_loss') in ('exp_negative_sum','reciprocal_sum','reciprocal_tracking_minus_termination_remaining','reciprocal_sum_plus_getup_head_height','linear_cost','idle_recovery_bounded'):
             # Auto-phase supervises the prediction head; it is displayed in the
             # total loss but is not part of the environment's physical reward.
             remaining_penalty=meta['reward_from_loss']=='reciprocal_tracking_minus_termination_remaining'
@@ -189,6 +191,14 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
             total=frame_terms[1:,reward_columns].sum(axis=1)
             expected=(1./(1.+total) if meta['reward_from_loss']!='exp_negative_sum'
                       else np.exp(-total))
+            if meta['reward_from_loss']=='idle_recovery_bounded':
+                expected=np.clip(1.-total,0.,1.)
+            if 'frame_com2_reward_multiplier' in meta:
+                multiplier=np.asarray(meta['frame_com2_reward_multiplier'])
+                assert meta['reward_from_loss'] in ('reciprocal_sum','idle_recovery_bounded')
+                assert multiplier.shape==(n,) and np.isfinite(multiplier).all()
+                assert np.all((multiplier>=.00099)&(multiplier<=1.00001))
+                expected*=multiplier[1:]
             if meta['reward_from_loss']=='linear_cost':
                 expected=1.-total
                 expected-=float(meta.get('getup_failure_penalty',0.))*(data[1:,0]==1)
@@ -198,7 +208,11 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
             if meta['reward_from_loss']=='reciprocal_sum_plus_getup_head_height':
                 expected = expected + np.asarray(meta['frame_head_height_reward'])[1:]
             expected-=float(meta.get('loco_failure_penalty',0.))*(data[1:,0]==1)
+            if 'frame_crawl_forward_reward' in meta:
+                expected+=np.asarray(meta['frame_crawl_forward_reward'])[1:]
             expected-=float(meta.get('normal_getup_failure_penalty',0.))*(data[1:,0]==1)
+            expected-=float(meta.get('pushed_idle_failure_penalty',0.))*(data[1:,0]==1)
+            expected-=float(meta.get('idle_velocity_failure_penalty',0.))*(data[1:,0]==1)
             assert np.allclose(expected,data[1:,2],atol=1e-6), 'Recorded reward does not match '+meta['reward_from_loss']
         else:
             assert np.allclose(-frame_terms.sum(axis=1),data[:,2],atol=1e-6)

@@ -1,5 +1,7 @@
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyRobotLocomotion.h"
 #include "ProphecyPhysicalContext.h"
+#include "ProphecyBodyflipDrive.h"
 #include "ProphecyModeTransitions.h"
 #include "ProphecyFixedArmPhysics.h"
 #include "ProphecySwordAttackCollision.h"
@@ -31,6 +33,7 @@ static TAutoConsoleVariable<int32> CVarPhysicalFootRecoveryTrace(TEXT("Prophecy.
 #include "ProphecyJoltPoseAnimInstance.h"
 #include "ProphecyJoltRig.h"
 #include "ProphecyFootColliderTrim.h"
+#include "ProphecyBodyflipRigProfile.h"
 #include "ProphecyJoltWorldSubsystem.h"
 #include "ProphecyNNLocomotionAnimInstance.h"
 #include "ProphecyNNPoseTypes.h"
@@ -131,6 +134,7 @@ struct FProphecyJoltCharacterState
     TArray<FProphecyJoltBodyHandle> Handles;
     TArray<FName> BodyNames;
     TArray<double> CapturedBodyMassesKg; // Captured before Chaos becomes a query-only receiver.
+    FString BodyflipRigProfile,BodyflipRigProfileError;
     TArray<FProphecyJoltBodyMaterial> OriginalBodyMaterials; // Immutable reset values for this admission.
     TArray<FName> SkeletonNames;
     TArray<int32> Parents;
@@ -457,7 +461,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     ProphecyFixedArmPhysics::AttachWrists(Mesh);
     FProphecyJoltRigSnapshot Snapshot;
     FProphecyJoltPreparedRig Prepared;
-    if (!ProphecyJolt::Rig::CaptureLiveRig(*Mesh, Snapshot, Error) || !Prepared.Build(Snapshot, Error))
+    if (!ProphecyJolt::Rig::CaptureLiveRig(*Mesh, Snapshot, Error)
+        || !ProphecyRobot::OverrideSnapshot(Agent,*Mesh,Snapshot,Error) || !Prepared.Build(Snapshot, Error))
         return Fail(OutError, Error);
     // Capture/Prepared validate identities, shapes and joint endpoints. Body count is
     // authored in PHAT; adding a physical skeleton bone must not require a pilot constant.
@@ -468,6 +473,7 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     Pending->MeshAsset = Mesh->GetSkeletalMeshAsset();
     Pending->PhysicsAsset = Mesh->GetPhysicsAsset();
     Pending->JointSettings = Snapshot.Joints;
+    ProphecyBodyflip::SerializeRigProfile(Snapshot,Prepared,Pending->BodyflipRigProfile,Pending->BodyflipRigProfileError);
     for (const FConstraintInstance* Joint : Mesh->Constraints) Pending->SourceConstraints.Add(Joint);
     Pending->WorldOwner = Owner;
     Pending->Coordinator = Coordinator;
@@ -481,6 +487,7 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     }
     if (!BuildAuthoredHelperPose(*Agent, *Mesh, Pending->SkeletonNames, Pending->BaseLocalPose, Error))
         return Fail(OutError, Error);
+    ProphecyRobot::EntryHelpers(Agent,Pending->BaseLocalPose);
 
     TArray<FTransform> InitialBodies;
     for (const FProphecyJoltRigBody& Body : Snapshot.Bodies)
@@ -492,6 +499,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
         // are already captured separately. Live physics and rendered bones may describe
         // different poses at handoff: that transient error must never become an offset.
         Mapping.BodyFromBoneRigid = FTransform::Identity;
+        if(ProphecyRobot::IsActive(Agent))
+            Mapping.BodyFromBoneRigid=ProphecyRobot::Profile(Error)->Bodies[Pending->Mappings.Num()-1].BodyFromBone;
         Mapping.VisualScale = BoneWorld.GetScale3D();
         Pending->BodyNames.Add(Body.BodyName);
         Pending->CapturedBodyMassesKg.Add(Body.MassKg);
@@ -527,11 +536,12 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     if (SolverPolicy.IsSuccess())
     {
         int32 Velocity,Position; Agent->GetJoltSolverIterations(Velocity,Position);
+        if(ProphecyRobot::IsActive(Agent)){Velocity=40;Position=8;}
         SolverPolicy = Owner->SetRigSolverIterations(Pending->RigHandle, Velocity, Position);
     }
     if (SolverPolicy.IsSuccess())
         SolverPolicy=ProphecyCharacterCollisionPreferences::Reapply(this, *Owner, Pending->RigHandle, Pending->BodyNames);
-    if (SolverPolicy.IsSuccess() && ProphecyFootColliderTrim::Get(Agent)>0.0f)
+    if (SolverPolicy.IsSuccess() && !ProphecyRobot::IsActive(Agent) && ProphecyFootColliderTrim::Get(Agent)>0.0f)
     {
         // Reference-pose foot -> ball identifies the toe end independently of animation.
         const auto Direction=[&](FName Foot,FName Toe)
@@ -545,6 +555,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
         SolverPolicy=Owner->SetRigFootColliderFrontTrim(Pending->RigHandle,ProphecyFootColliderTrim::Get(Agent),
             Direction(TEXT("foot_l"),TEXT("ball_l")),Direction(TEXT("foot_r"),TEXT("ball_r")));
     }
+    if(SolverPolicy.IsSuccess() && !ProphecyRobot::Configure(Agent,*Owner,Pending->RigHandle,Error))
+    {Owner->DestroyRig(Pending->RigHandle);return Fail(OutError,Error);}
     if (!SolverPolicy.IsSuccess())
     {
         Owner->DestroyRig(Pending->RigHandle);
@@ -600,6 +612,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     if (!CommitIsValid()) return AbortCommit();
     // QueryOnly may recreate UE physics state from PHAT defaults. Retain the live angular
     // overrides captured for Jolt, and only then bind the new receiver constraint identities.
+    if(!ProphecyRobot::IsActive(Agent))
+    {
     if (Mesh->GetPhysicsAsset() != State->PhysicsAsset.Get()
         || Mesh->Constraints.Num() != State->JointSettings.Num()) return AbortCommit();
     for (const FProphecyJoltRigJoint& Joint : State->JointSettings)
@@ -615,6 +629,7 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
         if (!ProphecyAngularLimits::Equal(Mesh->Constraints[Index]->ProfileInstance, Joint.CurrentProfile))
             ProphecyAngularLimits::Apply(*Mesh->Constraints[Index], Joint.CurrentProfile);
         State->SourceConstraints[Index] = Mesh->Constraints[Index];
+    }
     }
     Mesh->PhysicsTransformUpdateMode = EPhysicsTransformUpdateMode::ComponentTransformIsKinematic;
     Mesh->KinematicBonesUpdateType = EKinematicBonesUpdateToPhysics::SkipSimulatingBones;
@@ -647,7 +662,8 @@ bool UProphecyJoltCharacterComponent::EnablePhysicalAnimationNow(FString& OutErr
     State->bActive = true;
     AddTickPrerequisiteActor(Agent);
     if (!PublishAuthoredTargets(GetWorld()->GetDeltaSeconds(), Error) || !PublishCompletedPose(Error)
-        || !CommitIsValid() || !SynchronizeAngularLimits(Error) || !ProphecyKickFootLeeway::Reapply(Agent,Error) || !ProphecyForearmStretch::Reapply(Agent,Error)
+        || !CommitIsValid() || !SynchronizeAngularLimits(Error)
+        || (!ProphecyRobot::IsActive(Agent) && (!ProphecyKickFootLeeway::Reapply(Agent,Error) || !ProphecyForearmStretch::Reapply(Agent,Error)))
         || !SetAttackSelfCollisionSuppressed(ProphecySwordAttackCollision::SuppressesOwner(Agent), Error)
         || !Coordinator->RegisterCharacter(*this, Error))
     {
@@ -675,6 +691,7 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         return Fail(OutError, TEXT("Target frame duration must be finite and nonnegative."));
     AProphecyAgent* Agent = State->Agent.Get();
     USkeletalMeshComponent* Mesh = State->Mesh.Get();
+    if(ProphecyRobot::IsActive(Agent)){State->LastPublicationFrame=GFrameCounter;return true;}
     if (!Agent || !Mesh || Mesh->GetSkeletalMeshAsset() != State->MeshAsset.Get())
         return Fail(OutError, TEXT("The bound agent/mesh changed; disable the Jolt binding before replacing assets."));
     FProphecyJoltCharacterState* const PublishingState = State.Get();
@@ -712,10 +729,13 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     if (!ProphecyJolt::Pose::ValidateLocalPose(NewBaseLocal, Error)) return Fail(OutError, Error);
     TArray<FProphecyJoltRigVelocityTarget>& Targets = State->TargetScratch;
     Targets.Reset(State->Handles.Num());
+    // Stack staging only; ordinary drive and the separate holster limb keep their existing paths.
+    TArray<int32,TInlineAllocator<8>> BodyflipKinematicBodies;
     State->AuthoredBodyScratch.SetNum(State->Handles.Num());
     {
     Profile::FScope PhaseTiming(Profile::EPhase::TargetPacket);
     State->TargetNameLookup.Update(Names, State->BodyNames);
+    const bool BodyflipDrive=ProphecyBodyflip::Active(Agent);
     const auto Modes=ProphecyPhysicalContext::MagnetizationModes(Agent);
     if(Modes.Overrides && State->BodyModeRevision!=Modes.Revision)
     {
@@ -737,12 +757,12 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
     {
     for (int32 Index = 0; Index < State->Handles.Num(); ++Index)
     {
-        const float WorldAlpha=ModeAt(Index);
+        const float WorldAlpha=BodyflipDrive ? (State->BodyParents[Index]==INDEX_NONE?1.f:0.f) : ModeAt(Index);
         const int32 TargetIndex = State->TargetNameLookup.GetIndices()[Index];
         if (!Interpolated.IsValidIndex(TargetIndex))
             return Fail(OutError, FString::Printf(TEXT("Published authored pose is missing rig bone %s."), *State->BodyNames[Index].ToString()));
         FTransform BodyWorld = Interpolated[TargetIndex];
-        if(State->BodyNames[Index]==TEXT("hand_l") || State->BodyNames[Index]==TEXT("hand_r"))
+        if(!BodyflipDrive && (State->BodyNames[Index]==TEXT("hand_l") || State->BodyNames[Index]==TEXT("hand_r")))
         {
             const int32 Parent=Names.IndexOfByKey(State->BodyNames[Index]==TEXT("hand_l")?FName(TEXT("lowerarm_l")):FName(TEXT("lowerarm_r")));
             if(Interpolated.IsValidIndex(Parent))ProphecyForearmStretch::PhysicalTarget(Agent,State->BodyNames[Index],Interpolated[Parent],BodyWorld);
@@ -750,14 +770,23 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         State->AuthoredBodyScratch[Index] = BodyWorld;
         FProphecyBodyMagnetizationSettings Settings;
         Agent->GetBodyMagnetizationSettings(State->BodyNames[Index], Settings); // Missing entries intentionally use native defaults.
-        if (!Agent->bWorldMagnetizationEnabled || !Settings.bSimulateBody || !Settings.bMagnetizationEnabled) continue;
+        if(BodyflipDrive && !Settings.bSimulateBody)
+        {
+            FTransform Endpoint=BodyWorld;Endpoint.RemoveScaling();
+            const auto Valid=State->WorldOwner->ValidateKinematicBodyMove(State->Handles[Index],Endpoint,DeltaSeconds);
+            if(!Valid.IsSuccess())return Fail(OutError,FString::Printf(
+                TEXT("Bodyflip excluded body %s: %s"),*State->BodyNames[Index].ToString(),*Valid.Message));
+            BodyflipKinematicBodies.Add(Index);
+            continue;
+        }
+        if (!Settings.bSimulateBody || (!BodyflipDrive && (!Agent->bWorldMagnetizationEnabled || !Settings.bMagnetizationEnabled))) continue;
         // Foot translation follows the end of the authored calf, even when NN
         // presentation clamps are off. Leave NN data and every rotation untouched.
         // Use the reference offset, not the stretched foot local from the NN pose.
         static const FName Feet[] = {TEXT("foot_l"),TEXT("foot_r")};
         static const FName Calves[] = {TEXT("calf_l"),TEXT("calf_r")};
         const int32 Side = State->BodyNames[Index]==Feet[0] ? 0 : State->BodyNames[Index]==Feet[1] ? 1 : INDEX_NONE;
-        if (Side!=INDEX_NONE && KickFootLeeway<=0)
+        if (!BodyflipDrive && Side!=INDEX_NONE && KickFootLeeway<=0)
         {
             const auto& Skeleton=Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
             const int32 FootBone=State->Mappings[Index].BoneIndex;
@@ -814,6 +843,7 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         Target.LinearStrength = FMath::Max(0.0f, Agent->WorldMagnetizationLinearStrengthScale * Settings.LinearStrengthScale);
         Target.AngularStrength = FMath::Max(0.0f, Agent->WorldMagnetizationAngularStrengthScale * Settings.AngularStrengthScale);
         Target.GravityCompensationCmPerSecondSquared = Settings.bCancelGravity ? -Agent->GetWorld()->GetGravityZ() : 0.0f;
+        if(BodyflipDrive)ProphecyBodyflip::Drive::Configure(Target,Agent->GetWorld()->GetGravityZ());
     }
     return true;
     };
@@ -830,6 +860,14 @@ bool UProphecyJoltCharacterComponent::PublishAuthoredTargets(float DeltaSeconds,
         Profile::FScope PhaseTiming(Profile::EPhase::TargetCommit);
         const FProphecyJoltWorldStatus Published = State->WorldOwner->PublishRigVelocityTargets(State->RigHandle, Targets, H);
         if (!Published.IsSuccess()) return Fail(OutError, Published.Message);
+    }
+    // All endpoints and native motion types were checked before publication. MoveKinematic
+    // computes COM velocity for this frame; children read it during each shared substep.
+    for(int32 Index:BodyflipKinematicBodies)
+    {
+        FTransform Endpoint=State->AuthoredBodyScratch[Index];Endpoint.RemoveScaling();
+        const auto Moved=State->WorldOwner->MoveKinematicBody(State->Handles[Index],Endpoint,DeltaSeconds);
+        if(!Moved.IsSuccess())return Fail(OutError,Moved.Message);
     }
     State->AuthoredTargetHistory.Commit(State->AuthoredBodyScratch, State->ExpectedWorldSteps);
     Swap(State->BaseLocalPose, State->AuthoredLocalScratch);
@@ -1127,6 +1165,8 @@ bool UProphecyJoltCharacterComponent::PrepareForCoordinatedWorldStep(float Delta
         State->LastObjectChannel = ECC_MAX;
         // UE can recreate its PHAT query bodies/constraints when a preset toggles
         // physics flags. Rebind that proxy identity, retaining the Jolt articulation.
+        if(!ProphecyRobot::IsActive(Agent))
+        {
         if (Mesh->GetPhysicsAsset() != State->PhysicsAsset.Get() || Mesh->Constraints.Num() != State->JointSettings.Num())
             return Fail(OutError, TEXT("Collision preset changed the bound PHAT layout."));
         for (const auto& Joint : State->JointSettings)
@@ -1136,6 +1176,7 @@ bool UProphecyJoltCharacterComponent::PrepareForCoordinatedWorldStep(float Delta
                 || Constraint->ConstraintBone1 != Joint.Bone1 || Constraint->ConstraintBone2 != Joint.Bone2)
                 return Fail(OutError, TEXT("Collision preset changed a bound joint identity."));
             State->SourceConstraints[Joint.SourceConstraintIndex] = Constraint;
+        }
         }
     }
     if (!Agent || !Mesh || Mesh->GetSkeletalMeshAsset() != State->MeshAsset.Get()
@@ -1153,7 +1194,9 @@ bool UProphecyJoltCharacterComponent::PrepareForCoordinatedWorldStep(float Delta
         && State->LastPublicationFrame != GFrameCounter && !PublishAuthoredTargets(DeltaSeconds, OutError)) return false;
     // Publication can invoke callbacks. Revalidate the live binding before reading UE constraint state.
     if (!SynchronizeAngularLimits(OutError)) return false;
-    if (!ProphecyJointDamping::Update(Agent,State->Handles[0],OutError)) return false;
+    if(ProphecyRobot::IsActive(Agent))
+    {if(!ProphecyRobot::Prepare(Agent,*State->WorldOwner.Get(),State->RigHandle,OutError))return false;}
+    else if (!ProphecyJointDamping::Update(Agent,State->Handles[0],OutError)) return false;
     Mesh = State->Mesh.Get();
     const auto Channel = Mesh->GetCollisionObjectType();
     const auto Responses = Mesh->GetCollisionResponseToChannels();
@@ -1289,17 +1332,32 @@ bool UProphecyJoltCharacterComponent::ApplyAngularLimitProfiles(
 
 bool UProphecyJoltCharacterComponent::SynchronizeAngularLimits(FString& OutError)
 {
+    if(State && ProphecyRobot::IsActive(State->Agent.Get()))return true;
     if (!ValidateAngularLimitSource(OutError)) return Fail(OutError, OutError);
     const USkeletalMeshComponent* Mesh = State->Mesh.Get();
+    const bool FreeAttack = ProphecyBodyflip::Drive::AttackFree(State->Agent.Get());
+    const auto Effective = [FreeAttack](FConstraintProfileProperties& Profile)
+    {
+        if(!FreeAttack)return;
+        Profile.ConeLimit.Swing1Motion=ACM_Free;
+        Profile.ConeLimit.Swing2Motion=ACM_Free;
+        Profile.TwistLimit.TwistMotion=ACM_Free;
+    };
     bool bChanged = false;
     for (const FProphecyJoltRigJoint& Joint : State->JointSettings)
-        bChanged |= !ProphecyAngularLimits::Equal(Joint.CurrentProfile,
-            Mesh->Constraints[Joint.SourceConstraintIndex]->ProfileInstance);
+    {
+        if(FreeAttack)
+            bChanged |= Joint.CurrentProfile.ConeLimit.Swing1Motion!=ACM_Free || Joint.CurrentProfile.ConeLimit.Swing2Motion!=ACM_Free || Joint.CurrentProfile.TwistLimit.TwistMotion!=ACM_Free;
+        else bChanged |= !ProphecyAngularLimits::Equal(Joint.CurrentProfile,Mesh->Constraints[Joint.SourceConstraintIndex]->ProfileInstance);
+    }
     if (!bChanged) return true; // Normal preparation allocates nothing and leaves solver warm starts intact.
     TArray<FProphecyJoltRigJoint> Updated = State->JointSettings;
     for (FProphecyJoltRigJoint& Joint : Updated)
+    {
         ProphecyAngularLimits::Copy(Joint.CurrentProfile,
             Mesh->Constraints[Joint.SourceConstraintIndex]->ProfileInstance);
+        Effective(Joint.CurrentProfile);
+    }
     const FProphecyJoltWorldStatus Result = State->WorldOwner->UpdateRigAngularLimits(State->RigHandle, Updated);
     if (!Result.IsSuccess()) return Fail(OutError, Result.Message);
     State->JointSettings = MoveTemp(Updated);
@@ -1514,6 +1572,14 @@ void UProphecyJoltCharacterComponent::DisablePhysicalAnimation()
 void UProphecyJoltCharacterComponent::DisablePhysicalAnimationInternal(bool bCancelEnable)
 {
     if (!IsInGameThread()) return;
+    if(bCancelEnable&&!bDisableInProgress&&IsJoltPhysical())
+        if(auto* Agent=Cast<AProphecyAgent>(GetOwner());Agent&&!Agent->IsActorBeingDestroyed()&&ProphecyRobot::IsActive(Agent))
+        {
+            FString Error;
+            if(ProphecyRobot::ExitToSimulationMode(Agent,EProphecyAgentSimulationMode::Kinematic,Error))return;
+            UE_LOG(LogProphecyJoltCharacter,Warning,TEXT("Robot exit during backend removal: %s"),*Error);
+            ProphecyRobot::Forget(Agent);
+        }
     LowerFeedbackCaptures.Remove(this);
     if (bCancelEnable)
     {
@@ -1713,7 +1779,12 @@ bool UProphecyJoltCharacterComponent::GetBodyHandle(FName BoneName, FProphecyJol
 {
     OutHandle = {};
     if (!IsInGameThread() || !IsJoltPhysical() || !StillOwnsRig(*State)) return false;
-    const int32 Index = State->BodyNames.IndexOfByKey(BoneName);
+    int32 Index = State->BodyNames.IndexOfByKey(BoneName);
+    if(Index==INDEX_NONE && ProphecyRobot::IsActive(State->Agent.Get()))
+    {
+        FString Error;const auto* P=ProphecyRobot::Profile(Error);
+        if(P)Index=P->Bodies.IndexOfByPredicate([&](const auto& B){return B.Aliases.Contains(BoneName);});
+    }
     if (!State->Handles.IsValidIndex(Index)) return false;
     OutHandle = State->Handles[Index];
     return true;
@@ -1724,6 +1795,15 @@ double UProphecyJoltCharacterComponent::GetCapturedBodyMassKg(FName BoneName) co
     if (!IsInGameThread() || !IsJoltPhysical() || !StillOwnsRig(*State)) return 0;
     const int32 Index = State->BodyNames.IndexOfByKey(BoneName);
     return State->CapturedBodyMassesKg.IsValidIndex(Index) ? State->CapturedBodyMassesKg[Index] : 0;
+}
+
+bool UProphecyJoltCharacterComponent::GetBodyflipRigProfile(FString& Json,FString& Error) const
+{
+    if(!IsInGameThread()||!IsJoltPhysical()||!StillOwnsRig(*State)){Error=TEXT("Bodyflip requires a live native rig");return false;}
+    if(!State->BodyflipRigProfileError.IsEmpty()){Error=State->BodyflipRigProfileError;return false;}
+    auto Joints=State->JointSettings;
+    if(const auto* Mesh=State->Mesh.Get())for(auto& Joint:Joints)if(Mesh->Constraints.IsValidIndex(Joint.SourceConstraintIndex)&&Mesh->Constraints[Joint.SourceConstraintIndex])Joint.CurrentProfile=Mesh->Constraints[Joint.SourceConstraintIndex]->ProfileInstance;
+    return ProphecyBodyflip::RefreshRigProfile(State->BodyflipRigProfile,Joints,ProphecyFootColliderTrim::Get(State->Agent.Get()),Json,Error);
 }
 
 bool UProphecyJoltCharacterComponent::ReadPoseErrorBody(FName BoneName, int32& OutBodyIndex,
@@ -1784,9 +1864,9 @@ bool UProphecyJoltCharacterComponent::MakeHitResult(const FProphecyJoltRayHit& H
         OutHit.Normal = OutHit.ImpactNormal = Hit.Normal;
         OutHit.Distance = 0.0f; // This result has no source ray segment from which to compute a distance.
         OutHit.FaceIndex = INDEX_NONE;
-        // CaptureLiveRig/ValidateSnapshot guarantee descriptor order equals the source PHAT body index.
-        OutHit.Item = Index;
         OutHit.BoneName = State->BodyNames[Index];
+        // A trained compound robot can have fewer native bodies than its query PHAT.
+        OutHit.Item = Mesh->GetPhysicsAsset()?Mesh->GetPhysicsAsset()->FindBodyIndex(OutHit.BoneName):INDEX_NONE;
         return true;
     }
     return false;
@@ -1794,6 +1874,7 @@ bool UProphecyJoltCharacterComponent::MakeHitResult(const FProphecyJoltRayHit& H
 
 void UProphecyJoltCharacterComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ProphecyRobot::Forget(Cast<AProphecyAgent>(GetOwner()));
     ProphecyCharacterCollisionPreferences::Settings.Remove(this);
     ProphecyKickFootLeeway::Remove(Cast<AProphecyAgent>(GetOwner()));
     ProphecyLimbCollision::Remove(Cast<AProphecyAgent>(GetOwner()));

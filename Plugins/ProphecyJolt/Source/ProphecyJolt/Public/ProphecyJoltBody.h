@@ -59,6 +59,10 @@ public:
     FProphecyJoltPreparedBody(const FProphecyJoltPreparedBody&) = delete;
     FProphecyJoltPreparedBody& operator=(const FProphecyJoltPreparedBody&) = delete;
     bool Build(const FProphecyJoltBodySnapshot& Snapshot, FString& OutError);
+    // Authored Jolt convexes: build the unscaled hull/bevel first, then apply the
+    // physical scale wrapper. Imported Chaos geometry keeps the ordinary path.
+    bool BuildAuthoredConvex(const FProphecyJoltBodySnapshot& Snapshot, const FVector& PhysicalScale,
+        double UnscaledConvexRadiusCm, FString& OutError);
     void Reset();
     bool IsValid() const;
     FGuid GetCaptureId() const;

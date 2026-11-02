@@ -24,6 +24,7 @@ class ContactManifolds:
     response: wp.array4d(dtype=float)
     diagonal: wp.array3d(dtype=float)
     impulse: wp.array3d(dtype=float)
+    diagnostics: wp.array2d(dtype=int)
 
 
 def allocate(worlds,capacity,nv,device):
@@ -35,6 +36,7 @@ def allocate(worlds,capacity,nv,device):
     p.center=z((worlds,capacity),wp.vec3);p.frame=z((worlds,capacity),wp.mat33)
     p.friction=z((worlds,capacity));p.J=z((worlds,capacity,3,nv))
     p.response=z((worlds,capacity,3,nv));p.diagonal=z((worlds,capacity,3));p.impulse=z((worlds,capacity,3))
+    p.diagnostics=z((worlds,2),int)  # Latched maximum patch size / differing-normal patches.
     return p
 
 
@@ -51,9 +53,13 @@ def group_contacts(p:ContactManifolds,ncontact:wp.array(dtype=int),mu:wp.array2d
         for g in range(count):
             other=geom[p.first[w,g]]
             if pair[0]==other[0] and pair[1]==other[1]:
-                if wp.dot(normal,p.frame[w,g][0])<.99999:error[w]=9
-                found=g
-                break
+                if wp.dot(normal,p.frame[w,g][0])>=.99999:
+                    found=g
+                    break
+                # A curved/multi-face pair can have distinct contact normals.
+                # Keep separate friction patches instead of rejecting the world
+                # or applying the first patch's tangent plane to every contact.
+                p.diagnostics[w,1]=1
         if found<0:
             found=count;count+=1;p.first[w,found]=ident;p.size[w,found]=0
             p.center[w,found]=wp.vec3(0.);p.friction[w,found]=mu[w,c]
@@ -65,7 +71,10 @@ def group_contacts(p:ContactManifolds,ncontact:wp.array(dtype=int),mu:wp.array2d
     p.count[w]=count
     for g in range(count):
         p.center[w,g]/=float(p.size[w,g])
-        if p.size[w,g]>4:error[w]=7
+        # Four was a transfer-test assumption, not an array/solver capacity.
+        # MJ can emit larger patches; all their normal rows and friction loads
+        # are already included. Retain every point and report the size only.
+        p.diagnostics[w,0]=wp.max(p.diagnostics[w,0],p.size[w,g])
     for c in range(ncontact[w]):
         g=p.group[w,c]
         if g<0:continue

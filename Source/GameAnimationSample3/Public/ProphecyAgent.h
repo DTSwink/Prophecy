@@ -11,6 +11,7 @@
 #include "ProphecyNNPoseTypes.h"
 #include "ProphecyFootPinningTypes.h"
 #include "ProphecyPhysicalContextTypes.h"
+#include "ProphecyLocomotionTypeLibrary.h"
 #include "ProphecyAgent.generated.h"
 
 class UCapsuleComponent;
@@ -183,6 +184,9 @@ class GAMEANIMATIONSAMPLE3_API AProphecyAgent : public APawn
 	GENERATED_BODY()
 
 public:
+    /** Fires after a locomotion controller switch has committed. Blend nodes can be called here. */
+    UFUNCTION(BlueprintImplementableEvent,Category="Prophecy|Agent|Locomotion",meta=(DisplayName="Locomotion Type Changed"))
+    void OnLocomotionTypeChanged(EProphecyLocomotionType PreviousType,EProphecyLocomotionType NewType);
 	AProphecyAgent();
 
 	virtual void BeginPlay() override;
@@ -1035,7 +1039,7 @@ public:
 	/** Native bridge: returns the same source snapshot used for the world targets, reusing caller buffers. */
 	bool ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 		TArray<FTransform>& FutureWorldTransforms, TArray<FTransform>& InterpolatedWorldTransforms,
-		float& InterpolationAlpha, FProphecyNNPoseSnapshot& SourceSnapshot) const;
+		float& InterpolationAlpha, FProphecyNNPoseSnapshot& SourceSnapshot,bool bApplyFootIK=true) const;
 
 	/** Manually evaluates the existing viewer-matched Kinematic NN pose once. */
 	UFUNCTION(BlueprintCallable, Category = "Prophecy|Agent|Manual NN Pose", meta = (DisplayName = "Apply NN Pose Kinematically"))

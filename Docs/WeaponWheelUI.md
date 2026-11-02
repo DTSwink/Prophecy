@@ -1,5 +1,39 @@
 # Weapon wheel UI — isolated workstream
 
+## Main-menu scene — October30: native reference menu
+
+Native Slate menu added to the isolated MainMenuSceneLab, over the approved live
+background. Reference-space frame112/66,400×544; vector triple rules, curved
+corners, double diamonds, translucent crimson glass, small-caps serif typography
+and selected-row glow. Cormorant SC Regular is bundled with OFL/source attribution;
+no generated/raster menu image or runtime download. Explicit per-glyph tracking
+avoids Slate simple-text letter-spacing inconsistency. Cached composite font
+uses the current font API. Defaults font34/tracking3/selected1.25/line1.5.
+
+Scene studio moves to the right and uses two rows of tabs. Menu(index5) is default
+on Tab, with18 numeric fields/sliders plus Show menu and menu-only reset. All
+menu_* values use native Save/Revert/250ms recovery. New launch shows clean menu;
+Open.ps1 -Menu opens tuning, -NoMenu hides artwork. Uniform1280×720 layout scales
+with viewport; frame movement/scale and long labels fit their available bounds.
+The existing ground, water, rain, smoke, wet body, gizmo and card controls remain.
+
+Mouse hover/click and Up/Down/Enter/D-pad operate rows. Continue enters scene
+preview; Escape returns. New Game confirms mannequin reset/water clear without
+changing saved look. Load Game is an honest empty-save state (no game backend).
+Settings opens Menu tuning. Quit confirms Save and exit. Modal keyboard routing
+and focus prevent menu activation or mannequin movement underneath; focus returns
+to viewport after closing. Main project Blueprints/gameplay are not integrated.
+
+Native normal build, isolated interaction/save/revert checks and actual rendered
+UI review cover the reference1280×720,960×540 drawer,1920×1080 alternate selection,
+a modal, and extreme panel/font settings. Evidence Saved/MenuUI20261030 and
+Saved/Captures/menu-*.png; Validation/menu-controls.json uses native event handlers
+and shared callbacks without OS input. Default scene values are retained from the
+SaveLive backup; new menu defaults are appended on save. Scene materials are not
+regenerated. User approved background checkpoint remains d195d6d0; this UI work
+has not been pushed. Review44168 was saved/closed and clean review55888 reopened.
+See lab README for controls and prototype action meanings.
+
 ## Main-menu scene — October30: approved finite-card reflection checkpoint
 
 User approved this iteration and requested a push. SaveLive captured the current

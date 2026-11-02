@@ -1,0 +1,175 @@
+{
+  "summary": {
+    "count": 20,
+    "unique": 20,
+    "dimensions": [
+      "1672x941"
+    ],
+    "totalBytes": 33525334.0,
+    "MiB": 31.97,
+    "referenceMatches": true
+  },
+  "galleryLinkedImages": 20,
+  "images": [
+    {
+      "id": "01",
+      "file": "01-ivory-architecture.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1673033,
+      "sha256": "2353E2FAA3572878504CA08442E6ED88A30DAA7A9CC71D35E10F5066C10BB554"
+    },
+    {
+      "id": "02",
+      "file": "02-grand-editorial.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1685653,
+      "sha256": "410D355739215395C1B53DBED922EB05AAF032F9069B6A1614513490C351B3E2"
+    },
+    {
+      "id": "03",
+      "file": "03-inscribed-capitals.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1658908,
+      "sha256": "708A2558B71146BBD2FD0D256381FF845B972558812C645C7E2C0B5D0D9B3D46"
+    },
+    {
+      "id": "04",
+      "file": "04-modern-gallery.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1657559,
+      "sha256": "E99A9746E75FD83B6536D3B50E51FC070A3672C9360828539334AFC70A7F1523"
+    },
+    {
+      "id": "05",
+      "file": "05-gothic-velvet.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1686653,
+      "sha256": "650D820CE1E612ED8E884C22B4AD3CA808B905E5F8FA8401BC7D6AB567873A67"
+    },
+    {
+      "id": "06",
+      "file": "06-platinum-inlay.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1673331,
+      "sha256": "76FD1235E8E72BF23BF044820CE152B045F583601133F3246FCB5095E46BFA73"
+    },
+    {
+      "id": "07",
+      "file": "07-champagne-filigree.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1688529,
+      "sha256": "69A6B0FCDA9431A3318FF628C9192EE127A42F7DF7B4BA2DDF15EBEB80845F00"
+    },
+    {
+      "id": "08",
+      "file": "08-violet-enamel.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1677512,
+      "sha256": "3B28A03F92C053E0D5B91EB7604572FB13DE2D8BC0C98C477609838275E9A582"
+    },
+    {
+      "id": "09",
+      "file": "09-brushed-titanium.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1705533,
+      "sha256": "B43A52B9D94982A30A693B66121B18A8D38354D0F9530B1F4B5581CBD23006AF"
+    },
+    {
+      "id": "10",
+      "file": "10-ink-and-gilt.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1670954,
+      "sha256": "C02C8C61589DE1BCC40738D004BC6EA4A898C5E7AFB1C4F8B6EEA91E783EC827"
+    },
+    {
+      "id": "11",
+      "file": "11-crystal-smoke.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1681192,
+      "sha256": "A1094FC8C458CB439DCC18AB102BE7DDFE3094B3B68A7263E8E70F1C0D3CC2AE"
+    },
+    {
+      "id": "12",
+      "file": "12-frost-gradient.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1681024,
+      "sha256": "86FCDC83829744ADAD1337841293612F590B9E0CFE993350550704C71728BE1E"
+    },
+    {
+      "id": "13",
+      "file": "13-violet-quartz.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1682436,
+      "sha256": "9312A54433BEFC22FB363AE681C476EC7792F0F4D3D9EB626398025F6D2B7B37"
+    },
+    {
+      "id": "14",
+      "file": "14-ruby-veil.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1673105,
+      "sha256": "0C2C19C8624EEFE1A3D05793E0E0C7FFC413569CB58783C4F6ED752A5CAB5A5A"
+    },
+    {
+      "id": "15",
+      "file": "15-pearl-interference.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1659195,
+      "sha256": "001EEE58CBA09358F2D31D1667C348DA03189A202CDDA634CE93C3350D8DE131"
+    },
+    {
+      "id": "16",
+      "file": "16-chamfer-monolith.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1682564,
+      "sha256": "A81EAC16FAF16FA9D7162F5009F9FC81C34A042276F8C35CBAFBC5E7CA70A89B"
+    },
+    {
+      "id": "17",
+      "file": "17-rounded-precision.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1675649,
+      "sha256": "1274D671BD41B0FF4437FFB3D6A195542EA4CF2E1B2CA32C352E458BAC02751B"
+    },
+    {
+      "id": "18",
+      "file": "18-offset-double-frame.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1647829,
+      "sha256": "ACD86786B96E6F49E0B267B468CC8EB1D4AB91CEFB9618DDF277A875D86E596A"
+    },
+    {
+      "id": "19",
+      "file": "19-folded-edge.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1678362,
+      "sha256": "C529058F30AE8162C8D3E47D1FFCE1198982CAC35D5B4F6EE2CE3177985DE530"
+    },
+    {
+      "id": "20",
+      "file": "20-liquid-silver.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1686313,
+      "sha256": "FF34738D4462C82776309EB1D8CD8F8DE559D3F2943EFC2C6D9244A5F7E14FF2"
+    }
+  ]
+}

@@ -72,3 +72,10 @@ header{height:96px;justify-content:flex-start}header>.brand{flex:0 0 266px}.head
 
 .jump-enable{position:absolute;top:16px;transform:translateX(-50%);width:11px;height:11px;margin:0;pointer-events:auto;cursor:pointer;accent-color:#b8a0ff}
 .jump-marker[data-status=Disabled]{opacity:.4}
+
+/* Keep each attack name and cutoff together in the narrow options panel. */
+#attackEndFields{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+#attackEndFields>label{display:flex;align-items:center;justify-content:space-between;gap:12px;white-space:nowrap;min-width:0}
+#attackEndFields input[type=number]{width:76px;flex:0 0 76px}
+
+#jumpPin{margin-left:0;min-width:45px;flex-shrink:0}

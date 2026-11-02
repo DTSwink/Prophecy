@@ -58,6 +58,8 @@ public:
     bool GetRigIdentityBody(FProphecyJoltBodyHandle& OutHandle) const;
     void SetHitEventsEnabled(bool bEnabled);
     double GetCapturedBodyMassKg(FName BoneName) const;
+    // Exact pre-handoff prepared masses/shapes plus current native joint limits.
+    bool GetBodyflipRigProfile(FString& Json,FString& Error) const;
     // Preserve the original skeletal receiver identity. Native subshape IDs are never UE triangle FaceIndex values.
     bool MakeHitResult(const FProphecyJoltRayHit& Hit, FHitResult& OutHit) const;
     uint64 GetRevision() const;

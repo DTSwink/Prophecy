@@ -2,8 +2,8 @@
 
 Isolated Unreal 5.7 main-menu scene prototype: a crimson bed, live shallow water,
 animated mannequin, physical rain streaks, volumetric cold smoke and wet-body
-pearling. The game menu artwork remains separate. The main project and engine
-assets are unchanged.
+pearling, with a native Slate main-menu overlay matching the supplied reference.
+The main project and engine assets are unchanged.
 
 ## First checkout and launch
 
@@ -25,6 +25,43 @@ installed elsewhere. Generated binaries, caches and recovery snapshots stay loca
 The curated source-copy hashes are in `Resources/asset-provenance.json`.
 `Tools/copy_assets.py` records the original main-project dependency selection;
 it is not required on a checkout containing the copied Content assets.
+
+## Main menu and tuning
+
+Launch normally for the clean menu. Press **Tab** for the right-hand Scene studio;
+its **Menu** tab opens by default. `./Open.ps1 -Visible -Menu` opens directly with
+that drawer; `-NoMenu` hides the artwork for scene-only diagnostics.
+
+The frame uses vector rules, quarter-circle corners and double diamonds, a
+translucent crimson panel, bundled Cormorant SC lettering and a glowing selected
+row. Mouse hover/click, Up/Down/Enter and gamepad D-pad/accept select and activate
+rows. Selection crossfades; Glow motion adjusts the subtle breathing underline.
+Tab shows/hides studio without hiding the artwork. Layout scales uniformly from
+the1280×720 reference, and oversized panels/labels fit within their available area.
+
+The **Menu** tab offers18 numeric entries with matching sliders:
+
+- Position, panel width/height, overall scale, first-row height and row spacing.
+- Panel opacity, border opacity/thickness, ornament size, selection glow and crimson richness.
+- Letter size, actual pixel letter spacing, selected-label size, text brightness and glow motion.
+
+Show menu toggles the artwork. **Reset menu to reference** resets only its style
+and layout. **Save look**, **Revert** and automatic recovery include all menu
+settings together with the scene. Defaults: position112/66,400×544, font34,
+tracking3, selected scale1.25, line thickness1.5. Scroll the drawer to reach all
+controls. The background is not retuned by menu controls.
+
+This remains a scene prototype, with explicit local preview actions:
+Continue enters the live scene; **Escape** returns to the menu. New Game asks
+before restarting mannequin/clearing water, preserving the look. Load Game shows
+an empty-save state; no gameplay save backend is connected. Settings opens Menu
+tuning. Quit asks before saving the look and exiting. Confirmation dialogs keep
+keyboard input within their buttons; Tab/Left/Right changes button, Enter accepts,
+Escape backs out. Gameplay Blueprint wiring in the main project is untouched.
+
+Cormorant SC is bundled under the SIL Open Font License in `Resources/Fonts/`;
+its source attribution and license accompany the font. No font installation or
+network request is required at runtime.
 
 ## Scene interaction and saving
 
@@ -55,8 +92,8 @@ native layout changes require a normal build, not Live Coding.
 
 ## Controls
 
-There are 36 sliders across five tabs, plus the card-depth and width numeric fields, actions
-and the resting-contact switch.
+There are54 sliders across six tabs, including the18 Menu numeric controls,
+plus card-depth/width numeric fields, actions and visibility/contact switches.
 
 | Ground | Water | Rain | Air | Body |
 | --- | --- | --- | --- | --- |
@@ -88,12 +125,12 @@ The mannequin drives Epic WaterAdvanced/NiagaraFluids shallow water in the lab's
 engine solver and modules are unchanged; preparation links lab call inputs to
 the live controls:
 
-- Push strength, 0–3x, controls collision velocity transfer. Zero blocks new input.
-- Motion threshold, 0–20 cm/s, rejects small horizontal contact movements.
-- Contact softness, 0.5–20 cm, changes the collision coupling falloff distance.
-- Damping, 0–100%, increases friction and velocity dissipation on a square curve.
+- Push strength, 0â€“3x, controls collision velocity transfer. Zero blocks new input.
+- Motion threshold, 0â€“20 cm/s, rejects small horizontal contact movements.
+- Contact softness, 0.5â€“20 cm, changes the collision coupling falloff distance.
+- Damping, 0â€“100%, increases friction and velocity dissipation on a square curve.
   Zero retains friction 0.00025 and dissipation 0.0003; maximum is 0.01 and 0.05.
-- Wave relief, 0–3x, changes visible collision-wave slopes, independently of rain
+- Wave relief, 0â€“3x, changes visible collision-wave slopes, independently of rain
   and simulation energy.
 
 By default, actual submerged PHAT-body motion gates the collision provider.
@@ -125,23 +162,23 @@ reflected radiance after shading rather than averaging normals. The sample count
 is fixed across depth; there are no distance waves, amplitude gains or fades.
 This costs additional material work. It is a known-emitter reflection, not a full
 scene ray tracer: it does not trace mannequin occlusion of a card or convolve the
-finite source with a full GGX lobe. The original cards span Z=0–3000 cm, so their
+finite source with a full GGX lobe. The original cards span Z=0â€“3000 cm, so their
 lower ends still meet the water. Calm water consequently retains pointed sources.
 
-Ground → Reflection lights exposes **Card depth (m)** as a synced numeric field
+Ground â†’ Reflection lights exposes **Card depth (m)** as a synced numeric field
 and slider, from -200 to +200 m. Enter or leave the field to apply typed values;
 dragging updates live. All seven cards move along world X. Positive is behind
 the starting mannequin; negative moves toward and past the camera. Original is
 80 m. The `reflection_card_depth` setting uses metres and participates in Save
 look, Revert and automatic recovery. Typing in the field suppresses scene hotkeys.
 
-**Card width (x)** adds a numeric field and synced slider from 0.1–4x. It changes
+**Card width (x)** adds a numeric field and synced slider from 0.1â€“4x. It changes
 all seven source widths while retaining their relative sizes, height, depth and
 emission brightness. Default 1x preserves the original widths. It persists as
 `reflection_card_width` through the same save/recovery system.
 
 Cards are initially vertical at X=8000 cm, centered at Z=1500 cm, with height 3000 cm and
-widths 180–260 cm. Their Y positions are -3870, -3055, -1070, 142, 886, 2935 and
+widths 180â€“260 cm. Their Y positions are -3870, -3055, -1070, 142, 886, 2935 and
 3869 cm. The mannequin starts at (0,140,0). These are emissive reflection cards,
 separate from the rect lights illuminating the mannequin. The former
 `reflection_light_*` and `reflection_fade_*` settings have no effect.
@@ -152,7 +189,7 @@ Unreal Python; full preparation uses the same definitions. No engine edits.
 
 Rain uses 98,532 instanced streak seeds in four independent jittered layers.
 Density spans four times the original capacity: old 80% is now 20%; old 100% is
-now 25%. Stored `rain_amount` remains in original units, 0–4. Width stays in
+now 25%. Stored `rain_amount` remains in original units, 0â€“4. Width stays in
 world units, so near and distant drops project differently. No screen overlay or
 minimum screen-width clamp is used. Brightness and length help subpixel drops read.
 
@@ -185,7 +222,7 @@ The source emits downward; density buoyancy returns it upward and vorticity
 curls the flow. Temperature is zero. Drift speed changes the downward/return
 pace, while Rolling motion controls curl. Zero drift pauses the gas.
 
-**Horizontal width**, 0.25–8x, widens the actual source along world Y (left/right
+**Horizontal width**, 0.25â€“8x, widens the actual source along world Y (left/right
 on screen) through Epic's **Non Uniform Scale** input `(1,width,1)`. Height,
 depth, center and vertical flow settings remain independent. Width 1 preserves
 the earlier source shape. The old `haze_spread` remains as a compatibility
@@ -219,6 +256,13 @@ Direct launches can append `-SceneSequenceFrames=16` to capture a frame sequence
 every four rendered frames, and `-SceneSequenceFreeze` to keep the simulation
 clock fixed. `-SceneLegacyCardProjection` is a comparison-only launch flag that
 restores native card capture and disables the analytic contribution.
+
+`-SceneValidateMenu` on a direct native launch exercises all five hit targets,
+mouse selection/activation, keyboard wrap, modal routing, size extremes and
+style save/revert, with isolated settings under Saved. `-SceneCaptureMenuDialog`
+captures the empty-save modal. Current UI evidence: `Saved/MenuUI20261030/` and
+`Saved/Captures/menu-final.png`, `menu-studio-small.png`, `menu-selected-wide.png`,
+`menu-dialog.png`, `menu-extreme.png`.
 
 Local receipts include `Saved/Validation/weather-controls.json`,
 `collision-controls.json`, `collision-response.json`, `mannequin-gizmo.json`, and

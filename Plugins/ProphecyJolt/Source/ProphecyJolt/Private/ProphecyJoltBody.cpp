@@ -26,6 +26,9 @@
 THIRD_PARTY_INCLUDES_START
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
+#include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/RegisterTypes.h>
 THIRD_PARTY_INCLUDES_END
 
@@ -384,6 +387,68 @@ bool FProphecyJoltPreparedBody::Build(const FProphecyJoltBodySnapshot& Snapshot,
     Built->CaptureId = Snapshot.CaptureId;
     if (!ProphecyJolt::BodyConversion::PrepareShapeAndMass(Snapshot.Body, Built->Shape, Built->Mass, OutError)) return false;
     Native = MoveTemp(Built);
+    return true;
+}
+
+bool FProphecyJoltPreparedBody::BuildAuthoredConvex(const FProphecyJoltBodySnapshot& Snapshot,
+    const FVector& PhysicalScale, double UnscaledConvexRadiusCm, FString& OutError)
+{
+    using namespace ProphecyJolt::Conversions;
+    OutError.Reset();
+    if (!IsInGameThread()) { OutError = TEXT("Standalone shape preparation requires the game thread."); return false; }
+    if (!JPH::VerifyJoltVersionID() || !JPH::Factory::sInstance)
+    { OutError = TEXT("Jolt runtime/ABI is unavailable."); return false; }
+    if (!ProphecyJolt::Body::ValidateSnapshot(Snapshot, OutError)) return false;
+    if (PhysicalScale.ContainsNaN() || PhysicalScale.GetMin() <= 0.0
+        || !FMath::IsFinite(UnscaledConvexRadiusCm) || UnscaledConvexRadiusCm < 0.0)
+    { OutError = TEXT("Invalid authored convex scale/radius."); return false; }
+    // Do not call Build here: its zero-tolerance Chaos hull construction can
+    // reject an authored Jolt hull before its actual settings are considered.
+    auto Prepared = MakeUnique<FProphecyJoltPreparedBodyState>();
+    Prepared->CaptureId = Snapshot.CaptureId;
+    JPH::StaticCompoundShapeSettings Compound;
+    JPH::RefConst<JPH::Shape> Shape;
+    for (const auto& Input : Snapshot.Body.Shapes)
+    {
+        if (Input.Kind != EProphecyJoltRigShape::Convex || !Input.LocalToBodyOrigin.Equals(FTransform::Identity)
+            || Input.RestOffsetCm != 0.0
+            || (Input.CurrentCollisionEnabled != ECollisionEnabled::QueryAndPhysics && Input.CurrentCollisionEnabled != ECollisionEnabled::PhysicsOnly))
+        { OutError = TEXT("Authored convex preparation requires body-local simulation hulls without a rest offset."); return false; }
+        JPH::ConvexHullShapeSettings Settings;
+        // Exact settings read from the approved Throw Lab WASM binding.
+        Settings.mHullTolerance = .001f;
+        Settings.mMaxErrorConvexRadius = .05f;
+        Settings.mMaxConvexRadius = float(UnscaledConvexRadiusCm * .01);
+        Settings.mUserData = uint64(Input.SourceElementIndex + 1);
+        for (const auto& Point : Input.ConvexVerticesCm)
+            Settings.mPoints.push_back(static_cast<JPH::Vec3>(ToJoltPosition(Point / PhysicalScale)));
+        const auto Hull = Settings.Create();
+        if (Hull.HasError()) { OutError = UTF8_TO_TCHAR(Hull.GetError().c_str()); return false; }
+        Shape = Hull.Get();
+        Compound.AddShape(JPH::Vec3::sZero(), JPH::Quat::sIdentity(), Shape.GetPtr(), uint32(Input.SourceElementIndex + 1));
+    }
+    if (Snapshot.Body.Shapes.Num() > 1)
+    {
+        const auto Built = Compound.Create();
+        if (Built.HasError()) { OutError = UTF8_TO_TCHAR(Built.GetError().c_str()); return false; }
+        Shape = Built.Get();
+    }
+    if (!PhysicalScale.Equals(FVector::OneVector, 1.e-12))
+        Shape = new JPH::ScaledShape(Shape.GetPtr(), ToJoltDirection(PhysicalScale));
+    const auto DesiredCOM = static_cast<JPH::Vec3>(ToJoltPosition(Snapshot.Body.MassFrameToBodyOrigin.GetTranslation()));
+    Prepared->Shape = new JPH::OffsetCenterOfMassShape(Shape.GetPtr(), DesiredCOM - Shape->GetCenterOfMass());
+    // Same imported COM/principal-inertia contract as PrepareShapeAndMass.
+    // The input tensor is already about COM; no parallel-axis term is added.
+    Prepared->Mass.mMass = ToJoltMass(Snapshot.Body.MassKg);
+    Prepared->Mass.mInertia = JPH::Mat44::sScale(ToJoltInertiaDiagonal(Snapshot.Body.PrincipalInertiaKgCmSquared));
+    Prepared->Mass.Rotate(JPH::Mat44::sRotation(ToJoltRotation(Snapshot.Body.MassFrameToBodyOrigin.GetRotation())));
+    JPH::Mat44 PrincipalRotation; JPH::Vec3 PrincipalDiagonal;
+    if (!Prepared->Mass.DecomposePrincipalMomentsOfInertia(PrincipalRotation, PrincipalDiagonal)
+        || PrincipalDiagonal.GetX() <= 0.0f || PrincipalDiagonal.GetY() <= 0.0f || PrincipalDiagonal.GetZ() <= 0.0f)
+    { OutError = TEXT("Authored convex native inertia decomposition failed."); return false; }
+    if (!FromJoltPosition(JPH::RVec3(Prepared->Shape->GetCenterOfMass())).Equals(Snapshot.Body.MassFrameToBodyOrigin.GetTranslation(), 1.e-3))
+    { OutError = TEXT("Authored convex COM round-trip exceeds 0.001 cm."); return false; }
+    Native = MoveTemp(Prepared);
     return true;
 }
 

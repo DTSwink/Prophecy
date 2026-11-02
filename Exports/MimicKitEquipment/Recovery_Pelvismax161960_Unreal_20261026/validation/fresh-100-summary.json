@@ -1,0 +1,55 @@
+{
+  "total": 100,
+  "native_success": 99,
+  "unreal_success": 100,
+  "both_success": 99,
+  "native_only": [],
+  "unreal_only": [
+    27
+  ],
+  "cohorts": [
+    {
+      "motion": "front",
+      "plus": false,
+      "count": 25,
+      "native_success": 25,
+      "unreal_success": 25
+    },
+    {
+      "motion": "front",
+      "plus": true,
+      "count": 25,
+      "native_success": 25,
+      "unreal_success": 25
+    },
+    {
+      "motion": "back",
+      "plus": false,
+      "count": 25,
+      "native_success": 25,
+      "unreal_success": 25
+    },
+    {
+      "motion": "back",
+      "plus": true,
+      "count": 25,
+      "native_success": 24,
+      "unreal_success": 25
+    }
+  ],
+  "failures": [
+    {
+      "case": 27,
+      "backend": "native",
+      "ticks": 25,
+      "terminal": 1,
+      "pelvis_z": 0.9415301084518433,
+      "head_z": 1.4272361993789673,
+      "head_failure_below": 0.6995065212249756,
+      "pelvis_ceiling": 0.9345778226852417
+    }
+  ],
+  "seed": 2026102301,
+  "training_performed": false,
+  "scope": "100 fresh perturbed starts from production reset code; same frozen checkpoint and initial states; deterministic policy; flat floor; gameplay defaults unchanged"
+}

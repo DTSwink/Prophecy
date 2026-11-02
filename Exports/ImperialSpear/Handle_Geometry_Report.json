@@ -1,0 +1,57 @@
+{
+  "components": [
+    {
+      "name": "03 \u2022 scored leather handgrip",
+      "triangles": 764,
+      "closed": true,
+      "volume_m3": 0.00025657999352984926,
+      "uv_region": [
+        0.5029296875,
+        0.7470703125,
+        0.0732421875,
+        0.4970703125
+      ]
+    },
+    {
+      "name": "Grip \u2022 chased straight keeper lower",
+      "triangles": 1148,
+      "closed": true,
+      "volume_m3": 2.4460600809711138e-05,
+      "uv_region": [
+        0.5029296875,
+        0.7470703125,
+        0.0029296875,
+        0.0673828125
+      ]
+    },
+    {
+      "name": "Grip \u2022 chased straight keeper upper",
+      "triangles": 1148,
+      "closed": true,
+      "volume_m3": 2.446059715375203e-05,
+      "uv_region": [
+        0.5029296875,
+        0.7470703125,
+        0.0029296875,
+        0.0673828125
+      ]
+    }
+  ],
+  "protected_components_unchanged": 83,
+  "grip_span_m": [
+    1.115,
+    1.355
+  ],
+  "grip_pivot_m": 1.235,
+  "gold_keeper_bounds_m": [
+    [
+      1.102,
+      1.122
+    ],
+    [
+      1.348,
+      1.368
+    ]
+  ],
+  "changes": "Removed puffy spiral winding; taut sleeve and collars with integral rims"
+}

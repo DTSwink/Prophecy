@@ -7,6 +7,7 @@
 #include "Chaos/ImplicitObjectScaled.h"
 #include "Chaos/ImplicitObjectTransformed.h"
 #include "Chaos/ShapeInstance.h"
+#include "Chaos/HeightField.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -23,6 +24,7 @@
 THIRD_PARTY_INCLUDES_START
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/EmptyShape.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/RegisterTypes.h>
 THIRD_PARTY_INCLUDES_END
@@ -80,7 +82,8 @@ bool CaptureMesh(const FPhysicsShapeHandle& Handle, FProphecyJoltStaticMeshShape
         break;
     }
     const auto* Mesh = Geometry ? Geometry->GetObject<Chaos::FTriangleMeshImplicitObject>() : nullptr;
-    if (!Mesh) return Fail(Error, TEXT("Effective static triangle shape does not contain a cooked triangle mesh."));
+    const auto* Terrain = Geometry ? Geometry->GetObject<Chaos::FHeightField>() : nullptr;
+    if (!Mesh && !Terrain) return Fail(Error, TEXT("Effective static shape is neither cooked mesh nor heightfield."));
     const double Determinant = VertexToBody.Determinant();
     if (!FMath::IsFinite(Determinant) || Determinant == 0.0)
         return Fail(Error, TEXT("Static mesh native wrapper matrix is singular or nonfinite."));
@@ -89,6 +92,26 @@ bool CaptureMesh(const FPhysicsShapeHandle& Handle, FProphecyJoltStaticMeshShape
     Out.bQueryEnabled = Handle.Shape->GetQueryEnabled();
     StoreWords(Handle.Shape->GetSimData(), Out.SimulationFilterWords);
     StoreWords(Handle.Shape->GetQueryData(), Out.QueryFilterWords);
+    if (Terrain)
+    {
+        const int32 Rows=Terrain->GetNumRows(),Cols=Terrain->GetNumCols();
+        if(Rows<2 || Cols<2 || int64(Rows)*Cols>4*1024*1024)return Fail(Error,TEXT("Invalid or oversized terrain collision tile."));
+        Out.VerticesCm.Reserve(Rows*Cols);
+        for(int32 I=0;I<Rows*Cols;++I)Out.VerticesCm.Add(FVector(VertexToBody.TransformPosition(FVector(Terrain->GetPointScaled(I)))));
+        for(int32 Y=0;Y<Rows-1;++Y)for(int32 X=0;X<Cols-1;++X)
+        {
+            if(Terrain->IsHole(X,Y))continue;
+            for(int32 Half=0;Half<2;++Half)
+            {
+                const int32 Face=2*(Y*(Cols-1)+X)+Half;
+                Chaos::FTriangle Triangle;int32 A,B,C;
+                Terrain->GetTransformedTriangle(Face,Chaos::FRigidTransform3::Identity,Triangle,A,B,C);
+                if(Out.bReversedWindingForNegativeScale)Swap(B,C);
+                Out.Triangles.Add(FIntVector(A,B,C));Out.ExternalFaceIndices.Add(Face);Out.MaterialIndices.Add(0);
+            }
+        }
+        return true;
+    }
     const auto& Particles = Mesh->Particles();
     if (Particles.Size() > uint32(MAX_int32))
         return Fail(Error, TEXT("Static mesh vertex count exceeds the capture array limit."));
@@ -116,7 +139,7 @@ bool CaptureMesh(const FPhysicsShapeHandle& Handle, FProphecyJoltStaticMeshShape
     return true;
 }
 
-bool CaptureLocked(const FBodyInstance& Instance, const UBodySetup& Setup, FProphecyJoltStaticBodySnapshot& Out, FString& Error)
+bool CaptureLocked(const FBodyInstance& Instance, const UBodySetup* Setup, FProphecyJoltStaticBodySnapshot& Out, FString& Error)
 {
     const FPhysicsActorHandle Actor = Instance.GetPhysicsActor();
     if (!Actor || Instance.WeldParent || (!FPhysicsInterface::IsStatic(Actor)
@@ -124,7 +147,7 @@ bool CaptureLocked(const FBodyInstance& Instance, const UBodySetup& Setup, FProp
         return Fail(Error, TEXT("Static capture requires one independent native static body; moving/kinematic/dynamic and welded bodies are unsupported."));
     Out.BodyOriginToWorld = Instance.GetUnrealWorldTransform_AssumesLocked(false, true);
     Out.SourceBodyScale3D = Instance.Scale3D;
-    Out.SourceBuildScale3D = Setup.BuildScale3D;
+    Out.SourceBuildScale3D = Setup ? Setup->BuildScale3D : FVector::OneVector;
     Out.CollisionEnabled = Instance.GetCollisionEnabled();
     const UPhysicalMaterial* Material = Instance.GetSimplePhysicalMaterial();
     if (!Material) return Fail(Error, TEXT("Static body has no resolved physical material."));
@@ -148,10 +171,10 @@ bool CaptureLocked(const FBodyInstance& Instance, const UBodySetup& Setup, FProp
         Shape.RestOffsetCm = Element.RestOffset;
         Shape.bContributesToAuthoredMass = Element.GetContributeToMass();
     };
-    for (const auto& Element : Setup.AggGeom.SphereElems) Add(Element, EProphecyJoltRigShape::Sphere);
-    for (const auto& Element : Setup.AggGeom.BoxElems) Add(Element, EProphecyJoltRigShape::Box);
-    for (const auto& Element : Setup.AggGeom.SphylElems) Add(Element, EProphecyJoltRigShape::Capsule);
-    for (const auto& Element : Setup.AggGeom.ConvexElems) Add(Element, EProphecyJoltRigShape::Convex);
+    if (Setup) for (const auto& Element : Setup->AggGeom.SphereElems) Add(Element, EProphecyJoltRigShape::Sphere);
+    if (Setup) for (const auto& Element : Setup->AggGeom.BoxElems) Add(Element, EProphecyJoltRigShape::Box);
+    if (Setup) for (const auto& Element : Setup->AggGeom.SphylElems) Add(Element, EProphecyJoltRigShape::Capsule);
+    if (Setup) for (const auto& Element : Setup->AggGeom.ConvexElems) Add(Element, EProphecyJoltRigShape::Convex);
     TArray<FPhysicsShapeHandle> Shapes;
     Instance.GetAllShapes_AssumesLocked(Shapes);
     Out.NativeShapeCount = Shapes.Num();
@@ -186,7 +209,7 @@ bool CaptureLocked(const FBodyInstance& Instance, const UBodySetup& Setup, FProp
         if (!bHavePolicy) { Out.ObjectType = Channel; Out.CollisionResponses = Responses; bHavePolicy = true; }
         else if (Out.ObjectType != Channel || Out.CollisionResponses != Responses)
             return Fail(Error, TEXT("Static simulation shapes have different effective collision policies; split ownership is required."));
-        if (Type == Chaos::ImplicitObjectType::TriangleMesh)
+        if (Type == Chaos::ImplicitObjectType::TriangleMesh || Type == Chaos::ImplicitObjectType::HeightField)
         {
             if (!CaptureMesh(Handle, Out.MeshShapes.AddDefaulted_GetRef(), Error)) return false;
         }
@@ -232,8 +255,10 @@ bool ValidateSnapshot(const FProphecyJoltStaticBodySnapshot& Snapshot, FString& 
     }
     for (const auto& Mesh : Snapshot.MeshShapes)
     {
+        const bool bEmptyTerrain = Mesh.Triangles.IsEmpty()
+            && Mesh.NativeGeometryTypeChain.Contains(uint32(Chaos::ImplicitObjectType::HeightField));
         if (Mesh.NativeShapeIndex < 0 || NativeIndices.Contains(Mesh.NativeShapeIndex) || Mesh.VerticesCm.IsEmpty()
-            || Mesh.Triangles.IsEmpty() || Mesh.ExternalFaceIndices.Num() != Mesh.Triangles.Num() || Mesh.MaterialIndices.Num() != Mesh.Triangles.Num())
+            || (Mesh.Triangles.IsEmpty() && !bEmptyTerrain) || Mesh.ExternalFaceIndices.Num() != Mesh.Triangles.Num() || Mesh.MaterialIndices.Num() != Mesh.Triangles.Num())
             return Fail(Error, TEXT("Static mesh identity, vertices, triangles or parallel provenance are invalid."));
         NativeIndices.Add(Mesh.NativeShapeIndex);
         for (const FVector& V : Mesh.VerticesCm)
@@ -273,25 +298,25 @@ bool CaptureStaticBody(UPrimitiveComponent& Component, int32 InstanceIndex, FPro
     if (ISM && Instance != ISM->InstanceBodies[InstanceIndex])
         return Fail(Error, TEXT("Static instance lookup returned a different body than the exact requested native slot."));
     const UBodySetup* Setup = Instance ? Instance->GetBodySetup() : nullptr;
-    if (!Instance || !Instance->IsValidBodyInstance() || Instance->WeldParent || !Setup)
+    if (!Instance || !Instance->IsValidBodyInstance() || Instance->WeldParent)
         return Fail(Error, TEXT("Static component/instance has no valid independent native body/setup."));
     FProphecyJoltStaticBodySnapshot Captured;
     Captured.bKinematic = Component.GetMobility() != EComponentMobility::Static;
     Captured.CaptureId = FGuid::NewGuid(); Captured.SourceComponent = &Component; Captured.SourceWorld = World;
     Captured.InstanceIndex = InstanceIndex; Captured.ComponentPath = Component.GetPathName();
-    Captured.BodySetupPath = Setup->GetPathName(); Captured.EngineFrame = GFrameCounter;
+    Captured.BodySetupPath = GetPathNameSafe(Setup); Captured.EngineFrame = GFrameCounter;
     Captured.ComponentToWorld = Component.GetComponentTransform(); Captured.InstanceToWorld = Captured.ComponentToWorld;
     if (ISM && !ISM->GetInstanceTransform(InstanceIndex, Captured.InstanceToWorld, true))
         return Fail(Error, TEXT("Static instance world transform could not be captured."));
     if (const auto* Mesh = Cast<UStaticMeshComponent>(&Component)) Captured.StaticMeshPath = GetPathNameSafe(Mesh->GetStaticMesh());
     bool bCaptured = false;
     const bool bRead = FPhysicsCommand::ExecuteRead(Instance->GetPhysicsActor(), [&](const FPhysicsActorHandle&)
-        { bCaptured = CaptureLocked(*Instance, *Setup, Captured, Error); });
+        { bCaptured = CaptureLocked(*Instance, Setup, Captured, Error); });
     if (!bRead || !bCaptured) return Error.IsEmpty() ? Fail(Error, TEXT("Static native read failed.")) : false;
     if (!ValidateSnapshot(Captured, Error)) return false;
     Captured.CoverageNotes.Add(TEXT("Only effective native static simulation shapes are imported. Actual simple collision remains analytic/convex; complex-as-simple uses cooked triangles, including native wrappers once and signed-scale winding correction. No render collision fallback, hull simplification or invented mass is used."));
     Captured.CoverageNotes.Add(TEXT("Original UE component, instance index, native source faces, material indices and query geometry remain provenance. Jolt mesh triangles are single-sided for simulation and internally reordered; per-triangle user data retains the captured local triangle index, not a UE FaceIndex."));
-    Captured.CoverageNotes.Add(TEXT("The existing body-level Jolt friction/restitution and bilateral Block policy apply. Complex material coefficients/combine modes, overlaps, probes, scene lifecycle, landscape and moving bodies are not implemented by this static foundation. Retained UE queries provide blood/UV identity."));
+    Captured.CoverageNotes.Add(TEXT("The existing body-level Jolt friction/restitution and bilateral Block policy apply. Terrain collision uses the cooked grid triangles and holes in a static BVH. Complex per-face material coefficients, overlaps and probes are not implemented by this foundation. Retained UE queries provide blood/UV identity."));
     OutSnapshot = MoveTemp(Captured);
     return true;
 }
@@ -331,6 +356,12 @@ bool FProphecyJoltPreparedStaticBody::Build(const FProphecyJoltStaticBodySnapsho
     }
     for (const auto& Mesh : Snapshot.MeshShapes)
     {
+        if(Mesh.Triangles.IsEmpty())
+        {
+            // A fully holed terrain component remains a valid, non-colliding receiver.
+            Compound.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),new JPH::EmptyShape(),uint32(Mesh.NativeShapeIndex)+1);
+            continue;
+        }
         JPH::VertexList Vertices; Vertices.reserve(Mesh.VerticesCm.Num());
         for (const auto& V : Mesh.VerticesCm) Vertices.emplace_back(float(V.X * 0.01), float(V.Y * 0.01), float(V.Z * 0.01));
         JPH::IndexedTriangleList Triangles; Triangles.reserve(Mesh.Triangles.Num());

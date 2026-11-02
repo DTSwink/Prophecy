@@ -1,0 +1,58 @@
+{
+  "scope": "isolated Unreal scene; no production assets loaded",
+  "kernel": {
+    "cases": 4005,
+    "failures": 0,
+    "filled_rects": 1,
+    "ring_rects": 4,
+    "checker_rects": 128
+  },
+  "benchmark": {
+    "kernel_us_per_32x32_region": 7.1717,
+    "iterations": 20000,
+    "checksum": 4764356,
+    "scope": "CPU partition only; excludes Unreal components and GPU"
+  },
+  "patterns": [
+    {
+      "shape": "filled",
+      "old_decals": 43,
+      "new_decals": 1,
+      "occupied_cells": 256,
+      "last_update_ms": 0.014998018741607666
+    },
+    {
+      "shape": "hole",
+      "old_decals": 43,
+      "new_decals": 4,
+      "occupied_cells": 220,
+      "last_update_ms": 0.050302594900131226
+    },
+    {
+      "shape": "splash",
+      "old_decals": 52,
+      "new_decals": 24,
+      "occupied_cells": 139,
+      "last_update_ms": 0.10269880294799805
+    },
+    {
+      "shape": "strip",
+      "old_decals": 8,
+      "new_decals": 1,
+      "occupied_cells": 32,
+      "last_update_ms": 0.03890320658683777
+    }
+  ],
+  "stream": {
+    "cells": 1719,
+    "rectangles": 1088,
+    "update_max_ms": 0.24349987506866455,
+    "update_p95_ms": 0.2029016613960266,
+    "measured_updates": 288,
+    "scope": "non-idle synchronous CPU component updates; not GPU timing; competing user workloads"
+  },
+  "rendered": false,
+  "success": true,
+  "passed_checks": 4211,
+  "failed_checks": []
+}

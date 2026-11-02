@@ -15,7 +15,7 @@ class Element {
  closest(){return this.className==='jump-marker'?this:null;}
  contains(e){return this===e||this.children.some(c=>c.contains(e));}
 }
-const ids=['jumpThrowFields','jumpThrowCharge','jumpThrowSpeed','jumpInstantSpin','jumpPushWith','jumpPercent','jumpAttack','jumpAttackDelay','jumpAttackIn','jumpAttackOut','jumpEditor','jumpHere','jumpRemove','jumpTime','jumpLane','jumpPopover','jumpLabel','jumpStatus','jumpMarkers','jumpFlip','jumpTwist','jumpDelay','jumpDuration','jumpTurnIn','jumpTurnOut','jumpAxis','jumpPose','jumpPoseIn','jumpPoseHold','jumpPoseOut','jumpPoseTiming','minorOptions','jumpOptionsLabel'],elements=Object.fromEntries(ids.map(id=>[id,new Element()])),listeners={};
+const ids=['jumpPin','jumpThrowFields','jumpThrowCharge','jumpThrowSpeed','jumpInstantSpin','jumpPushWith','jumpPercent','jumpAttack','jumpAttackDelay','jumpAttackIn','jumpAttackOut','jumpEditor','jumpHere','jumpRemove','jumpTime','jumpLane','jumpPopover','jumpLabel','jumpStatus','jumpMarkers','jumpFlip','jumpTwist','jumpDelay','jumpDuration','jumpTurnIn','jumpTurnOut','jumpAxis','jumpPose','jumpPoseIn','jumpPoseHold','jumpPoseOut','jumpPoseTiming','minorOptions','jumpOptionsLabel'],elements=Object.fromEntries(ids.map(id=>[id,new Element()])),listeners={};
 const document={getElementById:id=>elements[id],createElement:()=>new Element(),addEventListener:(name,fn)=>listeners[name]=fn,activeElement:null};
 let settings=C.sanitize(),time=1.37,edits=0,seeks=[],results=[];
 const context=vm.createContext({document,setTimeout,clearTimeout,Date,BodyflipCore:C,BodyflipJumpAttack:require('./jump-attack.js'),BodyflipThrowAttack:require('./throw-attack.js')});
@@ -36,6 +36,15 @@ check('Dragging keeps playback time',time===1.37&&seeks.length===0);
 listeners.pointerdown({target:new Element()});check('Clicking away closes editor',elements.jumpPopover.hidden);
 marker.onclick();check('Clicking marker restores editor',!elements.jumpPopover.hidden);
 listeners.keydown({code:'Escape'});check('Escape closes editor',elements.jumpPopover.hidden);
+marker.onclick();const pinEdits=edits;elements.jumpPin.onclick();
+check('Pin shows its active state',editor.pinned&&elements.jumpPin.attrs['aria-pressed']==='true');
+listeners.pointerdown({target:new Element()});check('Pinned window stays open on outside click',!elements.jumpPopover.hidden);
+listeners.pointerdown({target:elements.minorOptions});check('Pinned window stays open in More options',!elements.jumpPopover.hidden);
+listeners.keydown({code:'Escape'});editor.close();check('Pinned window stays open on Escape',!elements.jumpPopover.hidden);
+check('Pin does not rebuild motion or seek',edits===pinEdits&&seeks.length===0);
+elements.jumpPin.onclick();check('Unpin leaves window open until dismissed',!editor.pinned&&!elements.jumpPopover.hidden);
+listeners.pointerdown({target:new Element()});check('Unpinned window closes normally',elements.jumpPopover.hidden);
+
 marker.onclick();elements.jumpTime.value='';const before=edits;elements.jumpTime.onchange();check('Empty time does not create a zero-time jump',before===edits&&elements.jumpTime.value==='1.600');
 elements.jumpRemove.onclick();check('Delete removes only selected marker',settings.jumpEvents.length===1&&!settings.jumpEvents.some(e=>e.id===id));
 elements.jumpMarkers.children.filter(e=>e.className==='jump-marker')[0].onclick();elements.jumpRemove.onclick();

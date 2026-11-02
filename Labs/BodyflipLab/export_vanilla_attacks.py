@@ -19,7 +19,14 @@ def main():
     folder = ROOT / 'data/vanilla'
     folder.mkdir(exist_ok=True)
     clips = []
+    existing = json.loads((ROOT / 'data/vanilla.json').read_text(encoding='utf-8')) if (ROOT / 'data/vanilla.json').exists() else {'clips': []}
+    overrides = {c['name']: c for c in existing['clips'] if c.get('sourceOverride')}
     for clip in payload['clips']:
+        if clip['name'] in overrides:
+            replacement = overrides[clip['name']]
+            assert hashlib.sha256((ROOT / replacement['file']).read_bytes()).hexdigest() == replacement['sha256']
+            clips.append(replacement)
+            continue
         source = Path(clip['source_npz'])
         with np.load(source, allow_pickle=False) as data:
             phases = {key: float(data['attack_' + key + '_frame']) for key in ('armed', 'hit')}
@@ -32,7 +39,6 @@ def main():
                               frames=clip['frame_count'], fps=clip['fps'], phases=phases,
                               hitTarget=data['attack_target_world_m'].astype(float).tolist(),
                               source=str(source), sha256=hashlib.sha256(raw).hexdigest()))
-    existing = json.loads((ROOT / 'data/vanilla.json').read_text()) if (ROOT / 'data/vanilla.json').exists() else {'clips': []}
     original_names = {c['name'] for c in clips}
     clips.extend(c for c in existing['clips'] if c['name'] not in original_names)
     receipt = dict(schema=1, source=str(SOURCE), sourceSHA256=hashlib.sha256(SOURCE.read_bytes()).hexdigest(),

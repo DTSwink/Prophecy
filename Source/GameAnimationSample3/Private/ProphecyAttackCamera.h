@@ -18,6 +18,8 @@ public:
 	UProphecyAttackCameraComponent();
 	void Follow(AActor* InManager, AProphecyAgent* InAgent);
 	void CompensateRootSnap(const FVector& PreviousSpringOrigin);
+	FVector CaptureLocomotionPivot() const;
+	void BlendLocomotionCamera(const FVector& PreviousPivot, bool bRobot);
 	void Stop();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -25,6 +27,8 @@ public:
 
 private:
 	friend class FProphecyAttackCameraComTest;
+	friend class FProphecyLocomotionCameraTest;
+	bool UpdateLocomotionCamera(ELevelTick TickType);
 	void Restore();
 	void ReleasePrerequisites();
 	void SetMesh(USkeletalMeshComponent* NewMesh);
@@ -51,4 +55,6 @@ namespace ProphecyAttackCamera
 	void End(const AActor* Manager);
 	void Update(AActor* Manager, AProphecyAgent* Player, bool bFullAttack);
 	void CompensateRootSnap(AProphecyAgent* Player, const FVector& PreviousSpringOrigin);
+	FVector CaptureLocomotionSwitch(AActor* Manager, AProphecyAgent* Player);
+	void LocomotionSwitched(AActor* Manager, AProphecyAgent* Player, const FVector& PreviousPivot);
 }

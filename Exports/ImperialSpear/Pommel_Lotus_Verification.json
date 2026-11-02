@@ -1,0 +1,1120 @@
+{
+  "status": "LOTUS_POMMEL_SOURCE_AND_ACTUAL_GAME_COLLISION_AUDITED",
+  "concept": "04 \u2014 Lotus bud",
+  "unreal_import_cooking_and_physics_validated": false,
+  "protected_component_count": 70,
+  "protected_full_source_fingerprints": {
+    "01 \u2022 rosewood shaft.001": "31817fcd0375ccd4391bdf23829e0e7533d363e50c1d3caca558e390e90e1d0a",
+    "06 \u2022 forged leaf blade": "49940eb04a0095c8ef40d8666b1c7bab1ea509e3fcab4e6d57cb4e407c77322d",
+    "Socket \u2022 narrow terminal cuff rim": "558d00ae21c5eb5f3532a926740dca53b62f69f9cbf14b784d895ad126a79f9d",
+    "Tassel \u2022 threaded leather attachment loop": "8242e539265e3f6e3e12218eba49098fe6273e32f826d987888defef08e09a36",
+    "Tassel \u2022 rough leather cord through beads": "e1e5e0e4b2d8aecb0c54e954d4a1cbbbfa01864212df6b466dac5e713cdd2d71",
+    "Tassel \u2022 pierced oval dark lacquer bead": "3ae97b293bcf36d148e6238a2fab925c26f60bcf90835f8245bc85c6691095e7",
+    "Tassel \u2022 compact attachment knot": "ff60a581ffc869c2fa6abeed8afbcc0e7dd0d56da64dcd9e43410b6cfc14d52a",
+    "Tassel \u2022 compact attachment knot.001": "b6d8db0e8b6bbcf693c3cc15667abeb437fa9ab4c64810d7965c9bdb94ef885d",
+    "Tassel \u2022 fine loose filament": "037c93218a7e0b9163eb83d8265afbd6ee7e775e785f39bc066f2b0d503867c8",
+    "Tassel \u2022 fine loose filament.001": "436c5077dcd66f3ba7d9294d4652feabb3f857975af00808bdef53f11e158ca5",
+    "Tassel \u2022 fine loose filament.002": "3799b7ce85e065d08b11b3a665429f06d213af97b4343bd148030d3c975398ba",
+    "Tassel \u2022 fine loose filament.003": "8e4328711ff7eaa240f0bdbe5e43b667a176876b99905fd5d94f65cdbeb0862e",
+    "Tassel \u2022 fine loose filament.004": "1ee9b9389e8b47cfa8c4975c1c0c2d73378f459852b3dbd00be06c2672e3199b",
+    "Tassel \u2022 fine loose filament.005": "7ab8b1dc3938998827d8f8fede00d37f243f385ac54aed16bd5516169f8f4f19",
+    "Tassel \u2022 fine loose filament.006": "6362f522e93274ebddb80bfc415987fccc217dca0e46844af41c019285dc3e0e",
+    "Tassel \u2022 fine loose filament.007": "803f4794600978ed631843f0263e604c248e1c669e43a94a3948bf1a0b479f22",
+    "Tassel \u2022 fine loose filament.008": "1660db2fa233e98dae1b6ad7985c833301732ba1d65389dff5e817798253e05f",
+    "Tassel \u2022 fine loose filament.009": "8e2dd95a99902e6aff73350488595601f8d009667e4762c1eaff794ed828875e",
+    "Tassel \u2022 fine loose filament.010": "aabc9262b720767d18971a5f2e26b96a64b337a0c13f785b0bd83f960453a9e7",
+    "Tassel \u2022 fine loose filament.011": "223de67917070400e90141e79d89fe12a13ab06a4a5f3f9c801e35a59cbdbe13",
+    "Tassel \u2022 fine loose filament.012": "2a51db2fdee0cc40101a2b3ae63e96e8f2dc0219b41204e99d69a498e27e77d0",
+    "Tassel \u2022 fine loose filament.013": "dc48a95f125354ed1abc22177d17fcc74d31f833aeaf49e941fb827fd442296f",
+    "Tassel \u2022 fine loose filament.014": "521d483488b374b38b6915ae7d411aa25e2c1bbc0ba6d8ce7a9a042b9064384c",
+    "Tassel \u2022 fine loose filament.015": "035652e5d4539f4d8375d41f70f0f85b558a42bfb0a376de431df746bda13c04",
+    "Tassel \u2022 fine loose filament.016": "e5dd1701e66556df369ef5233c3d09ce881abda997d9abbc8ae374ccdf872d01",
+    "Tassel \u2022 fine loose filament.017": "352eab780ba92a0522baa8c728d0487ffdaef6c1f02e19727998f4b9b62e4873",
+    "Tassel \u2022 fine loose filament.018": "e275936c163ef84eaaf92630cd1ea0d7870d5bf37e464f6ed88c190698093eb4",
+    "Tassel \u2022 fine loose filament.019": "0ffe2e941d55996c9d21a8e39409b44f94b4419da3049f1b18eda1a1fb3dcf9a",
+    "Socket \u2022 continuous cast inverted S.001": "5f4d9abad5481bf157397688fa656c135384260a7dc46508d7419ac8b857c917",
+    "Socket \u2022 continuous cast inverted S": "94a8a881f45b7aa8b3368ad70f6364a2d284a467ba0c1ade294c1baba689fd69",
+    "Tassel \u2022 second leather leg to first bead": "da1cde2258c0d8946df8a42e126fbb1e0e6d6a11b70344701ec7f9da2bddaf74",
+    "Tassel \u2022 tied throat wrap": "be14d0fadfd3514af8f8e0353bd4812a1d26017c2961220ae8d67a1346784cd8",
+    "Tassel \u2022 tied throat wrap.001": "31977bd5acbc113d0898d41dff05e3a918485c3f0c4080538416c39fc60b0332",
+    "Tassel \u2022 tied throat wrap.002": "3bccece45ecf88a7acb17e63dc23651bfccaffa09b752459a87f23c6c3bac203",
+    "Tassel \u2022 loose upper wisp": "60a458e9d96fd2bfe3fe625e5ed6bb6443029e761afadffe72c31efc70acf1d2",
+    "Tassel \u2022 loose upper wisp.001": "054c96469e6d2f2968c09754016b7ab64b3e374547ea6be488551b580f4f4c53",
+    "Tassel \u2022 loose upper wisp.002": "55209821c6ba9c122767b04c0b58ea21c465570d270b87a0f64c88f24d24befc",
+    "Tassel \u2022 reference silk bundle": "bea0ad0e93170b8c8dfbde369f3402ce38312fbece64178556a0c27bab95f151",
+    "Tassel \u2022 reference silk bundle.001": "92c5de985f392a6cc8f85ed4d3355ae6e8b52dda21094d24b62179c73da405d1",
+    "Tassel \u2022 reference silk bundle.002": "00f8945e7b76b991d1206f3945979d4621f8ea2d088bebccb47d890d36833d59",
+    "Tassel \u2022 reference silk bundle.003": "fb1eeee4a2b048af7cf4faa35674c7b9eed649f914a40a6e740a0c5539986943",
+    "Tassel \u2022 reference silk bundle.004": "c45c8f67bda7838ab6c2eefe349600476146a234bb13ad0f1839834a043a13ce",
+    "Tassel \u2022 reference silk bundle.005": "495435868aa8766d28f246280c071cc8587f02a6d78dfe2cfcb3ed6ae46de2d9",
+    "Tassel \u2022 reference silk bundle.006": "7a0473fd5f324812e809cd52d2f4e0a6e169a3b4a5ce5b120d148493c992d81b",
+    "Tassel \u2022 reference silk bundle.007": "2d905ce087c40348b0b68014cea062c53055f7de859a1e50640bd4a5384c9628",
+    "Tassel \u2022 reference silk bundle.008": "9a41222874c9897ce7976f84c4352fe752bb28bdce02ce61cd54fa326669be70",
+    "Tassel \u2022 reference silk bundle.009": "5c2f8be50ccfa019a6826d013ae10735a7f6c58e74483891d89d13b330b420e1",
+    "Tassel \u2022 reference silk bundle.010": "35155921b1b1d964a6fc13b06eaad74e6cfe6916690de93dff6c062f0647145b",
+    "Tassel \u2022 reference silk bundle.011": "1290519067409271ebf4bd5a24caadd7bfdc8e4b7eb2e8dfd55227fbe4e5ebfa",
+    "Tassel \u2022 reference silk bundle.012": "b9ab7d5ec5a727a7b378526c8d07120619ff0c2c5eecbaffd25355b667150b15",
+    "Tassel \u2022 reference silk bundle.013": "ae06709e7895ed2f2d1cebf77b365e74bc4ca9e801638a67d321a744ae87633a",
+    "Tassel \u2022 reference silk bundle.014": "80aa96f7081e1eb2c283b6135403e08225794178adf00f90525774a97b04f92f",
+    "Tassel \u2022 reference silk bundle.015": "f3c2f2f3d49645a418d8cee2ba360efb405b1e23540ce58af4f40dc53304707b",
+    "Tassel \u2022 reference silk bundle.016": "727361c976c712bf439b091ab1258f393a0ed25000a6f4c1d25abdd9a8e1778c",
+    "Tassel \u2022 reference silk bundle.017": "b69aa42816d76f4a254d18b50dd42478869ab6e02aee40e205e4b5cd8059a6a1",
+    "Tassel \u2022 reference silk bundle.018": "81327f6d44a8d426ff48d7b84b889b97215621d881f73aca41c315c8c148192c",
+    "Tassel \u2022 reference silk bundle.019": "ba95a5d9f6ba3c8908cc7cf36733de130622562ee2cc174ea494197a2ba33a49",
+    "Tassel \u2022 reference silk bundle.020": "2ee7d3c160415b6aada9904ad4f02628e9285214932a37ed9e40d35a481f1b75",
+    "Tassel \u2022 reference silk bundle.021": "6563e05abbea07c90724f4a4f4294acd56b533d39224585cb21ed4fe6d6172ba",
+    "Tassel \u2022 reference silk bundle.022": "d7ee72188163c3c74cf3c5ca72cfa0b94d003943ed535ab7f2429d358f8388d1",
+    "Tassel \u2022 reference silk bundle.023": "7ff19518798bf4264aed64a0d1c4db81b8f527e32948b50a00ebf3c429703bae",
+    "05 \u2022 long engraved socket and short end cuff": "ea9bc6bdea7c4d8c2ae320d733e2602431ba99c1cfe088f273ac231d1e31cc5d",
+    "Socket \u2022 thin flared neck ring": "5a76f369ca794e5bf9c2e0eeb4bf10f2aad26037d3afa2974d95632dcfd8e244",
+    "Socket \u2022 broad asymmetrical middle ring": "1e8171b076ad32010afac78b59f92cb7b3796baf2b2ffae5091ed93b3fb07449",
+    "Tassel \u2022 pierced small dark lacquer bead": "dd7dae7f3b62fe522ecc413ee64e6cce39e5171abbf6ff1f20a6b1cfc3180ea6",
+    "07 \u2022 reference cast housing with pierced eye": "2b48e0170964f20e0b12ef307af14ffc9694a6c6474e28a79fa2a19d51759409",
+    "Blade \u2022 flame and compact unified casting": "2cc8e88d4111aa96bad121cca32097f401d312ea0c869a8ace688bf94c45c2ea",
+    "03 \u2022 scored leather handgrip": "6a58b2955d2a8482657868739e617a84f4a83a7340c33dcde3217e0453ed7e08",
+    "Grip \u2022 chased straight keeper lower": "32ad2f6d3807b279351e04da907a7250ef9f326d1176ae3cb6cf3c09f11dca43",
+    "Grip \u2022 chased straight keeper upper": "a28617942e330e57cce788fee6a1a5f306ec71350097aecb90a6485fb8c54e74"
+  },
+  "all_atlas_file_hashes_unchanged": {
+    "T_ImperialSpear_BaseColor.png": "b2c73dd6ffa5937a04d749aabf165313f21957c919d8bb173893a60c41c9dd97",
+    "T_ImperialSpear_NormalDX.png": "70e8aacbc8ff464017448c19a85fb11c88c462966c4f583985043d1230930f79",
+    "T_ImperialSpear_NormalGL.png": "0b36392a4865b6bb07b09b56c4470b8398f6bb595144bba90a36234ac6e3d76c",
+    "T_ImperialSpear_ORM.png": "9bf9381c1c6be06f45bec1cbdd7cb4fe4f6f2a7c06a9d834fd67325ba5fc97d0"
+  },
+  "pommel_components": {
+    "02 \u2022 carved lotus pommel body": {
+      "vertices": 4098,
+      "triangles": 8192,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 7.147499013207854e-05,
+      "minimum_face_area_m2": 1.736436558985588e-07,
+      "minimum_edge_length_m": 6.939901504665613e-05,
+      "bounds_m": {
+        "min": [
+          -0.02449999935925007,
+          -0.02449999935925007,
+          0.012500000186264515
+        ],
+        "max": [
+          0.02449999935925007,
+          0.02449999935925007,
+          0.10849999636411667
+        ]
+      },
+      "minimum_triangle_area_m2": 6.967847130528089e-08,
+      "uv_bounds": {
+        "min": [
+          0.5396000146865845,
+          0.7578799724578857
+        ],
+        "max": [
+          0.665992021560669,
+          0.9921200275421143
+        ]
+      },
+      "minimum_triangle_uv_area": 4.1463707667332983e-07,
+      "minimum_custom_normal_geometric_normal_dot": 0.8063770271837711,
+      "fingerprint": "b26fc6fcb5361509a5f3d7051be2491d2cd9718ca964ea58d6de0647ea1966ce"
+    },
+    "Pommel \u2022 rolled socket and straight barrel": {
+      "vertices": 720,
+      "triangles": 1436,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 2.282402619265445e-05,
+      "minimum_face_area_m2": 2.1082337298139464e-06,
+      "minimum_edge_length_m": 0.0007615742506459355,
+      "bounds_m": {
+        "min": [
+          -0.01899999938905239,
+          -0.01899999938905239,
+          0.10499999672174454
+        ],
+        "max": [
+          0.01899999938905239,
+          0.01899999938905239,
+          0.12809999287128448
+        ]
+      },
+      "minimum_triangle_area_m2": 5.566057470383355e-07,
+      "uv_bounds": {
+        "min": [
+          0.5078799724578857,
+          0.801800012588501
+        ],
+        "max": [
+          0.7421200275421143,
+          0.899399995803833
+        ]
+      },
+      "minimum_triangle_uv_area": 1.146547194963432e-06,
+      "minimum_custom_normal_geometric_normal_dot": 0.9561249502003193,
+      "fingerprint": "3362aefa46c8288af0234a4a3ca33b5892eb9881fe4a95b6dc5a56c088c98396"
+    },
+    "Pommel \u2022 six carved lotus petals": {
+      "vertices": 1802,
+      "triangles": 3600,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 1.4832712959391226e-05,
+      "minimum_face_area_m2": 1.1696598134491865e-09,
+      "minimum_edge_length_m": 4.398164946906036e-06,
+      "bounds_m": {
+        "min": [
+          -0.016095571219921112,
+          -0.01563718356192112,
+          -0.03099999949336052
+        ],
+        "max": [
+          0.016095571219921112,
+          0.01563718356192112,
+          0.003000000026077032
+        ]
+      },
+      "minimum_triangle_area_m2": 1.169731049853288e-09,
+      "uv_bounds": {
+        "min": [
+          0.5078799724578857,
+          0.801800012588501
+        ],
+        "max": [
+          0.7421200275421143,
+          0.8847600221633911
+        ]
+      },
+      "minimum_triangle_uv_area": 2.91675803509861e-08,
+      "minimum_custom_normal_geometric_normal_dot": 0.32112225890159607,
+      "fingerprint": "24501888f5e0cf077889ec83ca461a5cfebe854c54f8e14c33d0285036558025"
+    },
+    "Pommel \u2022 stepped lotus seat": {
+      "vertices": 880,
+      "triangles": 1756,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 1.1340390132668065e-05,
+      "minimum_face_area_m2": 5.525450319510128e-07,
+      "minimum_edge_length_m": 0.00021213134459685534,
+      "bounds_m": {
+        "min": [
+          -0.017500000074505806,
+          -0.017500000074505806,
+          0.0010000000474974513
+        ],
+        "max": [
+          0.017500000074505806,
+          0.017500000074505806,
+          0.014499999582767487
+        ]
+      },
+      "minimum_triangle_area_m2": 2.7502789546435467e-07,
+      "uv_bounds": {
+        "min": [
+          0.5078799724578857,
+          0.801800012588501
+        ],
+        "max": [
+          0.7421200275421143,
+          0.899399995803833
+        ]
+      },
+      "minimum_triangle_uv_area": 1.071737946389817e-06,
+      "minimum_custom_normal_geometric_normal_dot": 0.948755043605523,
+      "fingerprint": "136fbd7bd772f0e36017d7dc5649b9836ce211d0e30edb8bf8f05209c0360253"
+    }
+  },
+  "collision_hulls": {
+    "UCX_SM_ImperialSpear_00": {
+      "role": "lower_shaft",
+      "vertices": 24,
+      "triangles": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.0008040431455864354,
+      "minimum_face_area_m2": 1.8379972971160896e-05,
+      "minimum_edge_length_m": 0.008574374951422215,
+      "bounds_m": {
+        "min": [
+          -0.016564419493079185,
+          -0.016564419493079185,
+          -1.1079000234603882
+        ],
+        "max": [
+          0.016564419493079185,
+          0.016564419493079185,
+          -0.13110001385211945
+        ]
+      },
+      "convex_max_plane_violation_m": 9.313225746154785e-10,
+      "minimum_triangle_area_m2": 1.8379973017835823e-05
+    },
+    "UCX_SM_ImperialSpear_01": {
+      "role": "forward_grip",
+      "vertices": 24,
+      "triangles": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.0003565996271554907,
+      "minimum_face_area_m2": 3.0172601327649318e-05,
+      "minimum_edge_length_m": 0.010985917411744595,
+      "bounds_m": {
+        "min": [
+          -0.0212231632322073,
+          -0.0212231632322073,
+          -0.13100001215934753
+        ],
+        "max": [
+          0.0212231632322073,
+          0.0212231632322073,
+          0.13289999961853027
+        ]
+      },
+      "convex_max_plane_violation_m": 4.656612873077393e-10,
+      "minimum_triangle_area_m2": 3.017259592292131e-05
+    },
+    "UCX_SM_ImperialSpear_02": {
+      "role": "upper_shaft",
+      "vertices": 24,
+      "triangles": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.00013472360632254128,
+      "minimum_face_area_m2": 1.8379972971160896e-05,
+      "minimum_edge_length_m": 0.008574374951422215,
+      "bounds_m": {
+        "min": [
+          -0.016564419493079185,
+          -0.016564419493079185,
+          0.13300000131130219
+        ],
+        "max": [
+          0.016564419493079185,
+          0.016564419493079185,
+          0.2966703474521637
+        ]
+      },
+      "convex_max_plane_violation_m": 9.313225746154785e-10,
+      "minimum_triangle_area_m2": 1.8379973017835823e-05
+    },
+    "UCX_SM_ImperialSpear_03": {
+      "role": "pommel_lotus_bud",
+      "vertices": 56,
+      "triangles": 108,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 2.1706418358590983e-05,
+      "minimum_face_area_m2": 5.888629175387905e-07,
+      "minimum_edge_length_m": 0.00017314034630544484,
+      "bounds_m": {
+        "min": [
+          -0.017650000751018524,
+          -0.017650000751018524,
+          -1.2661501169204712
+        ],
+        "max": [
+          0.017650000751018524,
+          0.017650000751018524,
+          -1.2308499813079834
+        ]
+      },
+      "convex_max_plane_violation_m": 1.178705133497715e-07,
+      "minimum_triangle_area_m2": 5.895664705479708e-07
+    },
+    "UCX_SM_ImperialSpear_04": {
+      "role": "pommel_carved_leaf",
+      "vertices": 56,
+      "triangles": 108,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.00014901319451848019,
+      "minimum_face_area_m2": 1.4850984371150844e-05,
+      "minimum_edge_length_m": 0.00128038483671844,
+      "bounds_m": {
+        "min": [
+          -0.024650000035762787,
+          -0.024650000035762787,
+          -1.2311500310897827
+        ],
+        "max": [
+          0.024650000035762787,
+          0.024650000035762787,
+          -1.130850076675415
+        ]
+      },
+      "convex_max_plane_violation_m": 1.0166547070866727e-07,
+      "minimum_triangle_area_m2": 1.4851718955998193e-05
+    },
+    "UCX_SM_ImperialSpear_05": {
+      "role": "pommel_socket",
+      "vertices": 56,
+      "triangles": 108,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 2.829499903252519e-05,
+      "minimum_face_area_m2": 1.986978077184176e-06,
+      "minimum_edge_length_m": 0.0008554591331630945,
+      "bounds_m": {
+        "min": [
+          -0.01915000006556511,
+          -0.01915000006556511,
+          -1.1311501264572144
+        ],
+        "max": [
+          0.01915000006556511,
+          0.01915000006556511,
+          -1.1067500114440918
+        ]
+      },
+      "convex_max_plane_violation_m": 9.033828973770142e-08,
+      "minimum_triangle_area_m2": 1.987116778874675e-06
+    },
+    "UCX_SM_ImperialSpear_06": {
+      "role": "engraved_socket",
+      "vertices": 36,
+      "triangles": 68,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.00017495522750465934,
+      "minimum_face_area_m2": 2.4555251002311707e-05,
+      "minimum_edge_length_m": 0.009910651482641697,
+      "bounds_m": {
+        "min": [
+          -0.022227216511964798,
+          -0.022227216511964798,
+          0.2965703308582306
+        ],
+        "max": [
+          0.022227216511964798,
+          0.022227216511964798,
+          0.42900002002716064
+        ]
+      },
+      "convex_max_plane_violation_m": 2.793967725581159e-09,
+      "minimum_triangle_area_m2": 2.4555250931665984e-05
+    },
+    "UCX_SM_ImperialSpear_07": {
+      "role": "neck_ring",
+      "vertices": 48,
+      "triangles": 92,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 1.3570734230905046e-05,
+      "minimum_face_area_m2": 2.3171791326603852e-05,
+      "minimum_edge_length_m": 0.0029120147228240967,
+      "bounds_m": {
+        "min": [
+          -0.030744990333914757,
+          -0.030744990333914757,
+          0.42820003628730774
+        ],
+        "max": [
+          0.030744990333914757,
+          0.030744990333914757,
+          0.4334000051021576
+        ]
+      },
+      "convex_max_plane_violation_m": 2.4796463549137115e-08,
+      "minimum_triangle_area_m2": 2.3172034008115135e-05
+    },
+    "UCX_SM_ImperialSpear_08": {
+      "role": "middle_ring",
+      "vertices": 48,
+      "triangles": 92,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 4.005297700976696e-05,
+      "minimum_face_area_m2": 3.3414708013879135e-05,
+      "minimum_edge_length_m": 0.005460317712277174,
+      "bounds_m": {
+        "min": [
+          -0.02780805341899395,
+          -0.02780805341899395,
+          0.34254419803619385
+        ],
+        "max": [
+          0.02780805341899395,
+          0.02780805341899395,
+          0.3609442412853241
+        ]
+      },
+      "convex_max_plane_violation_m": 3.725290298461914e-09,
+      "minimum_triangle_area_m2": 3.341487633376456e-05
+    },
+    "UCX_SM_ImperialSpear_09": {
+      "role": "terminal_cuff",
+      "vertices": 60,
+      "triangles": 116,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 4.726342280660021e-06,
+      "minimum_face_area_m2": 5.5890473049657885e-06,
+      "minimum_edge_length_m": 0.0011242019245401025,
+      "bounds_m": {
+        "min": [
+          -0.02097534015774727,
+          -0.02097534015774727,
+          0.296770304441452
+        ],
+        "max": [
+          0.02097534015774727,
+          0.02097534015774727,
+          0.3007703125476837
+        ]
+      },
+      "convex_max_plane_violation_m": 2.223532646894455e-08,
+      "minimum_triangle_area_m2": 5.589170244996783e-06
+    },
+    "UCX_SM_ImperialSpear_10": {
+      "role": "cast_housing_left",
+      "vertices": 32,
+      "triangles": 60,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.00010643445005893695,
+      "minimum_face_area_m2": 6.804024010875764e-10,
+      "minimum_edge_length_m": 5.964892989140935e-05,
+      "bounds_m": {
+        "min": [
+          -0.05516968294978142,
+          -0.015169154852628708,
+          0.4332500696182251
+        ],
+        "max": [
+          0.0001500000071246177,
+          0.015169152989983559,
+          0.5258623361587524
+        ]
+      },
+      "convex_max_plane_violation_m": 1.0244548320770264e-08,
+      "minimum_triangle_area_m2": 6.80401961533811e-10
+    },
+    "UCX_SM_ImperialSpear_11": {
+      "role": "cast_housing_right",
+      "vertices": 32,
+      "triangles": 60,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.00011213281561000125,
+      "minimum_face_area_m2": 8.26781615614891e-07,
+      "minimum_edge_length_m": 5.964892989140935e-05,
+      "bounds_m": {
+        "min": [
+          -0.0001500000071246177,
+          -0.01540040411055088,
+          0.4332500696182251
+        ],
+        "max": [
+          0.050156816840171814,
+          0.015400411561131477,
+          0.5261465311050415
+        ]
+      },
+      "convex_max_plane_violation_m": 2.2351741790771484e-08,
+      "minimum_triangle_area_m2": 8.268398376177131e-07
+    },
+    "UCX_SM_ImperialSpear_12": {
+      "role": "seated_flame_and_spiral",
+      "vertices": 32,
+      "triangles": 60,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 6.15456453049063e-05,
+      "minimum_face_area_m2": 2.289380063302815e-08,
+      "minimum_edge_length_m": 5.967012475593947e-05,
+      "bounds_m": {
+        "min": [
+          -0.002776017878204584,
+          -0.009393027052283287,
+          0.511099100112915
+        ],
+        "max": [
+          0.041499003767967224,
+          0.009393027052283287,
+          0.6190080046653748
+        ]
+      },
+      "convex_max_plane_violation_m": 1.979060471057892e-08,
+      "minimum_triangle_area_m2": 2.2893232643433768e-08
+    },
+    "UCX_SM_ImperialSpear_13": {
+      "role": "blade_root",
+      "vertices": 16,
+      "triangles": 28,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 5.343027019288566e-05,
+      "minimum_face_area_m2": 2.793280509649776e-05,
+      "minimum_edge_length_m": 0.00749934371560812,
+      "bounds_m": {
+        "min": [
+          -0.05763636529445648,
+          -0.008600001223385334,
+          0.5100000500679016
+        ],
+        "max": [
+          0.04227273166179657,
+          0.008600001223385334,
+          0.5750000476837158
+        ]
+      },
+      "convex_max_plane_violation_m": 1.862645149230957e-09,
+      "minimum_triangle_area_m2": 2.793280497115348e-05
+    },
+    "UCX_SM_ImperialSpear_14": {
+      "role": "blade_shoulder",
+      "vertices": 28,
+      "triangles": 52,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 6.108950209223263e-05,
+      "minimum_face_area_m2": 1.6386082279495895e-05,
+      "minimum_edge_length_m": 0.002116613322868943,
+      "bounds_m": {
+        "min": [
+          -0.05900000408291817,
+          -0.008600001223385334,
+          0.5751000046730042
+        ],
+        "max": [
+          0.052000001072883606,
+          0.008600001223385334,
+          0.6330000162124634
+        ]
+      },
+      "convex_max_plane_violation_m": 1.1175870895385742e-08,
+      "minimum_triangle_area_m2": 1.6386028761259195e-05
+    },
+    "UCX_SM_ImperialSpear_15": {
+      "role": "blade_waist",
+      "vertices": 16,
+      "triangles": 28,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 8.783779861705924e-05,
+      "minimum_face_area_m2": 3.8693222450092435e-05,
+      "minimum_edge_length_m": 0.009768080897629261,
+      "bounds_m": {
+        "min": [
+          -0.046000003814697266,
+          -0.008600001223385334,
+          0.6331000328063965
+        ],
+        "max": [
+          0.0430000014603138,
+          0.008600001223385334,
+          0.7350000143051147
+        ]
+      },
+      "convex_max_plane_violation_m": 2.7939677238464355e-09,
+      "minimum_triangle_area_m2": 3.8693211478315725e-05
+    },
+    "UCX_SM_ImperialSpear_16": {
+      "role": "blade_tip",
+      "vertices": 38,
+      "triangles": 72,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 0.00011291017443611502,
+      "minimum_face_area_m2": 3.730125097689552e-09,
+      "minimum_edge_length_m": 9.824286826187745e-05,
+      "bounds_m": {
+        "min": [
+          -0.046000003814697266,
+          -0.008600001223385334,
+          0.7351000308990479
+        ],
+        "max": [
+          0.04400000348687172,
+          0.008600001223385334,
+          0.9650000333786011
+        ]
+      },
+      "convex_max_plane_violation_m": 5.7480065152049065e-09,
+      "minimum_triangle_area_m2": 3.730125068973836e-09
+    }
+  },
+  "collision_hull_count": 17,
+  "maximum_hull_vertices": 60,
+  "actual_ucx_pommel_containment": {
+    "pommel_lotus_bud": {
+      "actual_ucx": "UCX_SM_ImperialSpear_03",
+      "source_z_slab_m": [
+        -0.03099999949336052,
+        0.004
+      ],
+      "actual_ucx_face_plane_count": 108,
+      "source_contained": true,
+      "sample_count": 2122,
+      "max_plane_violation_m": -0.00014995696811281878,
+      "minimum_plane_clearance_m": 0.00014995696811281878,
+      "tolerance_m": 1e-06
+    },
+    "pommel_carved_leaf": {
+      "actual_ucx": "UCX_SM_ImperialSpear_04",
+      "source_z_slab_m": [
+        0.004,
+        0.104
+      ],
+      "actual_ucx_face_plane_count": 108,
+      "source_contained": true,
+      "sample_count": 5025,
+      "max_plane_violation_m": -0.00014992332458496627,
+      "minimum_plane_clearance_m": 0.00014992332458496627,
+      "tolerance_m": 1e-06
+    },
+    "pommel_socket": {
+      "actual_ucx": "UCX_SM_ImperialSpear_05",
+      "source_z_slab_m": [
+        0.104,
+        0.12809999287128448
+      ],
+      "actual_ucx_face_plane_count": 108,
+      "source_contained": true,
+      "sample_count": 1361,
+      "max_plane_violation_m": -0.00014990495652034141,
+      "minimum_plane_clearance_m": 0.00014990495652034141,
+      "tolerance_m": 1e-06
+    }
+  },
+  "source_game_comparison": {
+    "source_objects": 74,
+    "source_triangles": 46836,
+    "game_triangles": 46836,
+    "source_vertices": 24230,
+    "game_vertices": 24230,
+    "pommel_triangles": 14984,
+    "protected_triangles": 31852,
+    "source_bounds_m": {
+      "min": [
+        -0.05900000035762787,
+        -0.026399999856948853,
+        -0.03099999949336052
+      ],
+      "max": [
+        0.16188524663448334,
+        0.026399999856948853,
+        2.200000047683716
+      ]
+    },
+    "game_bounds_grip_relative_m": {
+      "min": [
+        -0.05900000035762787,
+        -0.026399999856948853,
+        -1.2660000324249268
+      ],
+      "max": [
+        0.16188524663448334,
+        0.026399999856948853,
+        0.9650000333786011
+      ]
+    },
+    "maximum_bounds_error_m": 3.2931566140703694e-08,
+    "overall_length_m": 2.2310000471770763,
+    "source_bottom_z_m": -0.03099999949336052,
+    "grip_reference_source_z_m": 1.235,
+    "grip_from_pommel_m": 1.2659999994933606,
+    "material_triangles": {
+      "M_ImperialSpear_PBR": 46836
+    }
+  },
+  "pommel_material": "M_ImperialSpear_PBR",
+  "pommel_uses_existing_plain_gold_atlas": true,
+  "wood_joint": {
+    "status": "PASS",
+    "method": "actual shaft face sections; BVH parity with double-precision closed-surface solid-angle winding for stalled, ambiguous or negative votes",
+    "continuous_surface_proof": false,
+    "source_z_span_m": [
+      0.09000000357627869,
+      0.12809999287128448
+    ],
+    "axial_sections": 127,
+    "maximum_axial_step_m": 0.001,
+    "maximum_cross_section_step_m": 0.0005,
+    "boundary_tolerance_m": 2e-06,
+    "samples": 24980,
+    "outside_samples": 0,
+    "ray_vote_disagreements": 388,
+    "winding_fallback": {
+      "checks": 388,
+      "disagreement_checks": 388,
+      "negative_parity_checks": 2,
+      "corrected_false_negatives": 2,
+      "corrected_false_positives": 0,
+      "stalled_parity_rays": 0,
+      "stalled_parity_queries": 0,
+      "confirmed_outside": 0,
+      "maximum_integer_residual": 3.3306690738754696e-15,
+      "examples": [
+        {
+          "position_m": [
+            -0.012934313155710697,
+            0.005357568152248859,
+            0.09000000357627869
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0009515374549664557
+        },
+        {
+          "position_m": [
+            -0.010770034976303577,
+            -0.00883873924612999,
+            0.09000000357627869
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.000588364724535495
+        },
+        {
+          "position_m": [
+            -2.571758291167179e-18,
+            -0.014000000432133675,
+            0.09000000357627869
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.003268518717959523
+        },
+        {
+          "position_m": [
+            0.012296732515096664,
+            0.006572740618139505,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0008570529171265662
+        },
+        {
+          "position_m": [
+            -0.000455554953077808,
+            0.013965715654194355,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0030052759684622288
+        },
+        {
+          "position_m": [
+            -0.012296732515096664,
+            -0.006572740618139505,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0008570529171265662
+        },
+        {
+          "position_m": [
+            -0.0018222195794805884,
+            -0.01383110973984003,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.00233579077757895
+        },
+        {
+          "position_m": [
+            0.008845420554280281,
+            -0.010778176598250866,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0006477515562437475
+        },
+        {
+          "position_m": [
+            0.010197378695011139,
+            -0.009553126990795135,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0005954981897957623
+        },
+        {
+          "position_m": [
+            0.012953868135809898,
+            0.0053656683303415775,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0010240318952128291
+        },
+        {
+          "position_m": [
+            -0.004927289206534624,
+            0.013086848892271519,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0011416943743824959
+        },
+        {
+          "position_m": [
+            -0.008143862709403038,
+            0.011367554776370525,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0007156081264838576
+        },
+        {
+          "position_m": [
+            -0.011367554776370525,
+            -0.008143862709403038,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0007156081264838576
+        },
+        {
+          "position_m": [
+            -0.005769680719822645,
+            -0.012737919576466084,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0009923934703692794
+        },
+        {
+          "position_m": [
+            -0.003612152300775051,
+            -0.01348579116165638,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0014675435377284884
+        },
+        {
+          "position_m": [
+            0.010205081664025784,
+            -0.009560342878103256,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0006549063255079091
+        },
+        {
+          "position_m": [
+            -0.011367757804691792,
+            -0.008144007995724678,
+            0.09098846465349197
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0007168772863224149
+        },
+        {
+          "position_m": [
+            0.013353048823773861,
+            -0.00405060313642025,
+            0.09098846465349197
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0013617051299661398
+        },
+        {
+          "position_m": [
+            0.01252241712063551,
+            0.006173913367092609,
+            0.09099999815225601
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0009516567806713283
+        },
+        {
+          "position_m": [
+            -0.0009118304005824029,
+            0.013931859284639359,
+            0.09099999815225601
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0027399566024541855
+        }
+      ]
+    },
+    "containing_component_sample_counts": {
+      "02 \u2022 carved lotus pommel body": 11932,
+      "Pommel \u2022 rolled socket and straight barrel": 13048,
+      "Pommel \u2022 six carved lotus petals": 0,
+      "Pommel \u2022 stepped lotus seat": 0
+    },
+    "minimum_accepted_nearest_surface_distance_m": 0.0,
+    "outside_examples": []
+  }
+}

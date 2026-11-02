@@ -1,0 +1,99 @@
+{
+  "revision": 5,
+  "status": "ACTIVE GOAL: current working geometry/materials saved; visual fidelity and game exports still incomplete.",
+  "protected_geometry_sha256": {
+    "01 \u2022 rosewood shaft.001": "b2b4b83501abd82c8480066e826eee682e32175831deec9bc78266b2367f9471",
+    "02 \u2022 tapered gold pommel.001": "2bef903efd420385ea01a80851df44280bbada7b975ba8164eb28e68a50894b6",
+    "Pommel \u2022 fine rim.003": "1b14addd5686161a8a68b852c80a8702ce8ea043768c2cc7d2b451060bf5442a",
+    "Pommel \u2022 fine rim.004": "4dd669d17d00e5dfdd1662f0db41eb8b0291d10d5b427c0d14f7d84935170cb1",
+    "Pommel \u2022 fine rim.005": "d6d7ff0dc8fa7812828be4d526fc278e87fbd0b081437e47e761db74f1f47db3",
+    "Pommel \u2022 chased longitudinal rail.012": "4f74ac4cf677fa44e33171f040608c8fce5814abe8fc3e38d969d90644716fe0",
+    "Pommel \u2022 chased longitudinal rail.013": "9ac249b1beeee0bd47f221f2f21c7dba6b6390d5fd392768e74400b3cdb5fd1f",
+    "Pommel \u2022 chased longitudinal rail.014": "7a2fa15e11d2581611006fe611ab2495a25bbbe3140bdadb2c403814ba512b28",
+    "Pommel \u2022 chased longitudinal rail.015": "97434dc55f77ecc091de47665487e88fc45d83b9834077844e9a2f89821648c0",
+    "Pommel \u2022 chased longitudinal rail.016": "674b6e3021038c15c3a2c0006b96b62bf97d00dbfb01e555502df7495f810c10",
+    "Pommel \u2022 chased longitudinal rail.017": "6142938efb3025340aa5643a69165c213c281df684e79a79a58d8fdd92b153ae",
+    "Pommel \u2022 chased longitudinal rail.018": "c675e51820feae0a0c93696e6de50ac4e37930562bb3b6c8570f6bfd50a032dd",
+    "Pommel \u2022 chased longitudinal rail.019": "8b2b415f0a63e1f58d82cf6e7d932491caf5fd1e1abd44a2d23f97b4f1dc3175",
+    "Pommel \u2022 chased longitudinal rail.020": "c38961d05df6f54de74f7a0ee75c80372cb24297dc16a029dae4e0460190a7e7",
+    "Pommel \u2022 chased longitudinal rail.021": "54ed5aee533865c8d926e0269f501194d2aef0a1e40522844556a1839d1d6908",
+    "Pommel \u2022 chased longitudinal rail.022": "51e7ea599b934d1f9704495954adcc6c0e51347873951397120417ee0e9e82bc",
+    "Pommel \u2022 chased longitudinal rail.023": "598ac315d8457f48c70f153e7ac25b3744f2ad3df3c02d7cdfbdf0b6c1e49ce3",
+    "03 \u2022 leather grip underlay.001": "ecf19dd54c1722f0876623179116a216269536f7dcd924eaf78290daa894a109",
+    "04 \u2022 overlapping leather winding.001": "3d19d18be880299408597558b786410e73830c477748c665c151ba863bb7045d",
+    "Grip \u2022 gold keeper.002": "f142f8769e412952edb977dc2162052d0954cf32a2ee1764e0ba553518c16f8f",
+    "Grip \u2022 keeper wire.004": "fbf2ad37160759a086ded6b065e5d5d3fe88f134472fb3b7aa083354b313442e",
+    "Grip \u2022 keeper wire.005": "9bda25fae00e4966c2c8b75422499f993e277a9840ab0fe276f18c5aa62f738c",
+    "Grip \u2022 gold keeper.003": "7ac1219a2dd9c2c7d2f9f1af7064049f72452c2b883227a98cc9fc7217a9862d",
+    "Grip \u2022 keeper wire.006": "b99b76985e35b4a8ad2590b121d8eb43a14f545b66a199b7bb22327a4d4245fd",
+    "Grip \u2022 keeper wire.007": "9aca48f2e4f2e98e551c6c55c44c50fc73a8153287c70a09211b8911a1a905bd",
+    "06 \u2022 forged leaf blade": "80e6c7ed43c272dfb2052a78f2fc092a457d2a1968b372d9c4435a0aae209b8b"
+  },
+  "accepted_blade_and_recess_unchanged": true,
+  "reference_camera": "Reference_Camera.json",
+  "eye_reference_px": [
+    604,
+    287
+  ],
+  "eye_through_housing": true,
+  "separate_gold_ring_removed": true,
+  "collar_centres_z_m": {
+    "neck": 1.666045904159546,
+    "broad": 1.5867441892623901,
+    "terminal": 1.5335702896118164
+  },
+  "collar_axial_width_mm": {
+    "neck": 8,
+    "broad": 19,
+    "terminal": 4
+  },
+  "short_end_cuff_present": true,
+  "rough_cord_threaded_and_bound": true,
+  "source_triangles": 34660,
+  "housing_mesh": {
+    "initial_faces": 94,
+    "after_eye_faces": 144,
+    "final_faces": 1081,
+    "closed": true,
+    "volume_m3": 0.0001320331377707183
+  },
+  "visual_status": "Incomplete: compare materials, relief and housing against reference; rework pending.",
+  "surface_refinement": {
+    "maximum_housing_bow_mm": 1.4963175111994644,
+    "border_channels": "Dedicated housing normal/roughness patch, 0.30mm nominal depth, 1.4mm stroke; raised S remains geometry.",
+    "broad_ring_width_scale": 1.17,
+    "first_bead_elongation": "corrected to perpendicular oval; along cord radius9.2mm, across cord12.2mm",
+    "specular_from_orm_alpha": true,
+    "local_upper_arch_width_multiplier": 1.25
+  },
+  "body_normal_chasing": {
+    "dedicated_atlas": true,
+    "depth_mm": 0.3,
+    "raised_relief_in_geometry": true,
+    "eye_hole_in_geometry": true,
+    "housing_closed": true,
+    "volume_m3": 0.00014018478961142452
+  },
+  "latest_lighting": {
+    "key_w": 65,
+    "key_size_m": [
+      1.3,
+      0.35
+    ],
+    "fill_w": 10,
+    "rim_w": 45,
+    "world_strength": 0.08,
+    "agx_look": "None",
+    "key_location_m": [
+      -1.4,
+      -0.9,
+      2.3
+    ],
+    "key_target_m": [
+      0,
+      0,
+      1.3
+    ],
+    "status": "Latest grazing-light trial; fidelity not yet accepted."
+  }
+}

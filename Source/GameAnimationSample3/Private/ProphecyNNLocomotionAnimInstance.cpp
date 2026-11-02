@@ -1,4 +1,6 @@
 #include "ProphecyNNLocomotionAnimInstance.h"
+#include "ProphecyBodyflipRuntime.h"
+#include "ProphecyFootIKGame.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecyReachRuntime.h"
 #include "ProphecyAttackStartInertia.h"
@@ -102,6 +104,9 @@ protected:
 		}
 
 		AgentId = Instance->AgentId;
+		// Gameplay ownership is sampled on the game thread only. Worker Evaluate
+		// reads this private snapshot and never queries the active-controller map.
+		bBodyflipPoseOwner = ProphecyBodyflip::Active(Cast<AProphecyAgent>(Instance->GetOwningActor()));
 		ProphecyAttackFists::PreUpdate(this, Cast<AProphecyAgent>(Instance->GetOwningActor()));
 		ProphecyModeTransitions::PreUpdate(this, Cast<AProphecyAgent>(Instance->GetOwningActor()));
 		if (AgentId != CurrentAgentId)
@@ -118,15 +123,7 @@ protected:
 		bInterpolateNNPose = Instance->bInterpolateNNPose;
 		bUseViewerGlobalPoseInterpolation = Instance->bUseViewerGlobalPoseInterpolation;
 		NNPoseIntervalSeconds = FMath::Max(0.001f, Instance->NNPoseIntervalSeconds);
-		OverlayAnimation = Instance->OverlayAnimation;
-		bLoopOverlay = Instance->bLoopOverlay;
-		OverlayPlayRate = Instance->OverlayPlayRate;
-		OverlayMode = Instance->OverlayMode;
-		if (OverlayPlaybackRevision != Instance->OverlayPlaybackRevision)
-		{
-			OverlayPlaybackRevision = Instance->OverlayPlaybackRevision;
-			OverlayTimeSeconds = 0.0;
-		}
+		UpdateOverlay(*Instance, DeltaSeconds);
 		EvaluationTimeSeconds = Instance->GetWorld()
 			? double(Instance->GetWorld()->GetTimeSeconds())
 			: 0.0;
@@ -143,32 +140,6 @@ protected:
 			EvaluationComponentWorldTransform = FTransform::Identity;
 			bHasEvaluationComponentWorldTransform = false;
 			bPhysicalAgent = false;
-		}
-
-		const float TargetOverlayWeight = Instance->bOverlayEnabled && OverlayAnimation ? 1.0f : 0.0f;
-		if (Instance->OverlayBlendSeconds <= UE_SMALL_NUMBER)
-		{
-			OverlayWeight = TargetOverlayWeight;
-		}
-		else
-		{
-			OverlayWeight = FMath::FInterpConstantTo(
-				OverlayWeight,
-				TargetOverlayWeight,
-				DeltaSeconds,
-				1.0f / Instance->OverlayBlendSeconds);
-		}
-
-		if (OverlayAnimation && (TargetOverlayWeight > 0.0f || OverlayWeight > 0.0f))
-		{
-			const double PlayLength = FMath::Max(0.0, OverlayAnimation->GetPlayLength());
-			OverlayTimeSeconds += double(DeltaSeconds * OverlayPlayRate);
-			if (PlayLength > UE_DOUBLE_SMALL_NUMBER)
-			{
-				OverlayTimeSeconds = bLoopOverlay
-					? FMath::Fmod(OverlayTimeSeconds, PlayLength)
-					: FMath::Clamp(OverlayTimeSeconds, 0.0, PlayLength);
-			}
 		}
 
 		FProphecyNNPoseSnapshot LatestPose;
@@ -198,7 +169,7 @@ protected:
 		if (!CurrentPose.IsValid())
 		{
 			ProphecyAttackFists::Evaluate(this, Output);
-			ProphecyModeTransitions::Evaluate(this, Output);
+			if (!bBodyflipPoseOwner) ProphecyModeTransitions::Evaluate(this, Output);
 			return true;
 		}
 
@@ -224,7 +195,7 @@ protected:
 			? Output.Pose[PelvisIndex]
 			: FTransform::Identity;
 
-		if (OverlayAnimation && OverlayWeight > UE_SMALL_NUMBER && OverlayAnimation->GetSkeleton())
+		if (CanEvaluateOverlay() && OverlayAnimation->GetSkeleton())
 		{
 			TArray<FTransform, TInlineAllocator<64>> NNPose;
 			NNPose.SetNum(Output.Pose.GetNumBones());
@@ -269,7 +240,7 @@ protected:
 		}
 
 		ProphecyAttackFists::Evaluate(this, Output);
-		ProphecyModeTransitions::Evaluate(this, Output);
+		if (!bBodyflipPoseOwner) ProphecyModeTransitions::Evaluate(this, Output);
 		// Overlay and simulation-mode blends run after NN presentation. Their
 		// component-space interpolation must not shorten an attached forearm.
 		// Enforce the anatomical local translations at the final animation output;
@@ -286,6 +257,55 @@ protected:
 	}
 
 private:
+#if WITH_DEV_AUTOMATION_TESTS
+	friend class FProphecyBodyflipOverlayOwnershipTest;
+#endif
+	void UpdateOverlay(const UProphecyNNLocomotionAnimInstance& Instance, float DeltaSeconds)
+	{
+		// Retain the private playhead, fade and pending restart while Bodyflip owns
+		// the body. Instance/global settings stay editable and are read on release.
+		if (bBodyflipPoseOwner) return;
+		OverlayAnimation = Instance.OverlayAnimation;
+		bLoopOverlay = Instance.bLoopOverlay;
+		OverlayPlayRate = Instance.OverlayPlayRate;
+		OverlayMode = Instance.OverlayMode;
+		if (OverlayPlaybackRevision != Instance.OverlayPlaybackRevision)
+		{
+			OverlayPlaybackRevision = Instance.OverlayPlaybackRevision;
+			OverlayTimeSeconds = 0.0;
+		}
+		const float TargetOverlayWeight = Instance.bOverlayEnabled && OverlayAnimation ? 1.0f : 0.0f;
+		if (Instance.OverlayBlendSeconds <= UE_SMALL_NUMBER)
+		{
+			OverlayWeight = TargetOverlayWeight;
+		}
+		else
+		{
+			OverlayWeight = FMath::FInterpConstantTo(
+				OverlayWeight,
+				TargetOverlayWeight,
+				DeltaSeconds,
+				1.0f / Instance.OverlayBlendSeconds);
+		}
+
+		if (OverlayAnimation && (TargetOverlayWeight > 0.0f || OverlayWeight > 0.0f))
+		{
+			const double PlayLength = FMath::Max(0.0, OverlayAnimation->GetPlayLength());
+			OverlayTimeSeconds += double(DeltaSeconds * OverlayPlayRate);
+			if (PlayLength > UE_DOUBLE_SMALL_NUMBER)
+			{
+				OverlayTimeSeconds = bLoopOverlay
+					? FMath::Fmod(OverlayTimeSeconds, PlayLength)
+					: FMath::Clamp(OverlayTimeSeconds, 0.0, PlayLength);
+			}
+		}
+
+	}
+	bool CanEvaluateOverlay() const
+	{
+		return !bBodyflipPoseOwner && OverlayAnimation && OverlayWeight > UE_SMALL_NUMBER;
+	}
+
 	void RebuildCompactIndexCache(const FBoneContainer& PoseBones)
 	{
 		CachedCompactIndices.Reset(CurrentPose.BoneNames.Num());
@@ -403,6 +423,8 @@ private:
             ProphecyAttackStartInertia::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
         if (bApplyUpperBody) ProphecySwordHolsterPose::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
         ProphecyReach::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
+        if(bApplyPelvis&&bApplyLegs&&bApplyUpperBody)
+            ProphecyFootIKGame::Apply(AgentId,CurrentPose.BoneNames,DesiredComponentTransforms,EvaluationComponentWorldTransform);
 		const bool bRecoveringCalfLength=!bPhysicalAgent && ProphecyNNPresentation::HasRecoveryCalfLengths(AgentId);
 		// The model viewer draws each lower-leg segment all the way from the calf
 		// point to the predicted foot point. Mirror that here: keep the predicted
@@ -495,6 +517,7 @@ private:
 	FTransform EvaluationComponentWorldTransform = FTransform::Identity;
 	bool bHasEvaluationComponentWorldTransform = false;
 	bool bPhysicalAgent = false;
+	bool bBodyflipPoseOwner = false;
 
 	FProphecyNNPoseSnapshot PreviousPose;
 	FProphecyNNPoseSnapshot CurrentPose;
@@ -517,3 +540,76 @@ void UProphecyNNLocomotionAnimInstance::DestroyAnimInstanceProxy(FAnimInstancePr
 	ProphecyModeTransitions::ReleaseProxy(InProxy);
 	delete InProxy;
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Animation/AnimSequence.h"
+#include "Misc/AutomationTest.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyBodyflipOverlayOwnershipTest,
+	"Prophecy.Bodyflip.Presentation.OverlayOwnership",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FProphecyBodyflipOverlayOwnershipTest::RunTest(const FString&)
+{
+	// Test the actual private update/evaluation decision, without an NN model,
+	// animation asset, world or second controller. A zero-length transient clip
+	// retains the ordinary unbounded-time behavior used by UpdateOverlay.
+	auto* Mesh = NewObject<USkeletalMeshComponent>();
+	auto* Instance = NewObject<UProphecyNNLocomotionAnimInstance>(Mesh);
+	auto* ClipA = NewObject<UAnimSequence>();
+	auto* ClipB = NewObject<UAnimSequence>();
+	FProphecyNNLocomotionAnimInstanceProxy Owned, Other;
+	Instance->OverlayAnimation = ClipA;
+	Instance->bOverlayEnabled = true;
+	Instance->OverlayBlendSeconds = 1;
+	Instance->OverlayPlayRate = 2;
+	Instance->bLoopOverlay = false;
+	Instance->OverlayPlaybackRevision = 7;
+	Owned.UpdateOverlay(*Instance, .125f);
+	Other.UpdateOverlay(*Instance, .125f);
+	TestEqual(TEXT("Ordinary fade is unchanged"), Owned.OverlayWeight, .125f);
+	TestEqual(TEXT("Ordinary playhead is unchanged"), Owned.OverlayTimeSeconds, .25);
+	TestTrue(TEXT("Ordinary overlay can evaluate"), Owned.CanEvaluateOverlay());
+	Owned.bBodyflipPoseOwner = true;
+	Instance->OverlayAnimation = ClipB;
+	Instance->OverlayPlayRate = 3;
+	Instance->OverlayBlendSeconds = .2f;
+	Instance->bLoopOverlay = true;
+	Instance->OverlayMode = EProphecyAnimationOverlayMode::FullBody;
+	Instance->RestartOverlayPlayback();
+	for(int32 Frame=0;Frame<60;++Frame)Owned.UpdateOverlay(*Instance, 1.f/60);
+	TestEqual(TEXT("Bodyflip retains overlay time"), Owned.OverlayTimeSeconds, .25);
+	TestEqual(TEXT("Bodyflip retains fade progress"), Owned.OverlayWeight, .125f);
+	TestEqual(TEXT("Pending restart is retained"), Owned.OverlayPlaybackRevision, 7);
+	TestTrue(TEXT("Pending clip does not replace cached clip"), Owned.OverlayAnimation == ClipA);
+	TestFalse(TEXT("Full-weight output is suppressed by cached ownership"), Owned.CanEvaluateOverlay());
+	TestTrue(TEXT("Editable clip is not overwritten"), Instance->OverlayAnimation.Get() == ClipB);
+	TestTrue(TEXT("Editable enabled setting is preserved"), Instance->bOverlayEnabled);
+	TestEqual(TEXT("Editable restart revision is preserved"), Instance->OverlayPlaybackRevision, 8);
+	// Exact binary duration isolates ownership from float constant-folding.
+	Other.UpdateOverlay(*Instance, .0625f);
+	TestTrue(TEXT("Another proxy still evaluates the global overlay"), Other.CanEvaluateOverlay());
+	TestTrue(TEXT("Another proxy consumes the new clip"), Other.OverlayAnimation == ClipB);
+	TestEqual(TEXT("Another proxy consumes the restart"), Other.OverlayTimeSeconds, .1875);
+	Owned.bBodyflipPoseOwner = false;
+	Owned.UpdateOverlay(*Instance, .0625f);
+	TestTrue(TEXT("Overlay resumes after ownership ends"), Owned.CanEvaluateOverlay());
+	TestTrue(TEXT("Resume consumes the latest clip"), Owned.OverlayAnimation == ClipB);
+	TestEqual(TEXT("Resume consumes the pending restart"), Owned.OverlayPlaybackRevision, 8);
+	TestEqual(TEXT("Resume uses the new play rate"), Owned.OverlayTimeSeconds, .1875);
+	TestTrue(TEXT("Resume retains ordinary fade semantics"), FMath::IsNearlyEqual(Owned.OverlayWeight, .4375f));
+	TestTrue(TEXT("Resume consumes current mode and loop"), Owned.OverlayMode == EProphecyAnimationOverlayMode::FullBody && Owned.bLoopOverlay);
+	const double HeldTime = Owned.OverlayTimeSeconds;
+	Owned.UpdateOverlay(*Instance, 0);
+	TestEqual(TEXT("Zero-delta refresh does not advance time"), Owned.OverlayTimeSeconds, HeldTime);
+	Owned.bBodyflipPoseOwner = true;
+	Instance->bOverlayEnabled = false;
+	Owned.UpdateOverlay(*Instance, .5f);
+	TestEqual(TEXT("Disable during ownership does not advance time"), Owned.OverlayTimeSeconds, HeldTime);
+	TestFalse(TEXT("Disable edit remains stored on instance"), Instance->bOverlayEnabled);
+	Owned.bBodyflipPoseOwner = false;
+	Owned.UpdateOverlay(*Instance, .2f);
+	TestFalse(TEXT("Release honors a pending disable"), Owned.CanEvaluateOverlay());
+	TestEqual(TEXT("Completed fade does not advance disabled clip"), Owned.OverlayTimeSeconds, HeldTime);
+	return !HasAnyErrors();
+}
+#endif

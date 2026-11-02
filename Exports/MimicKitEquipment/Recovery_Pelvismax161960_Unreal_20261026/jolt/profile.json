@@ -1,0 +1,18 @@
+{
+  "profile": "native-pelvismax-spherical32",
+  "activation": "TRANSFER_NATIVE_BALL_LIMITS=1",
+  "physics_hz": 240,
+  "policy_hz": 30,
+  "velocity_iterations": 40,
+  "position_iterations": 8,
+  "limit_frequency_hz": 32,
+  "limit_damping_ratio": 1,
+  "floor_friction": 1,
+  "floor_restitution": 0,
+  "self_friction": 0,
+  "original_gains_and_torque_caps": true,
+  "weights_changed": false,
+  "source_sha256": "5d319800afe41d6bf6b7a8b446c90ebf76141e5b16523a1be9f0ec14f7063586",
+  "installed_dll_changed": false,
+  "gameplay_profile_changed": false
+}

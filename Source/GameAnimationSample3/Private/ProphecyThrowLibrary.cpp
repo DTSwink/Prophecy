@@ -1,4 +1,5 @@
 #include "ProphecyThrowLibrary.h"
+#include "ProphecyBodyflipRuntime.h"
 #include "ProphecyThrowRuntime.h"
 #include "ProphecyThrowMath.h"
 #include "ProphecyAgent.h"
@@ -97,6 +98,7 @@ bool Apply(AProphecyAgent* A,TConstArrayView<FName> Names,TConstArrayView<int32>
 static bool Start(AProphecyAgent* A,EProphecyThrow Kind,const FVector& Target,const FProphecyThrowPhysics& Physics,bool Auto,float Percent,UProphecyThrowAction* Action,FString& Error)
 {
     if(!IsValid(A)||!A->GetWorld()||!A->GetWorld()->IsGameWorld()||!A->GetAgentMesh()||!A->HasValidAgentHandle()){Error=TEXT("A live Prophecy agent registered with the NN manager is required");return false;}
+    if(ProphecyBodyflip::Active(A)){Error=TEXT("Stop this agent's Bodyflip controller before throwing");return false;}
     if(Active(A)){Error=TEXT("This agent already has an active throw");return false;}
     FName Attack;bool Half=false,Armed=false,Hit=false;int32 Frame=0;ProphecySwordHolsterPose::FStatus Holster;
     if(A->GetNNAttackState(Attack,Half,Armed,Hit,Frame)||A->IsNNAnimationLayerActive()||ProphecyReach::Active(A)||ProphecyGetUp::IsActive(A)||(ProphecySwordHolsterPose::Status(A,Holster)&&!Holster.Finished)){Error=TEXT("Finish the agent's current attack, animation layer, reach, get-up or sword action before throwing");return false;}

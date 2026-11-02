@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 class UWorld;
+namespace ProphecyBodyflip { int32 PhysicsSubsteps(const UWorld* World,float FrameSeconds); }
 
 namespace ProphecyJolt::StepTiming
 {
@@ -21,7 +22,7 @@ inline int32 Count(float FrameSeconds, const UPhysicsSettings* Settings, const U
 {
     const int32 Base = Settings ? Count(FrameSeconds, Settings->bSubstepping, Settings->MaxSubstepDeltaTime,
         Settings->MaxSubsteps) : 1;
-    return World ? FMath::Max(Base, MinimumSubsteps(World)) : Base;
+    return World ? FMath::Max3(Base, MinimumSubsteps(World), ProphecyBodyflip::PhysicsSubsteps(World,FrameSeconds)) : Base;
 }
 
 inline float Duration(float FrameSeconds, const UPhysicsSettings* Settings, const UWorld* World = nullptr)

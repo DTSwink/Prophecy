@@ -14,6 +14,7 @@ class USkeletalMeshComponent;
 enum class EProphecyAgentState : uint8;
 struct FProphecyNNDefenseStatus;
 namespace ProphecyNNModifierDebug { struct FReport; }
+namespace ProphecyFootIKLive { struct FSourceSample; }
 
 /** Read-only completed manager diagnostics; does not sample bodies or run inference. */
 struct FProphecyNNRuntimeBenchmarkStats
@@ -26,6 +27,7 @@ struct FProphecyNNRuntimeBenchmarkStats
 	int32 FootRollSteps = 0;
 	int32 PhysicalFeedbackExecutionMode = 0;
 	uint64 PreparedPhysicalSamples = 0, PreparedPhysicalBatches = 0;
+	uint64 ModelInferenceCalls = 0;
 	uint64 CompletedNNSteps = 0, CompletedPhysicalSamples = 0, FailedPhysicalSamples = 0;
 	double BuildSeconds = 0.0, InferenceSeconds = 0.0, OutputSeconds = 0.0, StoreSeconds = 0.0;
 	FString RunRuntime, WalkRuntime, UpperRuntime;
@@ -38,6 +40,16 @@ class GAMEANIMATIONSAMPLE3_API AProphecyNNLocomotionManager : public AActor
 
 public:
 	struct FImpl;
+    bool CommitBodyflipPose(FProphecyAgentHandle Handle);
+    // Event-only clean NN history handoff before releasing the causal surface owner.
+    bool RestoreFootIKSurfacePolicy(AProphecyAgent* Agent,FString& Error);
+    // Event-only terrain exit: actual displayed30Hz history, never mover/root ownership.
+    bool ReseedFootIKTerrainExit(AProphecyAgent* Agent,
+        const ProphecyFootIKLive::FSourceSample& Previous,const ProphecyFootIKLive::FSourceSample& Current,
+        double PreviousTimeSeconds,double CurrentTimeSeconds,FString& Error);
+    void ReleaseFootIKNavigation(AProphecyAgent* Agent);
+    bool SeedLocomotionFromPhysical(FProphecyAgentHandle Handle,const FVector& COM,
+        const FVector& Velocity,float YawRadiansPerSecond,FString& Error);
 	bool DescribeNNModifiers(const AProphecyAgent* Agent, ProphecyNNModifierDebug::FReport& Report) const;
 	// Event-only update of a registered lane; non-reflected and not a per-frame settings lookup.
 	void CacheUpperRootRotationHorizon(const AProphecyAgent* Agent, float Horizon);
@@ -302,6 +314,7 @@ public:
 	void ConfigureSimpleLocomotionTest();
 
 private:
+    friend class FProphecyFootIKTerrainExitTest;
 	bool LoadRuntimeContract();
 	bool LoadWalkRuntimeContract();
 	bool LoadUpperRuntimeContract();
@@ -335,6 +348,7 @@ private:
     void UpdateWalkTickPinning(float DeltaSeconds);
     void CommitWalkTickPinning();
 	void UpdateVisualRoots();
+	void AdvanceFootIKSurfaceControllers();
 	void DrawFutureRootDebug() const;
 	void InitializeSimpleTestPlayerView();
 	void CaptureAbsoluteMotionAuditFrame();

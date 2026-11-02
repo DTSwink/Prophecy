@@ -12,6 +12,7 @@
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/SkeletalBodySetup.h"
 #include "ProphecyJoltCharacterComponent.h"
+#include "ProphecyRobotLocomotion.h"
 
 namespace ProphecyAttackCameraFade
 {
@@ -43,6 +44,17 @@ struct FReturn
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> Durations;
 static TMap<TWeakObjectPtr<const AProphecyAgent>,float> ComAlphas;
 static TMap<TWeakObjectPtr<const UProphecyAttackCameraComponent>,FReturn> Returns;
+struct FLocomotionDurations { float In=.4f,Out=1.f; };
+struct FLocomotionFollow
+{
+	FReturn Fade;
+	FVector PendingPivot=FVector::ZeroVector;
+	FVector LastFloorCOM=FVector::ZeroVector;
+	bool bRobot=false,bPending=true,bHasCOM=false;
+};
+// New sidecars leave existing component and attack-return storage layouts intact.
+static TMap<TWeakObjectPtr<const AProphecyAgent>,FLocomotionDurations> LocomotionDurations;
+static TMap<TWeakObjectPtr<const UProphecyAttackCameraComponent>,FLocomotionFollow> LocomotionFollows;
 static FDelegateHandle Cleanup;
 static bool IsPossessedPlayer(const AProphecyAgent* Pawn)
 {
@@ -54,9 +66,32 @@ static float Duration(const AProphecyAgent* Pawn)
 	const float* Override=Durations.IsEmpty() ? nullptr : Durations.Find(Pawn);
 	return Override ? *Override : 1.f;
 }
+static float LocomotionDuration(const AProphecyAgent* Pawn,bool bRobot)
+{
+	const auto* Override=LocomotionDurations.Find(Pawn);
+	return bRobot ? (Override ? Override->In : .4f) : (Override ? Override->Out : 1.f);
+}
+static bool ReadRobotFloorCOM(AProphecyAgent* Pawn,FVector& Out)
+{
+	// Use the admitted robot's actual 15-body mass distribution, not the PHAT
+	// template or the pelvis. Only the possessed robot camera does this work.
+	auto* Character=Pawn->GetJoltCharacterComponent();
+	FString Error;const auto* Profile=ProphecyRobot::Profile(Error);
+	if (!Character || !Profile) return false;
+	FVector Weighted=FVector::ZeroVector;double Mass=0.;
+	for (const auto& Spec:Profile->Bodies)
+	{
+		FTransform Body;FVector Linear,Angular;bool Simulated=false;
+		if (!Character->GetBodyState(Spec.Bone,Body,Linear,Angular,Simulated)) return false;
+		Weighted+=Body.TransformPosition(Spec.MassFrame.GetLocation())*Spec.Mass;
+		Mass+=Spec.Mass;
+	}
+	if (Mass<=0. || Weighted.ContainsNaN()) return false;
+	Out=Weighted/Mass;Out.Z=0.;return true;
+}
 static void RefreshCleanup()
 {
-	if (Durations.IsEmpty() && ComAlphas.IsEmpty())
+	if (Durations.IsEmpty() && ComAlphas.IsEmpty() && LocomotionDurations.IsEmpty())
 	{
 		FWorldDelegates::OnWorldCleanup.Remove(Cleanup);Cleanup.Reset();
 	}
@@ -66,9 +101,30 @@ static void RefreshCleanup()
 			if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
 		for (auto It=ComAlphas.CreateIterator();It;++It)
 			if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
+		for (auto It=LocomotionDurations.CreateIterator();It;++It)
+			if (!It.Key().IsValid() || It.Key()->GetWorld()==World) It.RemoveCurrent();
 		RefreshCleanup();
 	});
 }
+}
+
+bool UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(AProphecyAgent* Pawn,float BlendIn,float BlendOut)
+{
+	using namespace ProphecyAttackCameraFade;
+	if (!IsInGameThread() || !IsValid(Pawn) || Pawn->IsActorBeingDestroyed() ||
+		!FMath::IsFinite(BlendIn) || !FMath::IsFinite(BlendOut) || BlendIn<0.f || BlendOut<0.f) return false;
+	const float PreviousIn=LocomotionDuration(Pawn,true),PreviousOut=LocomotionDuration(Pawn,false);
+	if (BlendIn==.4f && BlendOut==1.f) LocomotionDurations.Remove(Pawn);
+	else LocomotionDurations.Add(Pawn,{BlendIn,BlendOut});
+	RefreshCleanup();
+	if (auto* Follow=Pawn->FindComponentByClass<UProphecyAttackCameraComponent>())
+		if (auto* State=LocomotionFollows.Find(Follow); State && !State->bPending &&
+			(State->bRobot ? PreviousIn!=BlendIn : PreviousOut!=BlendOut))
+		{
+			State->Fade.Begin(State->Fade.Value(),LocomotionDuration(Pawn,State->bRobot));
+			State->Fade.LastFrame=GFrameCounter;
+		}
+	return true;
 }
 
 bool UProphecyAttackControlLibrary::SetAttackCameraCOMFollow(AProphecyAgent* Agent,float Alpha)
@@ -168,10 +224,71 @@ void UProphecyAttackCameraComponent::Restore()
 	AppliedOffset = FVector::ZeroVector;
 }
 
+FVector UProphecyAttackCameraComponent::CaptureLocomotionPivot() const
+{
+	// Independent Blueprint TargetOffset edits are deliberately not ours to blend.
+	return Spring.IsValid() ? Spring->GetComponentLocation()+AppliedOffset : FVector::ZeroVector;
+}
+
+void UProphecyAttackCameraComponent::BlendLocomotionCamera(const FVector& PreviousPivot,bool bRobot)
+{
+	using namespace ProphecyAttackCameraFade;
+	if (!bFollowing || !Spring.IsValid() || !IsPossessedPlayer(Agent.Get())) return;
+	auto& State=LocomotionFollows.FindOrAdd(this);
+	State.bRobot=bRobot;State.bPending=true;State.PendingPivot=PreviousPivot;
+	Returns.Remove(this);bTrackingCom=false;bTrackingPelvis=false;
+	const FVector Offset=PreviousPivot-Spring->GetComponentLocation();
+	Spring->TargetOffset+=Offset-AppliedOffset;AppliedOffset=Offset;
+	// Resolve the target after physics and any late root changes. Event handlers
+	// can still choose the duration before this first PostPhysics sample.
+	SetComponentTickEnabled(true);
+}
+
+bool UProphecyAttackCameraComponent::UpdateLocomotionCamera(ELevelTick TickType)
+{
+	using namespace ProphecyAttackCameraFade;
+	auto* State=LocomotionFollows.Find(this);if (!State) return false;
+	AProphecyAgent* Pawn=Agent.Get();
+	if (State->bRobot && !ProphecyRobot::IsActive(Pawn))
+		BlendLocomotionCamera(CaptureLocomotionPivot(),false);
+	FVector TargetOffset=FVector::ZeroVector;
+	if (State->bRobot)
+	{
+		FVector FloorCOM;
+		if (ReadRobotFloorCOM(Pawn,FloorCOM)) { State->LastFloorCOM=FloorCOM;State->bHasCOM=true; }
+		// A temporarily unavailable physical publication holds the last point;
+		// it must never jump back to the root or to world origin.
+		if (!State->bHasCOM) return true;
+		TargetOffset=State->LastFloorCOM-Pawn->GetRootLowPoint();
+	}
+	if (State->bPending)
+	{
+		State->Fade.Begin(State->PendingPivot-Spring->GetComponentLocation()-TargetOffset,LocomotionDuration(Pawn,State->bRobot));
+		State->Fade.LastFrame=GFrameCounter;State->bPending=false;
+	}
+	State->Fade.Advance(GFrameCounter,TickType==LEVELTICK_All && GetWorld() && !GetWorld()->IsPaused());
+	const FVector Offset=TargetOffset+State->Fade.Value();
+	Spring->TargetOffset+=Offset-AppliedOffset;AppliedOffset=Offset;
+	if (!State->bRobot && State->Fade.ElapsedTicks>=State->Fade.TotalTicks)
+	{
+		LocomotionFollows.Remove(this);
+		return false; // ordinary attack/defense follow may take over; otherwise retire
+	}
+	return true;
+}
+
 void UProphecyAttackCameraComponent::CompensateRootSnap(const FVector& PreviousSpringOrigin)
 {
 	using namespace ProphecyAttackCameraFade;
 	if (!bFollowing || !IsPossessedPlayer(Agent.Get()) || !Spring.IsValid()) return;
+	if (auto* State=LocomotionFollows.Find(this))
+	{
+		// A root correction belongs to the active locomotion transition, not a
+		// second attack fade. The robot's COM target already cancels root travel.
+		if (State->bPending) return;
+		if (State->bRobot) return;
+		BlendLocomotionCamera(PreviousSpringOrigin+AppliedOffset,false);return;
+	}
 	const float Seconds=Duration(Agent.Get());
 	if (Seconds<=0.f) { Stop();return; }
 	// TargetOffset is world-space. Measure the real spring origin before/after
@@ -204,6 +321,7 @@ void UProphecyAttackCameraComponent::ReleasePrerequisites()
 
 void UProphecyAttackCameraComponent::Stop()
 {
+	ProphecyAttackCameraFade::LocomotionFollows.Remove(this);
 	ProphecyAttackCameraFade::Returns.Remove(this);
 	Restore();
 	bFollowing = false;
@@ -223,6 +341,7 @@ void UProphecyAttackCameraComponent::TickComponent(float DeltaTime, ELevelTick T
 		Stop();
 		return;
 	}
+	if (UpdateLocomotionCamera(TickType)) return;
 	if (auto* Fade=ProphecyAttackCameraFade::Returns.Find(this); Fade && Fade->bPendingSnap)
 	{
 		const FVector LateDelta=Spring->GetComponentLocation()-Fade->PendingSpringOrigin;
@@ -375,7 +494,9 @@ namespace ProphecyAttackCamera
 
 	void Update(AActor* Manager, AProphecyAgent* Player, bool bFullAttack)
 	{
-		if (!bFullAttack || !ProphecyAttackCameraFade::IsPossessedPlayer(Player) ||
+		const auto* Owner=Cast<AProphecyNNLocomotionManager>(Manager);
+		if (!ProphecyAttackCameraFade::IsPossessedPlayer(Player) ||
+			(!bFullAttack && (!ProphecyRobot::IsActive(Player) || !Owner || Owner->ResolveAgent(Player->GetAgentHandle())!=Player)) ||
 			!Player->GetAgentSpringArm() || !Player->GetPoseReferenceMesh())
 		{
 			// Blueprint may start the next attack later in PrePhysics. The follower
@@ -396,11 +517,100 @@ namespace ProphecyAttackCamera
 			Entry = Follow;
 		}
 		Entry->Follow(Manager, Player);
+		if (ProphecyRobot::IsActive(Player) && !ProphecyAttackCameraFade::LocomotionFollows.Contains(Entry.Get()))
+			Entry->BlendLocomotionCamera(Entry->CaptureLocomotionPivot(),true);
+	}
+
+	FVector CaptureLocomotionSwitch(AActor* Manager,AProphecyAgent* Player)
+	{
+		if (!ProphecyAttackCameraFade::IsPossessedPlayer(Player)) return FVector::ZeroVector;
+		Update(Manager,Player,true);
+		if (auto* Follow=Player->FindComponentByClass<UProphecyAttackCameraComponent>()) return Follow->CaptureLocomotionPivot();
+		return FVector::ZeroVector;
+	}
+
+	void LocomotionSwitched(AActor* Manager,AProphecyAgent* Player,const FVector& PreviousPivot)
+	{
+		if (!ProphecyAttackCameraFade::IsPossessedPlayer(Player)) return;
+		Update(Manager,Player,true);
+		if (auto* Follow=Player->FindComponentByClass<UProphecyAttackCameraComponent>())
+			Follow->BlendLocomotionCamera(PreviousPivot,ProphecyRobot::IsActive(Player));
 	}
 }
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyLocomotionCameraTest,"Prophecy.Camera.LocomotionBlend",
+	EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyLocomotionCameraTest::RunTest(const FString&)
+{
+	using namespace ProphecyAttackCameraFade;
+	UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+	auto* Pawn=World ? World->SpawnActor<AProphecyAgent>() : nullptr;
+	auto* PC=World ? World->SpawnActor<APlayerController>() : nullptr;
+	auto* Manager=World ? World->SpawnActor<AProphecyNNLocomotionManager>() : nullptr;
+	if (!Pawn || !PC || !Manager) { if (World) World->DestroyWorld(false);return false; }
+	TestTrue(TEXT("Configure an NPC before possession"),UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,.2f,1.f));
+	ProphecyAttackCamera::CaptureLocomotionSwitch(Manager,Pawn);
+	TestNull(TEXT("NPC does not allocate a camera follower"),Pawn->FindComponentByClass<UProphecyAttackCameraComponent>());
+	PC->Possess(Pawn);
+	auto* Spring=Pawn->GetAgentSpringArm();
+	Spring->SetRelativeLocation(FVector(30,20,29));Spring->TargetOffset=FVector(5,40,12);
+	const FVector Independent=Spring->TargetOffset;
+	const FVector OldPivot=ProphecyAttackCamera::CaptureLocomotionSwitch(Manager,Pawn);
+	auto* Follow=Pawn->FindComponentByClass<UProphecyAttackCameraComponent>();
+	if (!Follow) { World->DestroyWorld(false);return false; }
+	Pawn->SetActorLocationAndRotation(FVector(70,-20,96),FRotator(0,65,0));
+	Follow->BlendLocomotionCamera(OldPivot,false);
+	TestTrue(TEXT("Switch preserves pivot immediately"),Follow->CaptureLocomotionPivot().Equals(OldPivot,1.e-7));
+	Pawn->AddActorWorldOffset(FVector(4,8,15));
+	Follow->TickComponent(20.f,LEVELTICK_All,nullptr);
+	TestTrue(TEXT("Late handoff translation/yaw is compensated before camera rendering"),Follow->CaptureLocomotionPivot().Equals(OldPivot,1.e-7));
+	const FVector Start=Follow->AppliedOffset;
+	for (int32 Tick=1;Tick<=30;++Tick)
+	{
+		auto& Fade=LocomotionFollows.FindChecked(Follow).Fade;Fade.LastFrame=MAX_uint64;
+		Follow->TickComponent(Tick%2 ? 20.f : 1.f/120.f,LEVELTICK_ViewportsOnly,nullptr);
+		TestEqual(TEXT("Non-game ticks do not advance fade"),Fade.ElapsedTicks,uint64(Tick-1));
+		Follow->TickComponent(Tick%2 ? 20.f : 1.f/120.f,LEVELTICK_All,nullptr);
+		Follow->TickComponent(20.f,LEVELTICK_All,nullptr);
+		TestEqual(TEXT("At most one blend tick per frame"),Fade.ElapsedTicks,uint64(Tick));
+	}
+	TestTrue(TEXT("Half offset at 30 ticks regardless of wall delta"),Follow->AppliedOffset.Equals(Start*.5,1.e-7));
+	UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,.2f,1.f);
+	TestEqual(TEXT("Unchanged settings do not restart a blend"),LocomotionFollows.FindChecked(Follow).Fade.ElapsedTicks,uint64(30));
+	UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,.5f,1.f);
+	TestEqual(TEXT("Editing entry duration does not restart an exit"),LocomotionFollows.FindChecked(Follow).Fade.ElapsedTicks,uint64(30));
+	const FVector MidPivot=Follow->CaptureLocomotionPivot();
+	Follow->BlendLocomotionCamera(MidPivot,false);
+	UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,.2f,.2f);
+	Follow->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+	TestTrue(TEXT("Interrupted transition starts exactly at current pivot"),Follow->CaptureLocomotionPivot().Equals(MidPivot,1.e-7));
+	TestEqual(TEXT("Event-time duration chosen before first sample"),LocomotionFollows.FindChecked(Follow).Fade.TotalTicks,uint64(12));
+	const FVector Extra(7,9,11);Spring->TargetOffset+=Extra;
+	for (int32 Tick=0;Tick<12;++Tick)
+	{
+		LocomotionFollows.FindChecked(Follow).Fade.LastFrame=MAX_uint64;
+		Follow->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+	}
+	TestFalse(TEXT("Completed return releases transition state"),LocomotionFollows.Contains(Follow));
+	TestFalse(TEXT("Idle NN camera follower stops ticking"),Follow->IsComponentTickEnabled());
+	TestTrue(TEXT("Independent Blueprint offsets survive"),Spring->TargetOffset.Equals(Independent+Extra,1.e-7));
+	Follow->Follow(Manager,Pawn);
+	Follow->BlendLocomotionCamera(Follow->CaptureLocomotionPivot()+FVector(100,0,0),false);
+	UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,0,0);
+	Follow->TickComponent(1.f/60,LEVELTICK_All,nullptr);
+	TestFalse(TEXT("Zero duration completes on first update"),LocomotionFollows.Contains(Follow));
+	Follow->Follow(Manager,Pawn);
+	Follow->BlendLocomotionCamera(Follow->CaptureLocomotionPivot()+FVector(100,0,0),false);
+	PC->UnPossess();
+	TestFalse(TEXT("Unpossession removes transition"),LocomotionFollows.Contains(Follow));
+	TestTrue(TEXT("Unpossession removes only owned offset"),Spring->TargetOffset.Equals(Independent+Extra,1.e-7));
+	TestFalse(TEXT("Invalid duration rejected"),UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,-1,1));
+	UProphecyLocomotionTypeLibrary::SetLocomotionCameraBlend(Pawn,.4f,1.f);
+	TestFalse(TEXT("Defaults require no settings entry"),LocomotionDurations.Contains(Pawn));
+	World->DestroyWorld(false);return !HasAnyErrors();
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyAttackCameraFadeTest,"Prophecy.Camera.AttackOffsetFade",
 	EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyAttackCameraFadeTest::RunTest(const FString&)

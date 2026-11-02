@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Engine/Engine.h"
 #include "Materials/Material.h"
+#include "MaterialDomain.h"
 #include "Components/BoxComponent.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyDecalRectanglesTest, "Prophecy.Blood.RectangleIntegration",

@@ -1,0 +1,45 @@
+{
+  "status": "reference specular alpha and red wood generated",
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\BeforeReferenceSpecular_v1",
+  "original_files": {
+    "T_ImperialSpear_BaseColor.png": "b678486c6b1b0339618df9ec4d303fa0b9cf3dd78f790035d89d876ea1f34f0c",
+    "T_ImperialSpear_ORM.png": "5fa16d440f513bc643af2662fbd5f45931f58695dab6b5375b05b5183c794912"
+  },
+  "wood_rgb": [
+    50,
+    19,
+    20
+  ],
+  "specular_levels": {
+    "wood": 0.2,
+    "leather": 0.25,
+    "cord": 0.25,
+    "beads": 0.5,
+    "metals": 0.5,
+    "silk": 0.5
+  },
+  "wood_roughness_min_mean_max": [
+    0.8078,
+    0.838,
+    0.8588
+  ],
+  "preserved_rgb_outside_wood": {
+    "T_ImperialSpear_BaseColor.png": {
+      "before_sha256": "44ea9bafe583bf93c3d8346aea9f27532fb6e1f64f07f1057af3f326062fe4e3",
+      "after_sha256": "44ea9bafe583bf93c3d8346aea9f27532fb6e1f64f07f1057af3f326062fe4e3",
+      "unchanged": true
+    },
+    "T_ImperialSpear_ORM.png": {
+      "before_sha256": "16713b885f7efacf092fb44b1791ca7af3ae6e4c5829888c1772d697c55bc730",
+      "after_sha256": "16713b885f7efacf092fb44b1791ca7af3ae6e4c5829888c1772d697c55bc730",
+      "unchanged": true
+    }
+  },
+  "normal_maps_modified": false,
+  "channel_layout": "R AO, G Roughness, B Metallic, A Specular IOR Level",
+  "blender_image_settings": {
+    "colorspace": "Non-Color",
+    "alpha_mode": "CHANNEL_PACKED",
+    "opaque_surface": true
+  }
+}

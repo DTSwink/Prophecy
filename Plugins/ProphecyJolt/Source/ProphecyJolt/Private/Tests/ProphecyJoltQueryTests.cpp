@@ -5,6 +5,7 @@
 #include "Async/Async.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "GameFramework/Actor.h"
 #include "Misc/AutomationTest.h"
 #include "ProphecyJoltWorldSubsystem.h"
 
@@ -78,6 +79,8 @@ bool FProphecyJoltClosestQueryTest::RunTest(const FString& Parameters)
     if (!Okay(*this, TEXT("Initialize query fixture"), Owner->InitializeSimulation(SmallWorld()))) return false;
     FProphecyJoltFixtureBodySettings SphereSettings;
     SphereSettings.PositionCm = FVector(0.0, 0.0, 100.0);
+    AActor* Tagged=Owner->GetWorld()->SpawnActor<AActor>();
+    Tagged->Tags.Add(TEXT("QueryTestFragment"));SphereSettings.AssociatedObject=Tagged;
     FProphecyJoltFixtureBodySettings BoxSettings;
     BoxSettings.PositionCm = FVector(300.0, 0.0, 100.0);
     BoxSettings.Rotation = FQuat(FVector::UpVector, UE_HALF_PI);
@@ -95,6 +98,15 @@ bool FProphecyJoltClosestQueryTest::RunTest(const FString& Parameters)
     FProphecyJoltBodyState State;
     if (!Okay(*this, TEXT("Resolve ray hit as body handle"), Owner->ReadBody(Hit.Handle, State))) return false;
     TestNearlyEqual(TEXT("Query does not advance body pose"), State.PositionCm, SphereSettings.PositionCm, 1.0e-6f);
+
+    TestTrue(TEXT("Filtered segment succeeds"),Owner->RayCast(Start,End,Hit,bHit,TEXT("QueryTestFragment")).IsSuccess());
+    TestTrue(TEXT("Ignored foreground body reveals farther surface"),bHit && SameHandle(Hit.Handle,Box));
+    TestTrue(TEXT("Starting inside ignored convex still finds farther surface"),
+        Owner->RayCast(SphereSettings.PositionCm,End,Hit,bHit,TEXT("QueryTestFragment")).IsSuccess() && bHit && SameHandle(Hit.Handle,Box));
+    TestTrue(TEXT("Unmatched tag retains closest sphere"),
+        Owner->RayCast(Start,End,Hit,bHit,TEXT("OtherTag")).IsSuccess() && bHit && SameHandle(Hit.Handle,Sphere));
+    TestTrue(TEXT("Ordinary queries unaffected after filtered cast"),
+        Owner->RayCast(Start,End,Hit,bHit).IsSuccess() && bHit && SameHandle(Hit.Handle,Sphere));
 
     if (!Okay(*this, TEXT("Cast along rotated box local X"), Owner->RayCast(FVector(300.0, -100.0, 100.0), FVector(300.0, 100.0, 100.0), Hit, bHit))
         || !TestTrue(TEXT("Static layer is queryable"), bHit)) return false;

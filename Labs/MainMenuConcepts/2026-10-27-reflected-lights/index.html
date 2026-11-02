@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crimson / 20 reflected-light variations</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#100d12;color:#f1ebef}*{box-sizing:border-box}body{margin:0}
+header{padding:32px 4vw 22px;border-bottom:1px solid #34242e}header small{letter-spacing:.18em;color:#c9a4bc}h1{font:36px Georgia,serif;margin:10px 0}p{color:#b7aab2;line-height:1.5}
+a{color:#e7b9d7}header nav{display:flex;flex-wrap:wrap;gap:20px}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;padding:22px 4vw}
+h2{grid-column:1/-1;font:28px Georgia,serif;scroll-margin-top:20px;margin:24px 0 0}
+article{border:1px solid #3c2b36;border-radius:8px;overflow:hidden;background:#1a141b}
+button{font:inherit;color:inherit;cursor:pointer}article button{padding:0;width:100%;border:0;text-align:left;background:transparent}
+article button:hover{background:#2b1e2a}article img{display:block;width:100%;aspect-ratio:1672/941;object-fit:contain;background:#050405}
+.meta{padding:15px 18px}.meta b{color:#d2a3c2;margin-right:12px}.meta p{font-size:13px;margin:8px 0 0}
+footer{padding:20px 4vw 32px;color:#aa9ba6;font-size:13px}
+dialog{border:1px solid #58404f;background:#100c12;color:#fff;padding:12px;width:97vw;max-width:1900px;max-height:97vh}
+dialog::backdrop{background:#000e}dialog nav{display:flex;align-items:center;gap:10px;padding:0 0 10px;flex-wrap:wrap}
+dialog strong{flex:1;min-width:180px}dialog button{border:1px solid #58404f;background:#2a1d28;border-radius:5px;padding:8px 13px}
+#compare[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#large{width:100%;height:calc(91vh - 110px);object-fit:contain;display:block;background:#060406}#detail{font-size:13px;margin:9px 4px 0}
+button:focus-visible,a:focus-visible{outline:2px solid #e4b0d7;outline-offset:3px}
+@media(min-width:1900px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){main{grid-template-columns:1fr}h1{font-size:29px}#large{height:auto;max-height:70vh}}
+</style></head>
+<body>
+<header><small>REFLECTED LIGHTS / 27 OCTOBER 2026</small>
+<h1>Crimson / 20 reflected-light variations</h1>
+<p>Your selected crimson ground, with variations in the lights reflected in its shallow water.</p>
+<nav><a href="#intensity">01–05 Intensity</a><a href="#arrangement">06–10 Arrangement</a><a href="#shape">11–15 Shape</a><a href="#colour">16–20 Colour</a></nav>
+<p>Click to enlarge. Arrow keys browse. Press <b>B</b> or use <b>Compare reference</b> to switch to your selected image. Esc closes.</p>
+</header>
+<main id="grid"></main>
+<footer><a href="reference-selected.png">Your selected reference</a> · <a href="manifest.json">Full prompts and provenance</a> · Generated with built-in imagegen.</footer>
+<dialog id="viewer" aria-label="Concept preview">
+<nav><button id="prev" aria-label="Previous concept">←</button><strong id="caption"></strong><button id="next" aria-label="Next concept">→</button><button id="compare" aria-pressed="false">Compare reference (B)</button><a id="original" target="_blank">Open image</a><button id="close">Close</button></nav>
+<img id="large" alt=""><p id="detail"></p></dialog>
+<script>
+const items=[{"id":"01","title":"Softened white","group":"Intensity","detail":"Softer white trails with less glare.","file":"01-softened-white.png"},{"id":"02","title":"Fine silver threads","group":"Intensity","detail":"Slim, crisp streaks leave more crimson visible.","file":"02-fine-silver-threads.png"},{"id":"03","title":"Broad soft glow","group":"Intensity","detail":"Wider, diffused reflections with gentle edges.","file":"03-broad-soft-glow.png"},{"id":"04","title":"Short glints","group":"Intensity","detail":"Highlights stay near the middle distance.","file":"04-short-glints.png"},{"id":"05","title":"Long silver trails","group":"Intensity","detail":"Longer, delicate reflections reach the foreground.","file":"05-long-silver-trails.png"},{"id":"06","title":"Single right light","group":"Arrangement","detail":"One main trail beside the mannequin.","file":"06-single-right-light.png"},{"id":"07","title":"Twin framing lights","group":"Arrangement","detail":"Two reflected sources frame the figure.","file":"07-twin-framing-lights.png"},{"id":"08","title":"Three uneven lights","group":"Arrangement","detail":"Three trails with varied spacing and strength.","file":"08-three-uneven-lights.png"},{"id":"09","title":"Edge lights","group":"Arrangement","detail":"Bright edges leave the centre calm.","file":"09-edge-lights.png"},{"id":"10","title":"Right-side cluster","group":"Arrangement","detail":"Reflections grouped more closely around the figure.","file":"10-right-side-cluster.png"},{"id":"11","title":"Large softbox","group":"Shape","detail":"One soft rectangular source reflected in broken ripples.","file":"11-large-softbox.png"},{"id":"12","title":"Horizontal ribbons","group":"Shape","detail":"Two low horizontal lights make rippled bands.","file":"12-horizontal-ribbons.png"},{"id":"13","title":"Soft oval pools","group":"Shape","detail":"Three rounded pools of reflected light.","file":"13-soft-oval-pools.png"},{"id":"14","title":"Segmented light","group":"Shape","detail":"A strip source forms delicate broken segments.","file":"14-segmented-light.png"},{"id":"15","title":"Slanted soft strips","group":"Shape","detail":"Angled sources create a diagonal reflection rhythm.","file":"15-slanted-soft-strips.png"},{"id":"16","title":"Cool pearl","group":"Colour","detail":"A faint cool cast in the reflected lights.","file":"16-cool-pearl.png"},{"id":"17","title":"Warm ivory","group":"Colour","detail":"Soft ivory-white reflections on the same crimson.","file":"17-warm-ivory.png"},{"id":"18","title":"Pale lavender","group":"Colour","detail":"Very pale violet-white glints echo the underline.","file":"18-pale-lavender.png"},{"id":"19","title":"Silver and lavender","group":"Colour","detail":"Neutral trails with one quiet lavender accent.","file":"19-silver-and-lavender.png"},{"id":"20","title":"Warm–cool pair","group":"Colour","detail":"Two near-white lights with a subtle temperature contrast.","file":"20-warm-cool-pair.png"}];
+const byId=id=>document.getElementById(id);
+const grid=byId('grid'),viewer=byId('viewer'),large=byId('large'),caption=byId('caption'),original=byId('original'),compare=byId('compare'),detail=byId('detail');
+let active=0,comparing=false;
+const reference=new Image();reference.src='reference-selected.png';
+function render(){
+ const item=items[active];
+ large.src=comparing?'reference-selected.png':item.file;
+ large.alt=comparing?'Selected reference':item.id+' — '+item.title;
+ caption.textContent=comparing?'Selected reference · comparing with '+item.id:item.id+' — '+item.title;
+ original.href=large.getAttribute('src');
+ compare.setAttribute('aria-pressed',String(comparing));
+ compare.textContent=comparing?'Back to variation (B)':'Compare reference (B)';
+ detail.textContent=item.detail;
+}
+function show(index){
+ active=(index+items.length)%items.length;comparing=false;render();
+ if(!viewer.open)viewer.showModal();
+ const preload=new Image();preload.src=items[(active+1)%items.length].file;
+}
+function toggleCompare(){comparing=!comparing;render();}
+items.forEach((item,i)=>{
+ if(i===0||items[i-1].group!==item.group){
+  const heading=document.createElement('h2');heading.id=item.group.toLowerCase();
+  heading.textContent=item.id+'–'+items[Math.min(i+4,items.length-1)].id+' / '+item.group;grid.append(heading);
+ }
+ const card=document.createElement('article'),button=document.createElement('button'),img=document.createElement('img'),meta=document.createElement('div'),number=document.createElement('b'),description=document.createElement('p');
+ img.src=item.file;img.alt=item.id+' — '+item.title;img.loading='lazy';img.width=1672;img.height=941;img.style.height='auto';
+ meta.className='meta';number.textContent=item.id;description.textContent=item.detail;
+ meta.append(number,document.createTextNode(item.title),description);button.append(img,meta);button.onclick=()=>show(i);card.append(button);grid.append(card);
+});
+byId('prev').onclick=()=>show(active-1);byId('next').onclick=()=>show(active+1);
+compare.onclick=toggleCompare;byId('close').onclick=()=>viewer.close();
+document.addEventListener('keydown',e=>{
+ if(!viewer.open||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key==='ArrowRight'){e.preventDefault();show(active+1);}
+ if(e.key==='ArrowLeft'){e.preventDefault();show(active-1);}
+ if(e.key.toLowerCase()==='b'&&!e.repeat){e.preventDefault();toggleCompare();}
+});
+viewer.addEventListener('click',e=>{if(e.target===viewer){const r=viewer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)viewer.close();}});
+</script></body></html>
+

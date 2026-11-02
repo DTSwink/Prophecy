@@ -1,0 +1,45 @@
+{
+  "status": "socket engraving generated",
+  "region": [
+    3584,
+    0,
+    4096,
+    2048
+  ],
+  "all_other_pixels_unchanged": true,
+  "protected_pixels": {
+    "T_ImperialSpear_BaseColor.png": {
+      "before_sha256": "dca966c5389f0c744a68b7dca29830c62da0f06812c538f7792e071315cb097b",
+      "after_sha256": "dca966c5389f0c744a68b7dca29830c62da0f06812c538f7792e071315cb097b",
+      "unchanged": true
+    },
+    "T_ImperialSpear_ORM.png": {
+      "before_sha256": "f79ac716cd31eeec9e896961da0a543a7201d8adba440455712cfc18577157e2",
+      "after_sha256": "f79ac716cd31eeec9e896961da0a543a7201d8adba440455712cfc18577157e2",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalGL.png": {
+      "before_sha256": "899c7a5ddfd6efd1e8d45f3fa98aabd97cd994a21efad911688a23a653692469",
+      "after_sha256": "899c7a5ddfd6efd1e8d45f3fa98aabd97cd994a21efad911688a23a653692469",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalDX.png": {
+      "before_sha256": "ca50ab7a5cba976c6c1255ee2e97b26a568a321359c955f4ada56617b87d48cb",
+      "after_sha256": "ca50ab7a5cba976c6c1255ee2e97b26a568a321359c955f4ada56617b87d48cb",
+      "unchanged": true
+    }
+  },
+  "motif_cell_mm": [
+    15.3125,
+    15.083333333333334
+  ],
+  "motif_repeat": [
+    8,
+    12
+  ],
+  "engraving_depth_mm": 0.1,
+  "outer_stroke_width_mm": 0.46,
+  "internal_vein_width_mm": 0.3312,
+  "rasterized_paths_including_wrap_bleed": 480,
+  "normal_max_lateral_component": 0.5657458901405334
+}

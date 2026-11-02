@@ -22,8 +22,24 @@ function create({a,b,leg:l,parents,joints,poseAt,surfaces,inspect,bodyExponent=1
  // An incoming NN residual is allowed to retire, never to grow as the legal
  // part turns underneath it. Skip projection entirely for valid source joints.
  function retireResidual(q,index,c){const bound=residualAngle[index]*(1-c.u);if(!c.live||residualAngle[index]<1e-7||c.u<=0||c.u>=1)return q;const j=index?l.knee:l.hip;for(let k=0;k<2;k++){const legal=joints.project(j,IDENT,q,false).q,error=2*Math.acos(clamp(Math.abs(dot(q,legal)),-1,1));if(error<=bound+1e-8)break;q=qslerp(legal,q,bound/error);}return q;}
- function rotations(v,c){const q=[retireResidual(unit(qm(c.residual[0],hipRotation(v))),0,c),retireResidual(unit(qm(c.residual[1],joints.hingeRelative(knee,v[3]*knee.max))),1,c)];return c.u>=1?q.map((v,i)=>joints.project(i?l.knee:l.hip,IDENT,v,false).q):q;}
- function evaluateGeometry(c,v){const [h,k]=rotations(v,c),hipQ=qm(c.parentQ,h),kneePoint=add(c.hipPoint,rotate(hipQ,c.local.p[l.knee])),kneeQ=qm(hipQ,k),footPoint=add(kneePoint,rotate(kneeQ,c.local.p[l.foot])),footQ=qm(kneeQ,footAt(c,v));let penetration=0,kneePenetration=0,min=Infinity,planeName=null;const constraints=[];const corners=c.corners.map(v=>add(footPoint,rotate(footQ,v)));
+ function rotation(v,c,index){const q=index?retireResidual(unit(qm(c.residual[1],joints.hingeRelative(knee,v[3]*knee.max))),1,c):retireResidual(unit(qm(c.residual[0],hipRotation(v))),0,c);return c.u>=1?joints.project(index?l.knee:l.hip,IDENT,q,false).q:q;}
+ function rotations(v,c){return [rotation(v,c,0),rotation(v,c,1)];}
+ // Coordinate descent changes only one subset of the chain at a time. Each
+ // sample's parent transform, offsets and residuals are immutable during its
+ // evaluations, so reuse exactly the same computed chain values until one of
+ // their input coordinates changes. This does not approximate the geometry.
+ const geometryCache=new WeakMap(),same3=(a,b,i)=>Object.is(a[i],b[i])&&Object.is(a[i+1],b[i+1])&&Object.is(a[i+2],b[i+2]);
+ function geometry(c,v){
+  let m=geometryCache.get(c);if(!m){m={};geometryCache.set(c,m);}
+  const hipChanged=!m.v||!same3(m.v,v,0),kneeChanged=!m.v||!Object.is(m.v[3],v[3]),footChanged=!m.v||!same3(m.v,v,4);
+  if(hipChanged){m.hipQ=qm(c.parentQ,rotation(v,c,0));m.kneePoint=add(c.hipPoint,rotate(m.hipQ,c.local.p[l.knee]));}
+  if(kneeChanged)m.kneeRotation=rotation(v,c,1);
+  if(hipChanged||kneeChanged){m.kneeQ=qm(m.hipQ,m.kneeRotation);m.footPoint=add(m.kneePoint,rotate(m.kneeQ,c.local.p[l.foot]));}
+  if(footChanged)m.footRotation=footAt(c,v);
+  if(hipChanged||kneeChanged||footChanged){m.footQ=qm(m.kneeQ,m.footRotation);m.corners=c.corners.map(p=>add(m.footPoint,rotate(m.footQ,p)));m.v=v.slice();}
+  return m;
+ }
+ function evaluateGeometry(c,v){const {kneePoint,corners}=geometry(c,v);let penetration=0,kneePenetration=0,min=Infinity,planeName=null;const constraints=[];
   for(const plane of typeof surfaces==='function'?surfaces(c.u,c.live):surfaces){const[x0,x1,z0,z1]=plane.bounds,below=at=>plane.finiteSlab&&at[1]<-plane.box.dims[1]-.04;
    let shoeError=0,kneeError=0;for(const p of corners){const at=plane.local(p);if(below(at))continue;if(at[0]>=x0&&at[0]<=x1&&at[2]>=z0&&at[2]<=z1){if(at[1]<min){min=at[1];planeName=plane.id;}penetration=Math.max(penetration,.012-at[1]);shoeError=Math.max(shoeError,.012-at[1]);}}
    const at=plane.local(kneePoint);if(!below(at)&&at[0]>=x0&&at[0]<=x1&&at[2]>=z0&&at[2]<=z1){kneePenetration=Math.max(kneePenetration,.085-at[1]);kneeError=Math.max(kneeError,.085-at[1]);}

@@ -1,0 +1,124 @@
+{
+  "samples": 1858,
+  "maxStrikeError": 2.0236841240037975e-15,
+  "maxReconstructionError": 9.995861419348e-16,
+  "maxCOMError": 6.670096357741796e-16,
+  "maxJoinError": 0.0043052847135619556,
+  "maxFinalError": 1.2087674670388546e-15,
+  "results": [
+    {
+      "name": "KickL",
+      "directArmed": false,
+      "sourceYawDegrees": -14.252056582236118,
+      "actualYawDegrees": -14.097195651705126,
+      "maxYawErrorDegrees": 13.885177087860422,
+      "largestSourceStepDegrees": 0.5774408994857839,
+      "largestActualStepDegrees": 0.8304805668609578,
+      "diagnostics": {
+        "ticks": 284,
+        "maxResidual": 1.0117306362625223e-7,
+        "maxCOMResidual": 5.553526949019417e-16,
+        "maxPelvisCorrection": 0.3635676102709954,
+        "maxFreeLateral": 0.07990973538169484,
+        "sampleRate": 120,
+        "maxDisplayedResidual": 9.569459454054308e-9,
+        "maxDisplayedPelvis": 0.3822170762926283
+      }
+    },
+    {
+      "name": "KickL",
+      "directArmed": true,
+      "sourceYawDegrees": -14.247641175630337,
+      "actualYawDegrees": -7.826445606139731,
+      "maxYawErrorDegrees": 7.892870927155188,
+      "largestSourceStepDegrees": 0.5794290382128977,
+      "largestActualStepDegrees": 0.8337772627463801,
+      "diagnostics": {
+        "ticks": 262,
+        "maxResidual": 1.1715369544161415e-7,
+        "maxCOMResidual": 6.663596519452762e-16,
+        "maxPelvisCorrection": 0.36698664889898636,
+        "maxFreeLateral": 0.08315209044175678,
+        "sampleRate": 120,
+        "maxDisplayedResidual": 9.672258756921658e-9,
+        "maxDisplayedPelvis": 0.37155960592560844
+      }
+    },
+    {
+      "name": "KickR",
+      "directArmed": false,
+      "sourceYawDegrees": 91.3746768789291,
+      "actualYawDegrees": 90.72294304236199,
+      "maxYawErrorDegrees": 12.843198156985544,
+      "largestSourceStepDegrees": 2.1403820644896108,
+      "largestActualStepDegrees": 2.925639264929792,
+      "diagnostics": {
+        "ticks": 284,
+        "maxResidual": 1.1855638377331264e-7,
+        "maxCOMResidual": 5.558618152526874e-16,
+        "maxPelvisCorrection": 0.8292941264464097,
+        "maxFreeLateral": 0.04908420064721379,
+        "sampleRate": 120,
+        "maxDisplayedResidual": 9.848698329352702e-9,
+        "maxDisplayedPelvis": 0.8193636510912912
+      }
+    },
+    {
+      "name": "KickR",
+      "directArmed": true,
+      "sourceYawDegrees": 91.49030108480248,
+      "actualYawDegrees": 76.3268340083678,
+      "maxYawErrorDegrees": 16.30241939050983,
+      "largestSourceStepDegrees": 2.01757242519307,
+      "largestActualStepDegrees": 3.1370115214603076,
+      "diagnostics": {
+        "ticks": 262,
+        "maxResidual": 1.1076748294230735e-7,
+        "maxCOMResidual": 5.558726425343896e-16,
+        "maxPelvisCorrection": 0.5489936043772049,
+        "maxFreeLateral": 0.05446495738508163,
+        "sampleRate": 120,
+        "maxDisplayedResidual": 9.792427201809383e-9,
+        "maxDisplayedPelvis": 0.48259069203630284
+      }
+    },
+    {
+      "name": "sweepKick",
+      "directArmed": false,
+      "sourceYawDegrees": -359.21409322004484,
+      "actualYawDegrees": -359.2140933601763,
+      "maxYawErrorDegrees": 18.200884255570084,
+      "largestSourceStepDegrees": 5.621216420951938,
+      "largestActualStepDegrees": 7.078243616948977,
+      "diagnostics": {
+        "ticks": 360,
+        "maxResidual": 1.0853436380680423e-7,
+        "maxCOMResidual": 6.662241588297015e-16,
+        "maxPelvisCorrection": 0.666067597432952,
+        "maxFreeLateral": 0.09718100566972802,
+        "sampleRate": 120,
+        "maxDisplayedResidual": 8.867831605717834e-9,
+        "maxDisplayedPelvis": 0.6852989938431822
+      }
+    },
+    {
+      "name": "sweepKick",
+      "directArmed": true,
+      "sourceYawDegrees": -359.2512882240824,
+      "actualYawDegrees": -359.2512882240824,
+      "maxYawErrorDegrees": 19.951209877310184,
+      "largestSourceStepDegrees": 5.611335485448412,
+      "largestActualStepDegrees": 7.023633000881355,
+      "diagnostics": {
+        "ticks": 338,
+        "maxResidual": 1.1926020019405155e-7,
+        "maxCOMResidual": 4.475586568020162e-16,
+        "maxPelvisCorrection": 0.7178267820098636,
+        "maxFreeLateral": 0.1016949557619347,
+        "sampleRate": 120,
+        "maxDisplayedResidual": 9.414924194661475e-9,
+        "maxDisplayedPelvis": 0.7650603966996388
+      }
+    }
+  ]
+}

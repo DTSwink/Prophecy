@@ -1,0 +1,18 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
+const K=require('../../Labs/FootIKLab/footik.js');
+const folder=path.resolve(__dirname,'../../Saved/Diagnostics/FootIKPort20261030');
+const input=JSON.parse(fs.readFileSync(path.join(folder,'walk-flat.input.json'))),source={...input.source,poses:input.source.poses.slice(0,17),roots:input.source.roots.slice(0,17),rootYawDegrees:input.source.rootYawDegrees?.slice(0,17),duration:16/30,totalDuration:16/30};
+source.directionMeta={...source.directionMeta,totalDuration:source.duration};
+const run=K.decode(source,input.parents),previous=K.at(run,0),current=K.at(run,1/30);
+global.__footikNN=()=>{throw Error('Unexpected NN call for actual-source live plan');};
+vm.runInThisContext(fs.readFileSync(path.resolve(__dirname,'../../Content/FootIKLab/Runtime.js'),'utf8'));
+const command=x=>JSON.parse(global.FootIKNative.command(JSON.stringify(x)));
+const result=command({...input,source,settings:{...input.settings,terrain:'flat'},op:'liveEvaluate',epoch:'live-test',currentTick:4,origin:[0,0,0],initialHistory:{previousTick:0,currentTick:4,previous,current}});
+assert(result.ready);assert.deepEqual(result.frame.pose.points,current.points);assert.equal(result.diagnostics.initialHistoryFrames,5);
+const tail=command({op:'liveFrames',start:5,count:12});assert.equal(tail.length,12);
+command({op:'liveCommit',acceptedFrames:tail.map((frame,i)=>({tick:i+5,frame}))});
+const status=command({op:'status'});assert.equal(status.through,16);assert.equal(status.appliedImports,12);
+command({op:'close'});assert.equal(command({op:'status'}).enabled,false);
+const report={passed:true,engine:'Node V8 packaged synchronous host seams',actualInitialFrames:5,acceptedFrames:12,noPolicyCalls:true,disabledNoState:true};
+fs.writeFileSync(path.join(folder,'live-runtime.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

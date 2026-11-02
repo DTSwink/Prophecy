@@ -1,0 +1,176 @@
+{
+  "summary": {
+    "count": 20,
+    "unique": 20,
+    "dimensions": [
+      "1672x941",
+      "1672x940"
+    ],
+    "totalBytes": 33909157.0,
+    "MiB": 32.34,
+    "referenceMatches": true
+  },
+  "galleryLinkedImages": 20,
+  "images": [
+    {
+      "id": "01",
+      "file": "01-monumental-sans.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1726646,
+      "sha256": "5DAEB9E6250A2EEC8F84052405CD928F65AE5F050090088717C09843F265C1AB"
+    },
+    {
+      "id": "02",
+      "file": "02-literary-spread.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1700651,
+      "sha256": "75F98F327BF7030B1D7EB88687FCE8BE6B2E2E40281AE7BD4E9EB31F77D450AD"
+    },
+    {
+      "id": "03",
+      "file": "03-condensed-poster.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1709618,
+      "sha256": "198B3FF74BDBBD54295BF7B929926EF7FA0C2F7B0E600299C07572EE1901A7CD"
+    },
+    {
+      "id": "04",
+      "file": "04-technical-precision.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1686573,
+      "sha256": "4B4ECF8D72B177A4BB67C5D2487147B2458E58B7777F64F878D2DF0698F03411"
+    },
+    {
+      "id": "05",
+      "file": "05-calligraphic-contrast.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1743255,
+      "sha256": "98E296135D8C1DBD0403CF4AFCBAF9F83714050725BD22692FCDEBB21819653B"
+    },
+    {
+      "id": "06",
+      "file": "06-bottom-navigation.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1639457,
+      "sha256": "9023C46C873FDCE7AE6739FE62C42C5AD128E0D881EBF20B20005ECFAD372DA1"
+    },
+    {
+      "id": "07",
+      "file": "07-floating-left-island.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1689829,
+      "sha256": "F72E55AC723C69E4645A882829D8309CBADE5C9E435F37B9CF9FC8203C4EC5E9"
+    },
+    {
+      "id": "08",
+      "file": "08-descending-steps.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1682348,
+      "sha256": "026CE27FD0E9B80BB05B4BBC7FD6753FA5FC3F0AED59D4F58C3751EA7E24D1E1"
+    },
+    {
+      "id": "09",
+      "file": "09-horizontal-action-cards.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1666716,
+      "sha256": "84CF1BF6EE593FDFC60E620A67DD09C5D3324C83D17C72C997614E15F22594A3"
+    },
+    {
+      "id": "10",
+      "file": "10-open-arc.png",
+      "width": 1672,
+      "height": 940,
+      "bytes": 1697668,
+      "sha256": "E2A92247D1CD8C629B0A76EFA6C92750B0C6D7ACFA83A065773360CAEEF9AA17"
+    },
+    {
+      "id": "11",
+      "file": "11-smoked-glass.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1708038,
+      "sha256": "785D489CA8159454CB41F41D840847E889921DECFAC39230DFCDE0126E70E361"
+    },
+    {
+      "id": "12",
+      "file": "12-ivory-folio.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1797318,
+      "sha256": "6147692DA1CD21F68A4124F038F9B026E4CD704C061FA45FC05B9E773A1E695E"
+    },
+    {
+      "id": "13",
+      "file": "13-geometric-deco.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1654098,
+      "sha256": "ECE2041E79070138CA10B07E03F8DFB8A88299E321CE26CEA2C9318076EFF550"
+    },
+    {
+      "id": "14",
+      "file": "14-obsidian-slats.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1725344,
+      "sha256": "030B5B677964BF6EEDACBC1DEB8D912EBDD15163438C61A8837B6BBC4CD22C9E"
+    },
+    {
+      "id": "15",
+      "file": "15-fine-wire-panel.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1658635,
+      "sha256": "C5A8AF2D879A84D9F0EF51827FEB3F8498C77E49796FB2D81633FCCA683DE6D9"
+    },
+    {
+      "id": "16",
+      "file": "16-split-hierarchy.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1668865,
+      "sha256": "D9FCC7965F4A795383F480CEA29887FD1B95C67A330A0E2CFE23CBD614CB20DC"
+    },
+    {
+      "id": "17",
+      "file": "17-negative-space-selection.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1658401,
+      "sha256": "6B7D012081AA7F161620224922CA7216D2D7C070357078A871517AAF5A063830"
+    },
+    {
+      "id": "18",
+      "file": "18-vertical-mast.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1689277,
+      "sha256": "2A8E32EC0D8B167DEB42A442920487A9B93CF0785C63882FFDEE0869BF5FEB23"
+    },
+    {
+      "id": "19",
+      "file": "19-ink-contour.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1705179,
+      "sha256": "A2314A71A8C5A0001D2B7E715A61748DB4B67C0F126EF9851F3435181C5130E0"
+    },
+    {
+      "id": "20",
+      "file": "20-cinematic-horizon.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1701241,
+      "sha256": "AA9C89DC05F0A9CA1D8F4D9EF48246761BFD48494A49E29CBD072C7D508F34A2"
+    }
+  ]
+}

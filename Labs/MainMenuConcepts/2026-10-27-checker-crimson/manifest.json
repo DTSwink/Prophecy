@@ -1,0 +1,236 @@
+{
+  "date": "2026-10-27",
+  "mode": "built-in imagegen",
+  "scope": "10 checkerboard and 10 rich-red ground-only variations from the user's two exact attached selections. Menu/character/camera/light held consistent.",
+  "references": [
+    "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+    "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png"
+  ],
+  "concepts": [
+    {
+      "id": "C01",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Grand check",
+      "detail": "Oversized black and white squares",
+      "file": "c01-grand-check.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A monumental classic checkerboard of 1.2-metre alternating ivory-white and jet-black marble squares, twice the apparent tile scale of reference. Very sparse fine veins, mostly clean large tonal planes. Polished edges and minimal joints, a bold luxurious graphic floor. Preserve diagonal checkerboard direction. Water extremely calm.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-aa36f760-ed5c-44b3-81a9-ad158efa636f.png"
+    },
+    {
+      "id": "C02",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Fine check",
+      "detail": "Small crisp porcelain checks",
+      "file": "c02-fine-check.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A much finer 20-centimetre black-and-white PORCELAIN checkerboard in the same diagonal orientation. Crisp clean small squares, smooth white ceramic versus glossy black ceramic, no marble veins. Refined high-frequency but readable chess-floor rhythm, perfectly flat with quiet thin clear water.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-38e058b4-a8e5-4348-a271-26155092ac1f.png"
+    },
+    {
+      "id": "C03",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Silver and chalk",
+      "detail": "Soft contrast / honed stone",
+      "file": "c03-silver-and-chalk.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A soft sophisticated checkerboard alternating SILVER-GRAY honed stone with CHALK-WHITE marble, medium 60cm squares. Gentle pearly satin finish, subtle cloudy stone texture, lower contrast than black-white but clearly distinguishable alternating checks. Beautiful restrained clean silver palette.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-c9bde05d-389c-4ede-b12b-ae9aeeabb36d.png"
+    },
+    {
+      "id": "C04",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Ivory and jade",
+      "detail": "Deep emerald marble checks",
+      "file": "c04-ivory-and-jade.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A diagonal checkerboard of warm IVORY marble and very deep EMERALD-GREEN polished marble. Clean 60cm squares, subtle graceful veins only. Dark green tile color must be discernible against ivory but dignified, jewel green rather than black; soft white light, immaculate luxury material.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-4d568e42-2acc-404e-87e3-b5286e92ea59.png"
+    },
+    {
+      "id": "C05",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Ivory and oxblood",
+      "detail": "Rich wine-red marble checks",
+      "file": "c05-ivory-and-oxblood.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A diagonal checkerboard of creamy IVORY and deep OXBLOOD wine-red marble, 60cm squares. Sparse fine natural mineral veins, elegant polished surface with restrained shallow water shimmer. Rich dark red color is the stone, not illumination; keep mannequin neutrally lit.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-30a0dd6f-953e-4522-9914-aa4f2ee9c68e.png"
+    },
+    {
+      "id": "C06",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Octagon cabochon",
+      "detail": "White octagons / small black diamonds",
+      "file": "c06-octagon-cabochon.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: An elegant variation on the black-white chess floor: large IVORY octagonal marble tiles with small glossy BLACK diamond cabochons in the gaps. Classic octagon-and-dot geometry fully tessellated, generous pale tiles and crisp small dark diamonds. Subtle veins, clear fine joints, refined polished floor.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-a066687b-ab84-44a5-b98f-32505c605d80.png"
+    },
+    {
+      "id": "C07",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Framed check",
+      "detail": "Thin dark frames / ivory square centres",
+      "file": "c07-framed-check.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A graphic framed-checkerboard design: big ivory square marble tile centers each enclosed by a slim charcoal-black frame, with small black squares at intersections. More pale open area than standard checkerboard. Crisp refined 60cm grid viewed diagonally; elegant calm architectural stone inlay.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-7bd44b63-75fd-4c90-afed-4712ccd839eb.png"
+    },
+    {
+      "id": "C08",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Woven monochrome",
+      "detail": "Black-and-white basketweave",
+      "file": "c08-woven-monochrome.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A premium black-and-white marble BASKETWEAVE tessellation, interlocking elongated white stone rectangles and paired black stone rectangles in a readable woven rhythm, with tiny charcoal junction squares. Flat floor, no physical weaving height, restrained fine veining, immaculate polished surface.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-e1251f85-4196-4f62-9f65-d65511d9825e.png"
+    },
+    {
+      "id": "C09",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Onyx and pearl",
+      "detail": "Iridescent pearl / mirror black",
+      "file": "c09-onyx-and-pearl.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A sophisticated 60cm diagonal checkerboard alternating smooth jet-black ONYX squares with pearlescent MOTHER-OF-PEARL white squares. Subtle nacre blush and seafoam shimmer inside the white tiles, predominantly monochrome. Elegant organic pearly swirls, no glitter or emissive effects. Thin transparent water.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-acd4befe-cb83-4b52-b33d-ba53b532901d.png"
+    },
+    {
+      "id": "C10",
+      "family": "Checkerboard",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-9e747ffd-cb70-4f97-a753-70ebd1dbe840.png",
+      "title": "Flowing check",
+      "detail": "Broad curving checker geometry",
+      "file": "c10-flowing-check.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A bold artistic monochrome checkerboard whose rows and columns follow gentle broad flowing S-curves across a completely FLAT floor. Large alternating black and ivory ceramic cells, coherent smooth warping not broken geometry. Optical-art elegance, restrained slow undulation of the pattern in plan, not physical bumps or waves. Black-white unmistakable.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-68210a57-8378-466a-9df4-1715f98a6b54.png"
+    },
+    {
+      "id": "R01",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Ruby ripples",
+      "detail": "Clear ruby / fine water texture",
+      "file": "r01-ruby-ripples.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: Refine the selected saturated ruby-red ground into luminous clear RUBY GLASS over an opaque crimson backing, beneath the thin water film. Preserve its beautiful liquid-like fine ripple shimmer but make the solid smooth red base evident. Bright ruby with deep cherry depths, elegant fine-scale ripples, neutral silver highlights, no dark muddy patches.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-8b7c4efd-9682-4197-92f8-174f375cef74.png"
+    },
+    {
+      "id": "R02",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Garnet silk",
+      "detail": "Deep garnet / flowing satin bands",
+      "file": "r02-garnet-silk.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A deep GARNET-red lacquer floor with graceful wide silky tonal bands sweeping diagonally like moire inside the solid lacquer finish. Tone-on-tone wine and ruby, delicate satin sheen under very shallow clear water. Beautiful fluid visual movement without lumps, physically flat floor, restrained silver reflections.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-ea5a6896-0080-4c6b-af2e-4e088238eb96.png"
+    },
+    {
+      "id": "R03",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Crimson marble",
+      "detail": "Broad crimson and charcoal veining",
+      "file": "r03-crimson-marble.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: Beautiful high-end CRIMSON MARBLE, broad slow mineral ribbons in ruby red and charcoal-black, only a few fine creamy threads. Large uninterrupted slabs with almost invisible seams. Rich red dominant, luxurious polished mineral depth; no speckled roughness or muddy rubble. Water thin and clear.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-6f0cd865-818d-4293-a968-76eedefcd847.png"
+    },
+    {
+      "id": "R04",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Scarlet enamel",
+      "detail": "Large glazed rectangular slabs",
+      "file": "r04-scarlet-enamel.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A vivid SCARLET glazed-enamel ceramic floor, large 90x180cm rectangular slabs laid in offset rows. Fine precise dark cherry joints, subtle deep glassy glaze variation within each slab. Flat clean modern glossy finish, luminous red material under neutral lighting with shallow ripples close to feet.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-cb315d46-9982-427c-81cc-75e74d891e34.png"
+    },
+    {
+      "id": "R05",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Red nacre",
+      "detail": "Rich red / nacre inlay",
+      "file": "r05-red-nacre.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: An extraordinary RUBY-RED mother-of-pearl inlay floor. Large gentle organic shell-shaped panels, deep red nacre with restrained cherry, wine and copper-red iridescent shifts. Smooth polished solid surface, exquisite layered internal shell texture, no gold metal outlines, no glitter, no pink-white dominance. Thin clear water.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-758e1c7e-8c93-421b-9933-b73a8c3a55e3.png"
+    },
+    {
+      "id": "R06",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Vermilion calm",
+      "detail": "Smooth lacquer / quiet reflection",
+      "file": "r06-vermilion-calm.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A calm immaculate VERMILION-to-deep-wine lacquer floor, a seamless flawlessly smooth plane. Minimal texture, luxurious controlled broad silver reflection, faint translucent red-black depth. Very still 1cm clear water, only a couple of small concentric ripples right at feet. Material red, neutral white lights.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-8ffdb6ff-c8aa-4655-96d0-3720784a8b4f.png"
+    },
+    {
+      "id": "R07",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Crimson clouds",
+      "detail": "Translucent resin / smoky black swirls",
+      "file": "r07-crimson-clouds.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A seamless polished CRIMSON RESIN floor with artistic slow smoky BLACK whorls suspended beneath a clear hard surface. Large flowing organic patterns, rich cherry-red translucent depth over opaque red base, graceful dark ink diffusion. Flat solid ground, very subtle water texture, no grunge or biological flesh appearance.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-8a37a5e8-b8a7-4051-ac41-9cb2df5959b9.png"
+    },
+    {
+      "id": "R08",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Ruby terrazzo",
+      "detail": "Polished scarlet / black mineral chips",
+      "file": "r08-ruby-terrazzo.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: An elegant modern RUBY TERRAZZO floor: saturated dark-scarlet binder with large sparse flat jet-black and pale rose mineral chips, about 4-8cm wide. Every chip flush, perfectly polished and smooth, clean deliberate graphic distribution. Red dominant; no loose gravel, rough rubble or brown dirt. Clear shallow water.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-d12ecf27-8bdf-4992-b424-ae1e04e24797.png"
+    },
+    {
+      "id": "R09",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Carmine brushed metal",
+      "detail": "Deep red / satin directional sheen",
+      "file": "r09-carmine-brushed-metal.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A gorgeous CARMINE anodized-metal ground, large square panels with very fine alternating diagonal brushed-satin grain. Dark ruby metal sheen, exact hairline joints, broad soft silver highlights and clean finish. Red appears rich and solid, no rust, dents, coarse scratches or harsh chrome glare. Thin clear wet film.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-7826e027-9268-4659-b89c-4568f087cd78.png"
+    },
+    {
+      "id": "R10",
+      "family": "Crimson",
+      "reference": "C:/Users/singerie/AppData/Local/Temp/codex-clipboard-f3d3b234-1779-48dc-85e9-4db751d3cea0.png",
+      "title": "Scarlet tessellation",
+      "detail": "Fine ceramic / interlocking chevrons",
+      "file": "r10-scarlet-tessellation.png",
+      "prompt": "Use case: precise-object-edit. Make one gorgeous AAA main-menu ground variation using the attached image as the EDIT TARGET. Scope: replace ONLY the ground's material, pattern and finish as specified. Keep camera, frame, perspective, black empty background, right gray faceless articulated mannequin pose and size, natural neutral-white illumination and left menu unchanged. Exactly five labels once each: \"CONTINUE\", \"NEW GAME\", \"LOAD GAME\", \"SETTINGS\", \"QUIT\"; same quiet violet underline. NO title, game name, logo, new UI decoration, star or constellation. Black liminal void, no architecture or props. Solid beautiful floor plainly visible beneath a clear shallow water film of about ONE CENTIMETER, only soles barely wet, ankles fully exposed. Tiny physical ripples/reflections close to feet, not a lake, deep pool or ocean. Material finish should be clean and designed, tactile and sophisticated, not dirty, muddy, lumpy, worn rubble or noisy grunge. Neutral light must remain unchanged even when floor is red/colored; no red light source or neon light. Wide 16:9 composition at reference framing. New ground variation: A striking red-on-red glazed ceramic floor arranged in broad interlocking CHEVRON bands: alternating deep GARNET and brighter SCARLET slim tiles. Strong readable geometric rhythm across the floor, tone-on-tone reds, fine dark-red joints, beautiful kiln glaze and pristine smooth polish. Shallow clear water, neutral silver reflection.",
+      "status": "generated",
+      "source": "C:\\Users\\singerie\\.codex\\generated_images\\01a16407-186e-7c23-9017-83a20dd490d0\\exec-341d255a-6de2-4813-ad44-40f7086c5cc5.png"
+    }
+  ],
+  "savedReferences": [
+    "references/checkerboard-selected.png",
+    "references/crimson-selected.png"
+  ],
+  "visualReview": "All twenty inspected individually. Distinct scale, geometry, palette and finish within the two selected families. Composition, black void, faceless mannequin, five English menu labels and violet underline retained. Water depth is a concept-art intent, not a physical measurement."
+}

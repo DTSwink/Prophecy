@@ -17,6 +17,7 @@ struct FListener final : JPH::ContactListener
     explicit FListener(FProphecyJoltWorldState& In):State(In){}
     void Apply(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& M,JPH::ContactSettings& S)
     {
+        RobotContact(State.Physics,A,B,M,S);
         // Resolve subshapes: a welded sword keeps its logical identity, distinct
         // from the hand carrying it. Workers access native immutable records only.
         const auto HA=State.HitHandle(A,M.mSubShapeID1),HB=State.HitHandle(B,M.mSubShapeID2);
@@ -33,6 +34,7 @@ struct FListener final : JPH::ContactListener
             if(const float* Scale=NoReaction.Find({HA.Slot,HA.Generation})){S.mInvMassScale1*=*Scale;S.mInvInertiaScale1*=*Scale;}
             if(const float* Scale=NoReaction.Find({HB.Slot,HB.Generation})){S.mInvMassScale2*=*Scale;S.mInvInertiaScale2*=*Scale;}
         }
+        State.Oil.Apply(A,B,M,S);
         State.CaptureIncoming(A,B,M);
     }
     void OnContactAdded(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& M,JPH::ContactSettings& S) override {Apply(A,B,M,S);}
@@ -43,7 +45,7 @@ static TMap<FProphecyJoltWorldState*,TUniquePtr<FListener>> Worlds;
 void Refresh(FProphecyJoltWorldState& S)
 {
     const auto* L=Worlds.Find(&S);
-    JPH::ContactListener* Listener=S.HitEnabledBodies?&S:nullptr;
+    JPH::ContactListener* Listener=(S.HitEnabledBodies || !S.Oil.Patches.IsEmpty() || RobotBodies.Contains(&S.Physics))?&S:nullptr;
     if(L && (!(*L)->Protection.IsEmpty() || !(*L)->NoReaction.IsEmpty()))Listener=L->Get();
     S.Physics.SetContactListener(Listener);
 }

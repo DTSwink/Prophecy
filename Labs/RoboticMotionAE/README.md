@@ -1,5 +1,37 @@
 # Robotic Motion AE — corrected full-body selection
 
+## Slow loco collection — October 31
+
+Separate dataset and AE under `Saved/RoboticMotionAE/20261031_slowloco`.
+Completed12,000updates locally in49.232s; best validation update3000 exported.
+Train MSE.000394058, validation.032804355, test.036992356. Export parity,
+standalone CPU loading, nonzero finite input gradients and heading/XY invariance
+pass. Synthetic root-jitter/body-jump/mismatched-pose detection fractions are
+100%/96.45%/68.69% (mean across clips). Later overfitting and weak temporal
+mismatch detection are limitations; this is not a validated controller reward.
+`prepare_slowloco.py append` added the six user-selected full FBXs (agonising,
+agonising_idle, limpL, limpR, lying, sitting) to the existing `slowloco` Cutter
+dataset. Existing two LAFAN selections, crawl and crawl_idle remain byte-identical;
+ten clips total. Original FBXs and the old dataset revision are retained.
+The Cutter's open draft is not overwritten; reopen the saved slowloco dataset
+to see external additions before saving an older in-memory draft.
+
+`prepare_slowloco.py prepare` reuses accepted robotic LAFAN exports after
+source/model checks, projects native saved cuts using the established physical
+body/foot correction pipeline, and resamples generalized coordinates at30Hz.
+Same405-feature, fixed three-pose pelvis frame and2x512/latent128 architecture.
+Equal clip sampling (10% each), training-only weighted normalization, chronological
+60/20/20 splits with two-frame gaps; no shared pose frames or cross-clip windows.
+Fresh12,000-update AdamW training via train.py; lowest validation checkpoint exported.
+This is offline AE training, not a controller run or replacement of the normal AE.
+
+Reproduction with the existing robotics Python:
+`train.py --data-root Saved/RoboticMotionAE/20261031_slowloco --run-dir <new-path> --hidden-dim 512 --hidden-layers 2`.
+`prepare_slowloco.py export` packages the completed run in its own `bundle` folder.
+Completion metrics are in `run_2x512/completed.json`; per-clip diagnostics in
+`run_2x512/validation.json`. Short within-motion holdouts do not establish
+unseen-motion generalization or policy reward quality.
+
 ## Current architecture comparison — October 19
 
 User requested a smaller AE trial. Trained fresh 2x512 hidden layers per side,

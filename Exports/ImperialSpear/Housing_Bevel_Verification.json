@@ -1,0 +1,111 @@
+{
+  "construction": "Explicit wide45-degree chamfer with small tangent edge eases; nested triangulated strips",
+  "closed": true,
+  "volume_m3": 0.00013793048441468878,
+  "triangles": 7312,
+  "generator_report": {
+    "construction": "Explicit wide45-degree chamfer with small tangent edge eases; nested triangulated strips",
+    "outer_nominal_bevel_mm": 4.8,
+    "eye_bevel_mm": 0.6,
+    "outer_nominal_depth_mm": 4.8,
+    "central_slope_degrees": 45.0,
+    "edge_ease_radius_mm": 0.3,
+    "outer_wall_half_depth_m": 0.007700000000000001,
+    "cap_half_depth_m": 0.0125,
+    "eye_protection": "Local horizontal spread and vertical drop taper together; no full-depth narrow eye bevel",
+    "eye_protection_join_fillet_mm": 2.0,
+    "eye_cap_maximum_concave_turn_degrees": 5.918719438382107,
+    "eye_transition_sampling_max_step_mm": 0.5,
+    "cap_plane_residual_snap_microns": 1.0,
+    "protected_width_field": "One width anchored at the original outer-boundary footpoint for every inset; no independently changing rim/strip depth",
+    "sections": 5,
+    "eye_cap_web_mm": 1.214697927661663,
+    "vertices": 3656,
+    "triangles": 7312,
+    "manifold_edges": true,
+    "consistent_winding": true,
+    "finite": true,
+    "positive_volume_m3": 0.00013793052418053248,
+    "euler_characteristic": 0,
+    "contours": [
+      {
+        "section": 0,
+        "nominal_inset_m": 0.0,
+        "outer_vertices": 186,
+        "nominal_half_depth_m": 0.007700000000000001
+      },
+      {
+        "section": 1,
+        "nominal_inset_m": 2.2836140246613977e-05,
+        "outer_vertices": 227,
+        "nominal_half_depth_m": 0.007814805029709528
+      },
+      {
+        "section": 2,
+        "nominal_inset_m": 8.786796564403575e-05,
+        "outer_vertices": 226,
+        "nominal_half_depth_m": 0.007912132034355965
+      },
+      {
+        "section": 3,
+        "nominal_inset_m": 0.004587867965644035,
+        "outer_vertices": 267,
+        "nominal_half_depth_m": 0.012412132034355965
+      },
+      {
+        "section": 4,
+        "nominal_inset_m": 0.004685194970290473,
+        "outer_vertices": 268,
+        "nominal_half_depth_m": 0.012477163859753386
+      },
+      {
+        "section": 5,
+        "nominal_inset_m": 0.0048,
+        "outer_vertices": 270,
+        "nominal_half_depth_m": 0.0125
+      }
+    ],
+    "projected_triangle_coverage_checked": true,
+    "projected_strips_disjoint_by_nested_boundaries": true,
+    "shoulder_triangulation": "Constrained Delaunay; avoids steep earcut diagonal fans",
+    "main_chamfer_geometric_area_weighted_angle_deg": 44.65380864131636,
+    "main_chamfer_geometric_area_fraction_40_to_50deg": 0.9923942443053612,
+    "geometric_ramp_direction_audit": {
+      "outer_triangle_count": 4864,
+      "minimum_outward_projected_normal_dot": -2.140267130190665e-13,
+      "reversed_outer_slopes": 0,
+      "reversal_tolerance_dot": -1e-08
+    },
+    "inclination_scope": "Straight shoulder areas approach45deg; converging corner and protected-eye patches vary",
+    "original_outer_trace_preserved_except_socket_seat": true,
+    "socket_seat": {
+      "reference_point_indices": [
+        10,
+        11,
+        12,
+        13
+      ],
+      "z_m": 1.6684,
+      "maximum_z_correction_mm": 2.532281205940734,
+      "x_preserved": true,
+      "other_original_outline_samples_unchanged": true
+    },
+    "vertex_normals": "Depth-field normals for explicit chamfer; cap exactly +/-Y",
+    "corner_normals": "Face-aligned3 normals per triangle; flat cap/wall corners classified independently",
+    "corner_normal_geometry_audit": {
+      "minimum_dot_before": 0.4102085835205405,
+      "backward_corners_before": 0,
+      "corrected_corner_count": 6,
+      "corrected_groups": {
+        "outer_chamfer_-1_0": 3,
+        "outer_chamfer_1_0": 3
+      },
+      "minimum_dot_after": 0.49999999999999994,
+      "backward_corners_after": 0,
+      "all_finite_unit_normals": true,
+      "geometry_unchanged_by_normal_correction": true
+    },
+    "shading_guidance": "Use corner_normals[face_index][corner_index] in original face order; no automatic averaging or weighted-normal modifier."
+  },
+  "blade_modified": false
+}

@@ -1,0 +1,220 @@
+env_name: deepmimic
+char_file: /workspace/mimickit_trial/assets/uefn/humanoid_uefn.xml
+camera_mode: track
+episode_length: 10.0
+global_obs: true
+root_height_obs: true
+pose_termination: true
+pose_termination_dist: 1.0
+enable_phase_obs: false
+enable_tar_obs: false
+num_phase_encoding: 4
+tar_obs_steps: []
+rand_reset: true
+log_tracking_error: false
+ref_char_offset:
+- 2.0
+- 0.0
+- 0.0
+init_pose: null
+enable_early_termination: true
+key_bodies:
+- head
+- right_hand
+- left_hand
+- right_foot
+- left_foot
+contact_bodies:
+- right_foot
+- left_foot
+motion_file: /workspace/mimickit_trial/prepared/motions.yaml
+joint_err_w:
+- 1.0
+- 0.6
+- 0.6
+- 0.4
+- 0.0
+- 0.6
+- 0.4
+- 0.0
+- 1.0
+- 0.6
+- 0.4
+- 1.0
+- 0.6
+- 0.4
+reward_pose_w: 0.5
+reward_vel_w: 0.1
+reward_root_pose_w: 0.15
+reward_root_vel_w: 0.1
+reward_key_pos_w: 0.15
+reward_pose_scale: 0.25
+reward_vel_scale: 0.01
+reward_root_pose_scale: 5.0
+reward_root_vel_scale: 1.0
+reward_key_pos_scale: 10.0
+absolute_world_body_objective: four_equal_mse_exp_reward_xy_position_only
+absolute_loss_calibration:
+  initialization: fresh_uefn_runLR_seed20261014
+  worlds: 512
+  ticks: 32
+  raw_means:
+    position_mse: 0.0026839261408895254
+    linear_velocity_mse: 0.6623611450195312
+    rotation_mse: 0.022831708192825317
+    angular_velocity_mse: 8.053424835205078
+  weights:
+    position_mse: 814.227101985491
+    linear_velocity_mse: 3.2992958902731857
+    rotation_mse: 95.71449429816654
+    angular_velocity_mse: 0.27135354813104584
+  asset_sha256: 6db2b49df9adf282cae1307c35797b9f3b8b7a8fd2427dff83c9b136c6dc5f0d
+  limits_sha256: 42523d530987b812b8659d3755ae74dd65d8773369591b4ebe4272142ed4a980
+  optimizer_steps: 0
+omni_manifest: /workspace/mimickit_trial/prepared/manifest.json
+visualize_ref_char: false
+target_radius_m: 0.27
+equipment_conditioning: true
+arm_injuries_enabled: false
+idle_row_fraction: 1.0
+flat_com_velocity_loss:
+  weight: 0.6771039952430788
+  leeway: 0.1
+  calibration:
+    reference_body_loss: 1.6927599881076971
+    axis_excess_m_s: 0.5
+    fraction_of_body_loss: 0.1
+velocity_command_margin: 0.05
+idle_recovery:
+  fraction: 1.0
+  motion_file: /workspace/mimickit_trial/prepared/recovery_motions.yaml
+  absolute_target: false
+  align_final_heading_to_idle: true
+  reset_at_getup_end: true
+  reset_motion_file: /workspace/mimickit_trial/prepared/recovery_reset_motions.yaml
+  reset: authored_frame_zero_front_back_equal
+  phase: previous_tick_prediction_input; authored_getup_clock; reset_at_clip_end;
+    no_idle_tail
+  termination: head_hands_65cm_feet_35cm; authored_clip_end_true_terminal; timeout_separate;
+    other_failure_checks_disabled
+  target_termination_bodies:
+  - head
+  - right_hand
+  - left_hand
+  - right_foot
+  - left_foot
+  timeout_only: false
+  sphere_only: true
+  start_at_frame_zero: false
+  target_radius_m: 0.65
+  pelvis_linear_velocity_multiplier: 2.0
+  target_radii_m:
+    left_foot: 0.35
+    right_foot: 0.35
+  random_start_fraction: 0.5
+  back_row_fraction: 0.5
+tracking_reward_form: reciprocal_sum
+perturbed_motion:
+  fraction: 0.7
+  yaw_degrees: 90.0
+  grace_ticks: 8
+  min_speed_ratio: 0.7
+  max_speed_ratio: 1.7
+  angle_degrees: 45.0
+  ae_ticks: 80
+  blend_ticks: 60
+  getup_ticks: 180
+  getup_head_reset_fraction: 0.9
+  ae_weight: 0.2752567992958057
+  ae_directory: /workspace/mimickit_trial/assets/motion_prior
+  com2_targets: /workspace/mimickit_trial/prepared/com2_targets.json
+  phase: prior prediction input and current target; no supervision on autoregressive
+    rows
+  getup_pose: Uniform alpha [0,1], vanilla frame0 to random limp whole pose; linear
+    root/local DOFs, shortest-arc root rotation; authored velocities unchanged
+  getup_objective: idle_frame0_body_positions
+  getup_reset: Head above90% idle height pays known success continuation once, zero
+    bootstrap
+  auxiliary: No flat-COM loss on perturbed rows; auto-phase supervision only on clock-input
+    rows
+  normal: Normal recoveries; half frame0 and half random source frame
+  getup_start_frame: 0
+  getup_position_mse_weight: 10.0
+  observation_normalization: physical_scales_v1
+  getup_pose_blend: uniform_0_1
+  getup_position_reward_form: linear_cost
+  getup_low_head_failure_fraction: 0.5
+  getup_low_head_failure_tick: 80
+  getup_failure_penalty: 100.0
+  loco_failure_penalty: 100.0
+  getup_upper_half_probability: 0.5
+  getup_success_value: 100.0
+  getup_success_discount: 0.99
+  normal_getup_failure_penalty: 100.0
+  normal_getup_random_start_fraction: 0.5
+  getup_limp_dataset: /workspace/mimickit_trial/assets/initializations/limp-inits.npz
+  getup_limp_sha256: 683193642d2350eedaef7cade16811f4f5161055b0296955bc5f539f18aca163
+  getup_floor_clearance_after_blend: true
+  getup_floor_model: /workspace/mimickit_trial/assets/uefn/humanoid_uefn.xml
+  getup_ae_regularizer: true
+  getup_success_max_feet_height_m: 0.13034895062446594
+  getup_success_max_head_vertical_speed_m_s: 2.103452682495117
+  getup_failure_pelvis_height_m: 0.9345778226852417
+  getup_failure_pelvis_after_tick: 5
+  getup_plus_fraction: 0.5
+  getup_plus_low_head_failure_tick: 100
+  getup_plus_max_spin_degrees_s: 700.0
+  getup_foot_regularizers:
+    velocity_weight: 0.006859699331106141
+    rotation_weight: 0.11904574395704297
+    target_fraction_each: 0.07
+    fixed_weights: true
+    scope: perturbed get-ups including perturbed+
+    calibration_pending: false
+    calibration_checkpoint_sha256: 33e97b6d5480fc58b3e6c5cf2477d70ce6b2d769108b146502de4f30366795e3
+    calibration_existing_loss_mean: 1.5653631687164307
+    velocity_metric: mean squared actual ankle target angular velocity across six
+      DOFs, radians/second
+    rotation_metric: mean squared shortest foot-relative-calf angle to assigned idle
+      frame0, radians
+  getup_pelvis_horizontal_regularizer:
+    weight: 0.30317221303099545
+    fixed_weight: true
+    target_fraction: 0.07
+    calibration_pending: false
+    scope: perturbed get-ups including perturbed+
+    axes: world XY horizontal; Z vertical
+    velocity_point: pelvis body origin, not COM
+    form: max(horizontal_speed-max_reference_peak,0)^2
+    motions:
+      getUp_front_quick_robotic:
+        peak_horizontal_m_s: 0.47284913063049316
+        peak_frame: 24
+        peak_velocity_xyz_m_s:
+        - -0.052181147038936615
+        - -0.4699610769748688
+        - 1.3308119773864746
+        frames: 47
+        fps: 30.0
+        motion_sha256: f9c3918e528944b61de65fcfd162f1089962beb0d7bb2f06b9c0864eb65da920
+      getUp_back_quick_robotic:
+        peak_horizontal_m_s: 1.4951565265655518
+        peak_frame: 17
+        peak_velocity_xyz_m_s:
+        - 1.1648945808410645
+        - -0.9372905492782593
+        - 2.0213189125061035
+        frames: 43
+        fps: 30.0
+        motion_sha256: 200d9fea1a8752aa289ad845db68278cc52c58e9f3844e534188ea68c77be1fc
+    limit_mode: shared_maximum_over_both_getups
+    shared_limit_m_s: 1.4951565265655518
+    calibration_checkpoint_sha256: 2203f55ee65f3fc8edba811d792485abd7a4de2cf29a5fadba872efd3d5aa05d
+    calibration_existing_loss_mean: 1.820573091506958
+position_mse_leeway:
+  axes: world_xy_horizontal_z_vertical
+  leg_horizontal_radius_m: 0.1
+  leg_vertical_half_height_m: 0.05
+  other_radius_m: 0.05
+  scope: idle
+  locomotion_radius_m: 0.03

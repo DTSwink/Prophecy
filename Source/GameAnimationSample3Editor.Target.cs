@@ -17,6 +17,7 @@ public class GameAnimationSample3EditorTarget : TargetRules
 		// but keep its grouping independent of the working tree's dirty state.
 		bUseAdaptiveUnityBuild = false;
 		ExtraModuleNames.Add("GameAnimationSample3");
+		ExtraModuleNames.Add("ProphecyAmbient");
 		ExtraModuleNames.Add("ProphecyEditor");
 	}
 }

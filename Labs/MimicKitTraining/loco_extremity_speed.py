@@ -12,7 +12,7 @@ import yaml
 BODIES = ['right_foot', 'left_foot', 'right_hand', 'left_hand']
 
 
-def calibrate(archive, out):
+def calibrate(archive, out, bodies=None, translation_only=False):
     # Reuse the same model, interpolation and small-angle velocity correction
     # as production. This work is offline, not repeated during training.
     from prepare_perturbed_com2 import MJCFCharModel, MotionLib, JointType, mp_util, world_velocities
@@ -30,7 +30,8 @@ def calibrate(archive, out):
     cfg = yaml.safe_load((source/'prepared/env_config.yaml').read_text())
     model = MJCFCharModel('cpu'); model.load(cfg['char_file'])
     lib = MotionLib(cfg['motion_file'], model, 'cpu')
-    names = model.get_body_names(); ids_body = [names.index(n) for n in BODIES]
+    bodies = BODIES if bodies is None else bodies
+    names = model.get_body_names(); ids_body = [names.index(n) for n in bodies]
     parents = [int(p) for p in model._parent_indices]
     mapping = torch.zeros((model.get_dof_size(), (len(names)-1)*3))
     for j in range(1, len(names)):
@@ -52,14 +53,16 @@ def calibrate(archive, out):
         frame = lib._calc_frame_blend(ids, times)[0]
         local = (dof@mapping).view(len(times), -1, 3)
         v, w = world_velocities(pos, rotation, velocity, omega*moving[frame, :1], local*moving[frame, 1:, None], parents)
-        relative = v[:, ids_body] - v[:, :1] - torch.cross(w[:, :1].expand(-1, 4, -1), pos[:, ids_body]-pos[:, :1], dim=-1)
+        relative = v[:, ids_body] - v[:, :1]
+        if not translation_only:
+            relative -= torch.cross(w[:, :1].expand(-1, len(bodies), -1), pos[:, ids_body]-pos[:, :1], dim=-1)
         speeds = relative.norm(dim=-1)
         maximum = speeds.amax(0)
         rows.append(dict(id=Path(lib.get_motion_file(i)).stem, max_m_s=maximum.tolist(),
-            limits_m_s=(maximum*torch.tensor([1.35,1.35,1.5,1.5])).tolist(),
+            limits_m_s=(maximum*torch.tensor([1.5]*len(bodies) if translation_only else [1.35,1.35,1.5,1.5])).tolist(),
             motion_sha256=hashlib.sha256(Path(lib.get_motion_file(i)).read_bytes()).hexdigest()))
-    report = dict(bodies=BODIES, ratios=[1.35,1.35,1.5,1.5], sample_hz=480,
-        measurement='body-origin speed in translating AND rotating pelvis frame: norm(v-v_p-omega_p cross (p-p_p))',
+    report = dict(bodies=bodies, ratios=[1.5]*len(bodies) if translation_only else [1.35,1.35,1.5,1.5], sample_hz=480,
+        measurement='body-origin speed relative to pelvis translation only: norm(v-v_p)' if translation_only else 'body-origin speed in translating AND rotating pelvis frame: norm(v-v_p-omega_p cross (p-p_p))',
         source_sha256=hashlib.sha256(Path(archive).read_bytes()).hexdigest(), motions=rows)
     (out/'extremity-speed-reference.json').write_text(json.dumps(report, indent=2))
     return report

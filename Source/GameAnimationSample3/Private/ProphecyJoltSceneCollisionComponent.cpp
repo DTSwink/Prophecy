@@ -220,7 +220,7 @@ void UProphecyJoltSceneCollisionComponent::ObserveSource(UPrimitiveComponent& So
 {
     if (!State || Source.GetWorld() != GetWorld()
         || (Source.GetMobility() != EComponentMobility::Static && !Source.IsA<UStaticMeshComponent>()
-            && !(Source.IsA<USkeletalMeshComponent>() && Source.GetOwner()->IsA<ASkeletalMeshActor>()))) return;
+            && !(Source.IsA<USkeletalMeshComponent>() && Cast<ASkeletalMeshActor>(Source.GetOwner())))) return;
     const TWeakObjectPtr<UPrimitiveComponent> Key(&Source);
     if (State->Sources.Contains(Key)) return;
     auto& Entry = State->Sources.Add(Key);

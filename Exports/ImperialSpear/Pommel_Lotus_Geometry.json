@@ -1,0 +1,125 @@
+{
+  "concept": "04 \u2014 Lotus bud",
+  "components": [
+    {
+      "name": "02 \u2022 carved lotus pommel body",
+      "vertices": 4098,
+      "triangles": 8192,
+      "closed": true,
+      "volume_m3": 7.147499013207854e-05,
+      "design_report": {
+        "design": "Four radial ribs with integral stepped leaf-shaped recesses inside four cubic concave panels",
+        "main_body_lobes": 4,
+        "belly_axis_radius_mm": 24.5,
+        "belly_diagonal_radius_mm": 12.973417190192722,
+        "belly_peak_to_valley_mm": 11.526582809807278,
+        "belly_scoop_below_peak_chord_mm": 4.350698948877693,
+        "crest_width_mm": 1.2,
+        "ridge_chamfer_depth_mm": 0.65,
+        "body_span_m": [
+          0.0125,
+          0.1085
+        ],
+        "secondary_carved_panels": 4,
+        "secondary_recess_depth_mm": 0.55,
+        "secondary_lip_height_mm": 0.1,
+        "secondary_panel_tips_z_m": [
+          0.018,
+          0.101
+        ],
+        "secondary_border_integral_geometry": true,
+        "width_and_depth_comparable": true,
+        "full_three_dimensional_section": true,
+        "triangles": 8192,
+        "vertices": 4098
+      }
+    },
+    {
+      "name": "Pommel \u2022 rolled socket and straight barrel",
+      "vertices": 720,
+      "triangles": 1436,
+      "closed": true,
+      "volume_m3": 2.282402619265445e-05
+    },
+    {
+      "name": "Pommel \u2022 stepped lotus seat",
+      "vertices": 880,
+      "triangles": 1756,
+      "closed": true,
+      "volume_m3": 1.1340390132668065e-05
+    },
+    {
+      "name": "Pommel \u2022 six carved lotus petals",
+      "vertices": 1802,
+      "triangles": 3600,
+      "closed": true,
+      "volume_m3": 1.4832712959391226e-05,
+      "design_report": {
+        "design": "Lotus bud V3: six recessed arched petals, flat lip lands, inner bevel steps and seated root",
+        "vertices": 1802,
+        "polygons": 1908,
+        "triangles": 3600,
+        "petals": 6,
+        "z_span_m": [
+          -0.031,
+          0.003
+        ],
+        "maximum_radius_m": 0.0161,
+        "petal_peak_to_groove_mm": 1.4,
+        "inner_bevel_drop_mm": 0.55,
+        "inner_bevel_toe_drop_mm": 0.02,
+        "petal_floor_crown_above_rim_toe_mm": 0.17,
+        "lip_land_mid_belly_width_mm": 0.40507695675386796,
+        "root_seating_shoulder_z_m": [
+          0.0004,
+          0.0007,
+          0.0012
+        ],
+        "root_seating_shoulder_radial_drop_mm": 0.35,
+        "button_throat_bevel_axial_mm": 0.35,
+        "button_throat_bevel_radial_mm": 0.4,
+        "petal_boundary_shape": "paired lens arches; narrow root, broad belly, converged button throat",
+        "maximum_boundary_sweep_degrees": 6.1647391312754305,
+        "root_radius_bound_m": 0.014150000000000001,
+        "button_diameter_m": 0.0057,
+        "topology": "One closed shell; adaptive annular mesh; no attached tubes or overlapping parts",
+        "closed_consistently_wound": true,
+        "volume_m3": 1.483705145151844e-05,
+        "minimum_fan_triangle_area_m2": 1.1697404477624062e-09,
+        "minimum_uv_triangle_area": 1.50122549021877e-06,
+        "minimum_custom_normal_face_dot": 0.3211014868178085
+      }
+    }
+  ],
+  "triangles": 14984,
+  "protected_components": 70,
+  "body_design": {
+    "design": "Four radial ribs with integral stepped leaf-shaped recesses inside four cubic concave panels",
+    "main_body_lobes": 4,
+    "belly_axis_radius_mm": 24.5,
+    "belly_diagonal_radius_mm": 12.973417190192722,
+    "belly_peak_to_valley_mm": 11.526582809807278,
+    "belly_scoop_below_peak_chord_mm": 4.350698948877693,
+    "crest_width_mm": 1.2,
+    "ridge_chamfer_depth_mm": 0.65,
+    "body_span_m": [
+      0.0125,
+      0.1085
+    ],
+    "secondary_carved_panels": 4,
+    "secondary_recess_depth_mm": 0.55,
+    "secondary_lip_height_mm": 0.1,
+    "secondary_panel_tips_z_m": [
+      0.018,
+      0.101
+    ],
+    "secondary_border_integral_geometry": true,
+    "width_and_depth_comparable": true,
+    "full_three_dimensional_section": true,
+    "triangles": 8192,
+    "vertices": 4098
+  },
+  "new_bottom_m": -0.03099999949336052,
+  "material": "M_ImperialSpear_PBR",
+  "same_gold_material_as_spearhead": true
+}

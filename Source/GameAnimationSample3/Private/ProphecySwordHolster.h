@@ -7,6 +7,8 @@ struct FProphecyJoltBodyHandle;
 namespace ProphecySwordHolster
 {
 bool InHolster(const AProphecyAgent* Agent);
+// Admission queue only; read-only and independent of other agents' bookings.
+bool HasPendingAction(const AProphecyAgent* Agent);
 bool FollowsAttachment(const UPrimitiveComponent* Source);
 bool HasKinematicArm(const AProphecyAgent* Agent);
 bool CompleteAttachedArms(UWorld* World,float DeltaSeconds,FString& Error);

@@ -1,6 +1,17 @@
 {
   "schema": "bodyflip-lab-v1",
   "settings": {
+    "pikeSpineAbsorb": true,
+    "attackEndFrames": {
+      "sweepKick": 26,
+      "slashRU": 23,
+      "slashRD": 22,
+      "slashR": 25,
+      "slashLU": 21,
+      "slashLD": 24,
+      "pike": 16
+    },
+    "sweepKickEndFrame": 26,
     "poseEaseIn": 0.15,
     "poseExponent": 1,
     "poseEaseOut": 0.5,
@@ -135,15 +146,15 @@
         "spinVersion": 2,
         "pushWith": "foot",
         "jumpPercent": 0,
-        "attack": "sweepKick",
+        "attack": "pike",
         "throwCharge": 100,
         "throwSpeed": 1,
         "throwDirection": null,
-        "attackDelay": 0,
+        "attackDelay": 1,
         "attackIn": 0.2,
         "attackOut": 0.25,
-        "flip": null,
-        "twist": null,
+        "flip": 400,
+        "twist": 200,
         "turnDelay": 0,
         "turnDuration": 0.8,
         "turnIn": 0.4,
@@ -283,17 +294,17 @@
     "bicolor": true,
     "skeleton": false,
     "target": [
-      -0.13141103817803562,
-      2.5427556976470767,
-      1.4698287216859085
+      0.7804021986307871,
+      2.256565603279684,
+      -0.7907076453563804
     ],
     "radius": 0.12,
     "platformResetVersion": "2026-10-25-default-platforms-1"
   },
   "camera": {
-    "yaw": -1.337201782226562,
-    "pitch": 0.4351158627141957,
-    "zoom": 0.8907061810993769,
+    "yaw": 10.45159912109375,
+    "pitch": 0.3154456580687136,
+    "zoom": 0.6481868828994245,
     "panX": 0,
     "panY": 0,
     "free": false,
@@ -302,13 +313,13 @@
     "pelvisView": null
   },
   "playback": {
-    "time": 1.6833333333333333,
+    "time": 2.4166666666666634,
     "attackTime": -1,
     "flip": 0,
     "twist": 0,
     "playing": false,
-    "hit": false,
-    "bestMiss": null
+    "hit": true,
+    "bestMiss": 0
   },
   "modePlaybacks": {
     "spaceGym": {
@@ -323,15 +334,15 @@
             "spinVersion": 2,
             "pushWith": "foot",
             "jumpPercent": 0,
-            "attack": "sweepKick",
+            "attack": "pike",
             "throwCharge": 100,
             "throwSpeed": 1,
             "throwDirection": null,
-            "attackDelay": 0,
+            "attackDelay": 1,
             "attackIn": 0.2,
             "attackOut": 0.25,
-            "flip": null,
-            "twist": null,
+            "flip": 400,
+            "twist": 200,
             "turnDelay": 0,
             "turnDuration": 0.8,
             "turnIn": 0.4,
@@ -438,13 +449,13 @@
         "loop": false
       },
       "playback": {
-        "time": 1.6833333333333333,
+        "time": 2.4166666666666634,
         "attackTime": -1,
         "flip": 0,
         "twist": 0,
         "playing": false,
-        "hit": false,
-        "bestMiss": null
+        "hit": true,
+        "bestMiss": 0
       }
     }
   },
@@ -636,6 +647,17 @@
         "state": {
           "schema": "bodyflip-lab-v1",
           "settings": {
+            "pikeSpineAbsorb": true,
+            "attackEndFrames": {
+              "sweepKick": 26,
+              "slashRU": 23,
+              "slashRD": 22,
+              "slashR": 25,
+              "slashLU": 21,
+              "slashLD": 24,
+              "pike": 16
+            },
+            "sweepKickEndFrame": 26,
             "poseEaseIn": 0.15,
             "poseExponent": 1,
             "poseEaseOut": 0.5,
@@ -770,15 +792,15 @@
                 "spinVersion": 2,
                 "pushWith": "foot",
                 "jumpPercent": 0,
-                "attack": "sweepKick",
+                "attack": "pike",
                 "throwCharge": 100,
                 "throwSpeed": 1,
                 "throwDirection": null,
-                "attackDelay": 0,
+                "attackDelay": 1,
                 "attackIn": 0.2,
                 "attackOut": 0.25,
-                "flip": null,
-                "twist": null,
+                "flip": 400,
+                "twist": 200,
                 "turnDelay": 0,
                 "turnDuration": 0.8,
                 "turnIn": 0.4,
@@ -918,17 +940,17 @@
             "bicolor": true,
             "skeleton": false,
             "target": [
-              -0.13141103817803562,
-              2.5427556976470767,
-              1.4698287216859085
+              0.7804021986307871,
+              2.256565603279684,
+              -0.7907076453563804
             ],
             "radius": 0.12,
             "platformResetVersion": "2026-10-25-default-platforms-1"
           },
           "camera": {
-            "yaw": -1.337201782226562,
-            "pitch": 0.4351158627141957,
-            "zoom": 0.8907061810993769,
+            "yaw": 10.45159912109375,
+            "pitch": 0.3154456580687136,
+            "zoom": 0.6481868828994245,
             "panX": 0,
             "panY": 0,
             "free": false,
@@ -937,13 +959,13 @@
             "pelvisView": null
           },
           "playback": {
-            "time": 1.6833333333333333,
+            "time": 2.4166666666666634,
             "attackTime": -1,
             "flip": 0,
             "twist": 0,
             "playing": false,
-            "hit": false,
-            "bestMiss": null
+            "hit": true,
+            "bestMiss": 0
           },
           "modePlaybacks": {
             "spaceGym": {
@@ -958,15 +980,15 @@
                     "spinVersion": 2,
                     "pushWith": "foot",
                     "jumpPercent": 0,
-                    "attack": "sweepKick",
+                    "attack": "pike",
                     "throwCharge": 100,
                     "throwSpeed": 1,
                     "throwDirection": null,
-                    "attackDelay": 0,
+                    "attackDelay": 1,
                     "attackIn": 0.2,
                     "attackOut": 0.25,
-                    "flip": null,
-                    "twist": null,
+                    "flip": 400,
+                    "twist": 200,
                     "turnDelay": 0,
                     "turnDuration": 0.8,
                     "turnIn": 0.4,
@@ -1073,13 +1095,13 @@
                 "loop": false
               },
               "playback": {
-                "time": 1.6833333333333333,
+                "time": 2.4166666666666634,
                 "attackTime": -1,
                 "flip": 0,
                 "twist": 0,
                 "playing": false,
-                "hit": false,
-                "bestMiss": null
+                "hit": true,
+                "bestMiss": 0
               }
             }
           }

@@ -34,10 +34,16 @@ public:
         JPH::BodyID Parent;
         FTransform ParentStart = FTransform::Identity, ParentTarget = FTransform::Identity;
         float WorldAlpha = 1.f;
+        bool bFiniteJointCarry = false;
+        FVector ParentAnchorCOMCm = FVector::ZeroVector;
+        FVector ChildAnchorCOMCm = FVector::ZeroVector;
     };
     struct FParentSample
     {
         FTransform Pose;
+        FQuat ActualRotation = FQuat::Identity;
+        FVector LinearCommandCmPerSecond = FVector::ZeroVector;
+        float GravityCancellationCmPerSecond = 0.f;
         bool Valid=false;
     };
     struct FSample

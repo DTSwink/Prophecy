@@ -1,0 +1,128 @@
+{
+  "run": "20261022_131128_uefn_getup_pelvismax7_1024",
+  "checkpoint": "161960_final",
+  "samples": 3668983808,
+  "selection": "Latest accepted pelvismax checkpoint; later rejected custom runs excluded",
+  "files": {
+    "checkpoint_0161960_final.zip": {
+      "bytes": 56772563,
+      "sha256": "0dc58150f87f1cb25816235f9e565638e9972d262b9203c5da0d14c0ea736a2b"
+    },
+    "HANDOFF.md": {
+      "bytes": 4372,
+      "sha256": "18272f61f9d88c66cb9d012a9e4dc2342551e9282a968cd987b032a03f55731b"
+    },
+    "jolt/fixture.cpp": {
+      "bytes": 25346,
+      "sha256": "b8b1536e55c9452885165b53ba562eac846fe58aa87dcc80940be99a456d3ee9"
+    },
+    "jolt/jolt-rig-generated.h": {
+      "bytes": 23466,
+      "sha256": "b468aa5604b940363cc95920eb0156b15c953b3c469a22fbc841d35f0aae1cff"
+    },
+    "jolt/profile.json": {
+      "bytes": 565,
+      "sha256": "883fbfe750a9091120f58f7846ec4808a3d57637b53f02328ef7202f04f27656"
+    },
+    "policy/agent_config.yaml": {
+      "bytes": 833,
+      "sha256": "1f394d75e5367579f72fe387a9784bed54542adccdd68bec7aa9f8293b36171c"
+    },
+    "policy/engine_config.yaml": {
+      "bytes": 876,
+      "sha256": "89c59347661a024bb1d3bd98c25806d9ac16d7d17a20974a75015dec390c7976"
+    },
+    "policy/env_config.yaml": {
+      "bytes": 7166,
+      "sha256": "f28ce755bff8866515310dec1de4b669afde8c7cd1be0329adbbfe0ae9d45066"
+    },
+    "policy/io-contract.json": {
+      "bytes": 7332,
+      "sha256": "0f0ae6ae723e769a5fdb6450ac64fb6b68224d2e24e95c54f5d34be22f7d33df"
+    },
+    "policy/model.pt": {
+      "bytes": 13951766,
+      "sha256": "566ca447fbe141050d3c8b88c331f671d3743b73fe1bb12fdf07e37f179f1376"
+    },
+    "policy/provenance.json": {
+      "bytes": 454,
+      "sha256": "474fbb86067019ccdb2f1011a595583d20151927239e187e48c71ec1c1b9a347"
+    },
+    "policy/recovery_actor.onnx": {
+      "bytes": 7010827,
+      "sha256": "e4fd7becb45c85d71220b11985ec5a6f103054f05fc636decf1221a42c685832"
+    },
+    "policy/runtime-freeze.txt": {
+      "bytes": 4049,
+      "sha256": "10e056918d0b21fc050a479222a50d6523260e7c0701727cc8b26074ad0612dc"
+    },
+    "policy/torque_envelope.json": {
+      "bytes": 1988,
+      "sha256": "34e6a50265e35d862af915701a9b0cba4e49113462d539e6afededb0a08c2125"
+    },
+    "policy/velocity_command_bounds.json": {
+      "bytes": 5476,
+      "sha256": "d6ef17a542ad396df77227365f8d677bafeee5db66c7930f0ca38b0ba0f8c031"
+    },
+    "reference/build_getup_native_profile.py": {
+      "bytes": 3340,
+      "sha256": "bd9d79f393da9504132cd2d198cf2c0cfc8e4f29bc9b29b29c66ba796d23ba6f"
+    },
+    "reference/char_env.py": {
+      "bytes": 19317,
+      "sha256": "b447f2c0cebeb4c2dff7bda6464f571e752aa6b2055f47d54707c46f34358602"
+    },
+    "reference/getup_transfer.py": {
+      "bytes": 11776,
+      "sha256": "898ae11223623e3cbeb2f3d1fe46ed9b4624ff718d77c0b4abfc29ca073f8597"
+    },
+    "reference/getup_unreal.py": {
+      "bytes": 2656,
+      "sha256": "5b4bed007bcf9d1f37d4e9cae0568d37dd1575d0d3ce5925d1ca2da95d5ff8f5"
+    },
+    "reference/omni_policy.py": {
+      "bytes": 8225,
+      "sha256": "6385c4c7603ae6429fc8a074cbb2d39075928cc6fd92a66123d69d9fe1c48ab7"
+    },
+    "reference/package_getup_handoff.py": {
+      "bytes": 13045,
+      "sha256": "f42c142d73f2a793126249b76f233e76d5eb41f5797310ad78f744ab2eb02730"
+    },
+    "reference/ProphecyJoltRecoveryTransferTests.cpp": {
+      "bytes": 3357,
+      "sha256": "633a6e8140e2fe6a3b8fcaf2b6cc7bac63e2237abc6750ea5229cfdafc9a6560"
+    },
+    "reference/recovery_fixture.inl": {
+      "bytes": 41758,
+      "sha256": "ff9241d7315b1e9557803569979839b4c3eb6a96e31c0b6f3b57a0478f018c6f"
+    },
+    "reference/torch_util.py": {
+      "bytes": 13579,
+      "sha256": "dd753b13160b536a3a1aa714b611a6b4c6b028b43e2bb62018ce09d29178beaa"
+    },
+    "rig/humanoid_uefn.xml": {
+      "bytes": 21691,
+      "sha256": "a05181efa98b0a62fa36af2a22efffa65b6a7b21550edd01dd6063289d0c1e15"
+    },
+    "rig/limits.json": {
+      "bytes": 44966,
+      "sha256": "502187a97e7f22aa8aedbc9e5ee38a934ccf76e12f3b84a7dd56a4575c7375cd"
+    },
+    "rig/physics.json": {
+      "bytes": 22614,
+      "sha256": "efa2b976406566b80256df6bbef69ec706ccd709b379ed1d8b87a19c02228407"
+    },
+    "validation/fresh-100-summary.json": {
+      "bytes": 1252,
+      "sha256": "cfbd65cd25d9bd26805d1eaca8a1085f0d6ef4b14118dfd8d60a8608dcf52971"
+    },
+    "validation/inference_vectors.npz": {
+      "bytes": 22688,
+      "sha256": "016c596a199a830a4f96721b8602994fadb91d039ee1203f4b212681503431e7"
+    },
+    "validation/onnx-parity.json": {
+      "bytes": 1420,
+      "sha256": "ccf110e37d42ffecefa4372164501524d35286ccca62e56f796d0aa3d57ba1ca"
+    }
+  }
+}

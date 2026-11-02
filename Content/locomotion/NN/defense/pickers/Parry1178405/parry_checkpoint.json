@@ -1,0 +1,13 @@
+{
+  "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\parry_step_1178405.pt",
+  "sha256": "385118689f1ef1d7a53a493537a5d78eaf59ec90e3955c502f439f874d674489",
+  "step": 1178405,
+  "exact_forearms": true,
+  "models": {
+    "prophecy_parry_upper.onnx": {
+      "sha256": "fa2ebf459470d21b3554859cef0825190e2b6a78a15d1ea2b297f1a486ffdb5a",
+      "parity_batches": 15,
+      "max_abs_error": 9.5367431640625e-07
+    }
+  }
+}

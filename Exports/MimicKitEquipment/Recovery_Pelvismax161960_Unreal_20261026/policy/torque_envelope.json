@@ -1,0 +1,76 @@
+{
+  "axes": {
+    "right_thigh:0": {
+      "previous_nm": 200.0,
+      "requested_nm": 732.8481536865235,
+      "applied_nm": 732.84814453125
+    },
+    "right_thigh:1": {
+      "previous_nm": 200.0,
+      "requested_nm": 482.6681900024414,
+      "applied_nm": 482.6681823730469
+    },
+    "right_thigh:2": {
+      "previous_nm": 200.0,
+      "requested_nm": 547.7334869384766,
+      "applied_nm": 547.7334594726562
+    },
+    "right_shin": {
+      "previous_nm": 150.0,
+      "requested_nm": 321.15493927001955,
+      "applied_nm": 321.1549377441406
+    },
+    "right_foot:0": {
+      "previous_nm": 90.0,
+      "requested_nm": 403.23335723876954,
+      "applied_nm": 403.2333679199219
+    },
+    "right_foot:1": {
+      "previous_nm": 90.0,
+      "requested_nm": 239.51566085815432,
+      "applied_nm": 239.51565551757812
+    },
+    "right_foot:2": {
+      "previous_nm": 90.0,
+      "requested_nm": 469.4500076293946,
+      "applied_nm": 469.45001220703125
+    },
+    "left_thigh:0": {
+      "previous_nm": 200.0,
+      "requested_nm": 395.52479095458983,
+      "applied_nm": 395.5247802734375
+    },
+    "left_thigh:1": {
+      "previous_nm": 200.0,
+      "requested_nm": 494.32335662841797,
+      "applied_nm": 494.3233642578125
+    },
+    "left_thigh:2": {
+      "previous_nm": 200.0,
+      "requested_nm": 450.6542449951172,
+      "applied_nm": 450.65423583984375
+    },
+    "left_shin": {
+      "previous_nm": 150.0,
+      "requested_nm": 380.0389572143555,
+      "applied_nm": 380.0389709472656
+    },
+    "left_foot:0": {
+      "previous_nm": 90.0,
+      "requested_nm": 167.84636764526368,
+      "applied_nm": 167.84637451171875
+    },
+    "left_foot:1": {
+      "previous_nm": 90.0,
+      "requested_nm": 209.99386367797854,
+      "applied_nm": 209.99386596679688
+    },
+    "left_foot:2": {
+      "previous_nm": 90.0,
+      "requested_nm": 507.8737976074219,
+      "applied_nm": 507.8738098144531
+    }
+  },
+  "existing_limits_never_reduced": true,
+  "gains_changed": false
+}

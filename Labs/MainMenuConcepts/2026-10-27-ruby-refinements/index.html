@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ruby & gold / 20 refinements</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#100d12;color:#f1ebef}*{box-sizing:border-box}body{margin:0}
+header{padding:32px 4vw 22px;border-bottom:1px solid #34242e}header small{letter-spacing:.18em;color:#c9a4bc}h1{font:36px Georgia,serif;margin:10px 0}p{color:#b7aab2;line-height:1.5}
+a{color:#e7b9d7}header nav{display:flex;flex-wrap:wrap;gap:20px}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;padding:22px 4vw}
+h2{grid-column:1/-1;font:28px Georgia,serif;scroll-margin-top:20px;margin:24px 0 0}
+article{border:1px solid #3c2b36;border-radius:8px;overflow:hidden;background:#1a141b}
+button{font:inherit;color:inherit;cursor:pointer}article button{padding:0;width:100%;border:0;text-align:left;background:transparent}
+article button:hover{background:#2b1e2a}article img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#050405}
+.meta{padding:15px 18px}.meta b{color:#d2a3c2;margin-right:12px}.meta p{font-size:13px;margin:8px 0 0}
+footer{padding:20px 4vw 32px;color:#aa9ba6;font-size:13px}
+dialog{border:1px solid #58404f;background:#100c12;color:#fff;padding:12px;width:97vw;max-width:1900px;max-height:97vh}
+dialog::backdrop{background:#000e}dialog nav{display:flex;align-items:center;gap:10px;padding:0 0 10px;flex-wrap:wrap}
+dialog strong{flex:1;min-width:180px}dialog button{border:1px solid #58404f;background:#2a1d28;border-radius:5px;padding:8px 13px}
+#compare[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#stage{height:calc(91vh - 110px);overflow:auto;background:#060406}
+#large{width:100%;height:100%;object-fit:contain;display:block;background:#060406}
+#stage.inspect #large{width:200%;height:auto;max-height:none;object-fit:initial}
+#inspect[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#detail{font-size:13px;margin:9px 4px 0}
+button:focus-visible,a:focus-visible{outline:2px solid #e4b0d7;outline-offset:3px}
+@media(min-width:1900px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){main{grid-template-columns:1fr}h1{font-size:29px}#large{height:auto;max-height:70vh}}
+</style></head>
+<body>
+<header><small>RUBY & GOLD REFINEMENTS / 27 OCTOBER 2026</small>
+<h1>Ruby & gold / 20 refinements</h1>
+<p>Your selected ruby-and-gold design, made taller and wider. Twenty refinements of its frame, lettering, materials and details.</p>
+<nav><a href="#frame">01–05 Frame</a><a href="#typography">06–10 Typography</a><a href="#material">11–15 Material</a><a href="#detail-studies">16–20 Detail</a></nav>
+<p>Click to enlarge. Arrow keys browse. Press <b>B</b> or use <b>Compare reference</b> to switch to your selected image. Press <b>D</b> for 2× details, then scroll to inspect. Esc closes.</p>
+</header>
+<main id="grid"></main>
+<footer><a href="reference-selected.png">Your selected reference</a> · <a href="manifest.json">Full prompts and provenance</a> · Generated with built-in imagegen.</footer>
+<dialog id="viewer" aria-label="Concept preview">
+<nav><button id="prev" aria-label="Previous concept">←</button><strong id="caption"></strong><button id="next" aria-label="Next concept">→</button><button id="compare" aria-pressed="false">Compare reference (B)</button><a id="original" target="_blank">Open image</a><button id="close">Close</button></nav>
+<div id="stage"><img id="large" alt=""></div><p id="detail"></p></dialog>
+<script>
+const items=[{"id":"01","title":"Quiet atelier","group":"Frame","detail":"Fine champagne rails, softened ruby glass and calm proportions.","file":"01-quiet-atelier.png"},{"id":"02","title":"Architectural rebate","group":"Frame","detail":"A recessed border with subtle depth and disciplined corner joints.","file":"02-architectural-rebate.png"},{"id":"03","title":"Jeweller's setting","group":"Frame","detail":"Precise gold corner fittings and a restrained selected-row outline.","file":"03-jewellers-setting.png"},{"id":"04","title":"Floating inner rail","group":"Frame","detail":"A fine inset frame and generous clear space around the menu.","file":"04-floating-inner-rail.png"},{"id":"05","title":"Stepped classic","group":"Frame","detail":"Small architectural steps with carefully balanced gold line weights.","file":"05-stepped-classic.png"},{"id":"06","title":"Roman inscription","group":"Typography","detail":"Confident Roman capitals with spacious rhythm and fine gold trim.","file":"06-roman-inscription.png"},{"id":"07","title":"Editorial ivory","group":"Typography","detail":"Sculpted serif lettering and a gentle hierarchy of scale.","file":"07-editorial-ivory.png"},{"id":"08","title":"Humanist classic","group":"Typography","detail":"Open, readable lettering within the established ruby-and-gold frame.","file":"08-humanist-classic.png"},{"id":"09","title":"Bookplate prestige","group":"Typography","detail":"Literary small-cap proportions with subtle engraved framing.","file":"09-bookplate-prestige.png"},{"id":"10","title":"Ceremonial spacing","group":"Typography","detail":"An airy vertical composition with finely controlled type and separators.","file":"10-ceremonial-spacing.png"},{"id":"11","title":"Polished ruby","group":"Material","detail":"Deep ruby glass with fine champagne edge highlights.","file":"11-polished-ruby.png"},{"id":"12","title":"Smoked champagne","group":"Material","detail":"Neutral smoked glass and pale gold for a quieter luxury treatment.","file":"12-smoked-champagne.png"},{"id":"13","title":"Satin garnet","group":"Material","detail":"Soft garnet shading and restrained gold edging without heavy bloom.","file":"13-satin-garnet.png"},{"id":"14","title":"Enamel and gilt","group":"Material","detail":"A narrow burgundy enamel rim with crisp gilded edges.","file":"14-enamel-and-gilt.png"},{"id":"15","title":"Crystal bevel","group":"Material","detail":"Clearer ruby glass with a subtle bevel and luminous ivory text.","file":"15-crystal-bevel.png"},{"id":"16","title":"Deco fan","group":"Detail","detail":"Small geometric fan corners and a quiet diamond selection marker.","file":"16-deco-fan.png"},{"id":"17","title":"Engraved laurel","group":"Detail","detail":"Minute botanical engraving kept entirely within the frame.","file":"17-engraved-laurel.png"},{"id":"18","title":"Long lozenge","group":"Detail","detail":"Elongated diamond fittings and clean, uninterrupted side rails.","file":"18-long-lozenge.png"},{"id":"19","title":"Corner compass","group":"Detail","detail":"Geometric quarter-circle joints and fine etched edge details.","file":"19-corner-compass.png"},{"id":"20","title":"Atelier synthesis","group":"Detail","detail":"Balanced Roman lettering, jewelled corner joints and refined ruby glass.","file":"20-atelier-synthesis.png"}];
+const byId=id=>document.getElementById(id);
+const grid=byId('grid'),viewer=byId('viewer'),large=byId('large'),caption=byId('caption'),original=byId('original'),compare=byId('compare'),detail=byId('detail');
+let active=0,comparing=false,inspecting=false;
+const stage=byId('stage'),inspect=document.createElement('button');
+inspect.id='inspect';inspect.textContent='2× details (D)';inspect.setAttribute('aria-pressed','false');compare.after(inspect);
+function toggleInspect(){
+ inspecting=!inspecting;stage.classList.toggle('inspect',inspecting);
+ inspect.setAttribute('aria-pressed',String(inspecting));inspect.textContent=inspecting?'Fit image (D)':'2× details (D)';
+ requestAnimationFrame(()=>{stage.scrollLeft=inspecting?stage.clientWidth*.15:0;stage.scrollTop=inspecting?stage.clientHeight*.12:0;});
+}
+inspect.onclick=toggleInspect;
+const reference=new Image();reference.src='reference-selected.png';
+function render(){
+ const item=items[active];
+ large.src=comparing?'reference-selected.png':item.file;
+ large.alt=comparing?'Selected reference':item.id+' — '+item.title;
+ caption.textContent=comparing?'Selected reference · comparing with '+item.id:item.id+' — '+item.title;
+ original.href=large.getAttribute('src');
+ compare.setAttribute('aria-pressed',String(comparing));
+ compare.textContent=comparing?'Back to variation (B)':'Compare reference (B)';
+ detail.textContent=item.detail;
+ history.replaceState(null,'','#concept-'+item.id);
+}
+function show(index){
+ active=(index+items.length)%items.length;comparing=false;render();
+ if(!viewer.open)viewer.showModal();
+ const preload=new Image();preload.src=items[(active+1)%items.length].file;
+}
+function toggleCompare(){comparing=!comparing;render();}
+items.forEach((item,i)=>{
+ if(i===0||items[i-1].group!==item.group){
+  const heading=document.createElement('h2');heading.id=item.group==='Detail'?'detail-studies':item.group.toLowerCase();
+  heading.textContent=item.id+'–'+items[Math.min(i+4,items.length-1)].id+' / '+item.group;grid.append(heading);
+ }
+ const card=document.createElement('article'),button=document.createElement('button'),img=document.createElement('img'),meta=document.createElement('div'),number=document.createElement('b'),description=document.createElement('p');
+ img.src=item.file;img.alt=item.id+' — '+item.title;img.loading='lazy';img.width=1672;img.height=941;img.style.height='auto';
+ meta.className='meta';number.textContent=item.id;description.textContent=item.detail;
+ meta.append(number,document.createTextNode(item.title),description);button.append(img,meta);button.onclick=()=>show(i);card.append(button);grid.append(card);
+});
+byId('prev').onclick=()=>show(active-1);byId('next').onclick=()=>show(active+1);
+compare.onclick=toggleCompare;byId('close').onclick=()=>viewer.close();
+document.addEventListener('keydown',e=>{
+ if(!viewer.open||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key==='ArrowRight'){e.preventDefault();show(active+1);}
+ if(e.key==='ArrowLeft'){e.preventDefault();show(active-1);}
+ if(e.key.toLowerCase()==='b'&&!e.repeat){e.preventDefault();toggleCompare();}
+ if(e.key.toLowerCase()==='d'&&!e.repeat){e.preventDefault();toggleInspect();}
+});
+const initial=location.hash.match(/^#concept-(\d{2})$/);if(initial){const i=items.findIndex(x=>x.id===initial[1]);if(i>=0)show(i);}
+viewer.addEventListener('click',e=>{if(e.target===viewer){const r=viewer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)viewer.close();}});
+</script></body></html>
+

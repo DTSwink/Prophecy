@@ -200,6 +200,8 @@ print('Checkpoint and runtime ready')
           '--equipment-omni',r+'/prepared','--evaluate','--output-interval','100','--replay-rows','20',
           '--resume',r+'/resume.zip','--actor-lr','1.125e-6','--resume-perturbed-motion']
     overrides=plan.get('training_overrides',{})
+    if overrides.get('custom_physics'):
+        args.append('--resume-custom-physics')
     if overrides.get('resume_position_leeway'):
         args.append('--resume-position-leeway')
     for key,flag in [('action_noise','--action-noise'),('gae_lambda','--gae-lambda')]:

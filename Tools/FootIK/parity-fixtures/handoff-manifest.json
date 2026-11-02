@@ -1,0 +1,35 @@
+{
+  "schema": "footik-handoff-replay-inputs-v1",
+  "records": [
+    {
+      "name": "app-run-stairs",
+      "bytes": 736863,
+      "sha256": "9ee719f1dae7a54d0bf19df9de9ee9c20c1de30d5df65a837b347b88aba28de2"
+    },
+    {
+      "name": "app-run-down",
+      "bytes": 737620,
+      "sha256": "862f1821034a678f85558af2081a190afc60f446154d2996956e45d59cafbd4a"
+    },
+    {
+      "name": "app-run-uneven",
+      "bytes": 737602,
+      "sha256": "b1c5f607f9a18afdc521ad2a9f9313fbf593716c9efc7bc302e5db04ae0ced28"
+    },
+    {
+      "name": "app-walk-stairs",
+      "bytes": 579369,
+      "sha256": "e1ee60834383f0c6cfb8e8fd96226dc8dee90f172e73ea03bd13a5e165784863"
+    },
+    {
+      "name": "app-walk-down",
+      "bytes": 579654,
+      "sha256": "2acbac17118fae5aa22840281ec848d2719c45ea431747a55f6f8f3bcab8dfab"
+    },
+    {
+      "name": "app-walk-uneven",
+      "bytes": 579599,
+      "sha256": "cf74736560210c27a77a5cdfc4fa54be890236c4bdc5cba226af2125cbaaf326"
+    }
+  ]
+}

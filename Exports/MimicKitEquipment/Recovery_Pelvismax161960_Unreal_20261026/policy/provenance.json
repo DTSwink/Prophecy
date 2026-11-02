@@ -1,0 +1,13 @@
+{
+  "upstream_commit": "2ed1e6c093bb0829f55d33cb4f7a1731cfe6cb69",
+  "task": "four_equal_mse_exp_reward_xy_position_only",
+  "worlds": 1024,
+  "seed": 20261014,
+  "training_action_noise_std": 0.075,
+  "evaluation_enabled": true,
+  "wrapper_sha256": "4670bc3f7b5db093987adcd283cf23a70139e2b1936c5a77f8d4c5102facc2b5",
+  "training_config_changed": [
+    "world-body tracking; target alignment from config; reward=reciprocal_sum"
+  ],
+  "gpu": "NVIDIA L4"
+}

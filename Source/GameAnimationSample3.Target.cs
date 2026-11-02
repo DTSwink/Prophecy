@@ -9,5 +9,6 @@ public class GameAnimationSample3Target : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.Latest;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		ExtraModuleNames.Add("GameAnimationSample3");
+		ExtraModuleNames.Add("ProphecyAmbient");
 	}
 }

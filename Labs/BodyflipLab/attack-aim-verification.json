@@ -1,0 +1,32 @@
+{
+  "undoRotationChecks": 34,
+  "samples": 9500,
+  "maxDirectionError": 8.50270903902235e-9,
+  "maxCOMError": 7.774426035788602e-16,
+  "maxLocalError": 1.0700305378531082e-15,
+  "maxManualError": 6.197326795751626e-9,
+  "maxNativeCalibrationError": 4.47545209131181e-16,
+  "maxPelvisTilt": 5.51460937295861e-16,
+  "maxChainStepSpread": 1.942890293094024e-15,
+  "deadlines": {
+    "headbutt": "Hit",
+    "hookL": "Hit",
+    "hookR": "Hit",
+    "jabL": "Armed",
+    "jabR": "Armed",
+    "KickL": "Armed",
+    "KickR": "Armed",
+    "overL": "Hit",
+    "overR": "Hit",
+    "pike": "Armed",
+    "slashL": "Hit",
+    "slashLD": "Hit",
+    "slashLU": "Hit",
+    "slashR": "Hit",
+    "slashRD": "Hit",
+    "slashRU": "Hit",
+    "sweepKick": "Hit"
+  },
+  "savedScene": null,
+  "visualVerified": false
+}

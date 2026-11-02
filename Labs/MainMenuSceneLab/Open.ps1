@@ -1,4 +1,4 @@
-param([switch]$Capture,[switch]$Demo,[switch]$Offscreen,[switch]$Visible,[switch]$BodyCloseup,[switch]$Air,[switch]$Ground,[switch]$Water,[switch]$FreezeBody,[switch]$MoveTest,[switch]$NoCollision,[switch]$ReflectionProbe,[switch]$HideControls,[switch]$CaptureUI,[switch]$ValidateControls,[switch]$ValidateGizmo,[switch]$GizmoPreview,[float]$PoseTime=-1,[float]$MoveSpeed=90,[string]$Settings='',[string]$Name='scene')
+param([switch]$Capture,[switch]$Demo,[switch]$Offscreen,[switch]$Visible,[switch]$BodyCloseup,[switch]$Air,[switch]$Ground,[switch]$Menu,[switch]$NoMenu,[switch]$Water,[switch]$FreezeBody,[switch]$MoveTest,[switch]$NoCollision,[switch]$ReflectionProbe,[switch]$HideControls,[switch]$CaptureUI,[switch]$ValidateControls,[switch]$ValidateGizmo,[switch]$GizmoPreview,[float]$PoseTime=-1,[float]$MoveSpeed=90,[string]$Settings='',[string]$Name='scene')
 $ErrorActionPreference='Stop'
 $labRoot=$PSScriptRoot.Replace('\','/')
 $labArgs=@(('"'+$labRoot+'/MainMenuSceneLab.uproject"'),'/Engine/Maps/Entry','-game','-windowed','-ResX=1280','-ResY=720','-NoSplash','-NoSound',('-abslog="'+$labRoot+'/Saved/scene.log"'))
@@ -9,6 +9,8 @@ if($BodyCloseup){$labArgs+='-SceneBodyCloseup'}
 if($Air){$labArgs+='-SceneAirTab'}
 if($Water){$labArgs+='-SceneWaterTab'}
 if($FreezeBody){$labArgs+='-SceneFreezeBody'}
+if($Menu){$labArgs+='-SceneMenuTab'}
+if($NoMenu){$labArgs+='-SceneHideMenu'}
 if($Ground){$labArgs+='-SceneGroundTab'}
 if($MoveTest){$labArgs+='-SceneMoveTest';$labArgs+=('-SceneMoveSpeed='+$MoveSpeed.ToString([Globalization.CultureInfo]::InvariantCulture))}
 if($NoCollision){$labArgs+='-SceneNoCollision'}

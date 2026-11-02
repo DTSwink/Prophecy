@@ -1,0 +1,139 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "rapid edits share one serialized preparation task",
+      "passed": true
+    },
+    {
+      "name": "superseded result is not published",
+      "passed": true
+    },
+    {
+      "name": "intermediate settings are coalesced",
+      "passed": true
+    },
+    {
+      "name": "only latest settings publish and queue becomes idle",
+      "passed": true
+    },
+    {
+      "name": "surface seed is bounded and retains nominal full duration metadata",
+      "passed": true
+    },
+    {
+      "name": "preparation preserves selected playback time",
+      "passed": true
+    },
+    {
+      "name": "shrinking trim does not request generation or discard prefix",
+      "passed": true
+    },
+    {
+      "name": "seek is capped to generated endpoint",
+      "passed": true
+    },
+    {
+      "name": "end bracket previews only available motion",
+      "passed": true
+    },
+    {
+      "name": "end commit requests only extension on the same physics session",
+      "passed": true
+    },
+    {
+      "name": "bracket release restores playback before async extension",
+      "passed": true
+    },
+    {
+      "name": "extension completion preserves restored playback",
+      "passed": true
+    },
+    {
+      "name": "refresh with larger view-only trim extends rather than skipping",
+      "passed": true
+    },
+    {
+      "name": "refresh retains saved playback after extending",
+      "passed": true
+    },
+    {
+      "name": "view-only refresh with smaller trim performs no preparation",
+      "passed": true
+    },
+    {
+      "name": "view-only refresh cannot claim a frame beyond generated motion",
+      "passed": true,
+      "measured": {
+        "time": 2.8,
+        "playing": false,
+        "busy": false,
+        "phase": 0.7,
+        "trimOut": 2,
+        "marker": 0.7,
+        "through": 2.8,
+        "pending": false,
+        "reloading": false,
+        "task": false
+      }
+    },
+    {
+      "name": "preparation pauses playback while busy",
+      "passed": true
+    },
+    {
+      "name": "preparation restores previous play intent and time",
+      "passed": true
+    },
+    {
+      "name": "root heading continues commanded yaw beyond seed",
+      "passed": true,
+      "measured": [
+        -1,
+        0,
+        -1.8369701987210297e-16
+      ]
+    },
+    {
+      "name": "root travel readout extends beyond seed",
+      "passed": true
+    },
+    {
+      "name": "saved wall trim is a real interval and preparation stops at its endpoint",
+      "passed": true,
+      "measured": {
+        "trimIn": 0,
+        "trimOut": 3.466666666666667
+      }
+    },
+    {
+      "name": "saved wall load requests only seed rather than full five-second gait",
+      "passed": true
+    },
+    {
+      "name": "saved wall playback time survives bounded load",
+      "passed": true,
+      "measured": {
+        "time": 0.7166666666666667,
+        "playing": false,
+        "busy": false,
+        "phase": 0.36,
+        "trimOut": 3.466666666666667,
+        "marker": 0.36,
+        "through": 3.466666666666667,
+        "pending": false,
+        "reloading": false,
+        "task": false
+      }
+    },
+    {
+      "name": "network deadline helper loads before app",
+      "passed": true
+    },
+    {
+      "name": "request deadline includes a stalled response body",
+      "passed": true
+    }
+  ],
+  "scope": "Real app control flow in VM with deferred fake surface sessions; no browser, server, inference or saved-state writes."
+}

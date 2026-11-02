@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Enclosed menu / 20 variations</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#100d12;color:#f1ebef}*{box-sizing:border-box}body{margin:0}
+header{padding:32px 4vw 22px;border-bottom:1px solid #34242e}header small{letter-spacing:.18em;color:#c9a4bc}h1{font:36px Georgia,serif;margin:10px 0}p{color:#b7aab2;line-height:1.5}
+a{color:#e7b9d7}header nav{display:flex;flex-wrap:wrap;gap:20px}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;padding:22px 4vw}
+h2{grid-column:1/-1;font:28px Georgia,serif;scroll-margin-top:20px;margin:24px 0 0}
+article{border:1px solid #3c2b36;border-radius:8px;overflow:hidden;background:#1a141b}
+button{font:inherit;color:inherit;cursor:pointer}article button{padding:0;width:100%;border:0;text-align:left;background:transparent}
+article button:hover{background:#2b1e2a}article img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#050405}
+.meta{padding:15px 18px}.meta b{color:#d2a3c2;margin-right:12px}.meta p{font-size:13px;margin:8px 0 0}
+footer{padding:20px 4vw 32px;color:#aa9ba6;font-size:13px}
+dialog{border:1px solid #58404f;background:#100c12;color:#fff;padding:12px;width:97vw;max-width:1900px;max-height:97vh}
+dialog::backdrop{background:#000e}dialog nav{display:flex;align-items:center;gap:10px;padding:0 0 10px;flex-wrap:wrap}
+dialog strong{flex:1;min-width:180px}dialog button{border:1px solid #58404f;background:#2a1d28;border-radius:5px;padding:8px 13px}
+#compare[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#stage{height:calc(91vh - 110px);overflow:auto;background:#060406}
+#large{width:100%;height:100%;object-fit:contain;display:block;background:#060406}
+#stage.inspect #large{width:200%;height:auto;max-height:none;object-fit:initial}
+#inspect[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#detail{font-size:13px;margin:9px 4px 0}
+button:focus-visible,a:focus-visible{outline:2px solid #e4b0d7;outline-offset:3px}
+@media(min-width:1900px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){main{grid-template-columns:1fr}h1{font-size:29px}#large{height:auto;max-height:70vh}}
+</style></head>
+<body>
+<header><small>ENCLOSED PANEL STUDIES / 27 OCTOBER 2026</small>
+<h1>Enclosed menu / 20 variations</h1>
+<p>A closed rectangular panel, a translucent interior and bright vertical options. Twenty approaches to the details.</p>
+<nav><a href="#typography">01–05 Typography</a><a href="#craft">06–10 Craft</a><a href="#glass">11–15 Glass</a><a href="#geometry">16–20 Geometry</a></nav>
+<p>Click to enlarge. Arrow keys browse. Press <b>B</b> or use <b>Compare reference</b> to switch to your selected image. Press <b>D</b> for 2× details, then scroll to inspect. Esc closes.</p>
+</header>
+<main id="grid"></main>
+<footer><a href="reference-selected.png">Your selected reference</a> · <a href="manifest.json">Full prompts and provenance</a> · Generated with built-in imagegen.</footer>
+<dialog id="viewer" aria-label="Concept preview">
+<nav><button id="prev" aria-label="Previous concept">←</button><strong id="caption"></strong><button id="next" aria-label="Next concept">→</button><button id="compare" aria-pressed="false">Compare reference (B)</button><a id="original" target="_blank">Open image</a><button id="close">Close</button></nav>
+<div id="stage"><img id="large" alt=""></div><p id="detail"></p></dialog>
+<script>
+const items=[{"id":"01","title":"Ivory architecture","group":"Typography","detail":"Quiet architectural framing with finely balanced serif lettering.","file":"01-ivory-architecture.png"},{"id":"02","title":"Grand editorial","group":"Typography","detail":"A stronger serif hierarchy within a spacious translucent frame.","file":"02-grand-editorial.png"},{"id":"03","title":"Inscribed capitals","group":"Typography","detail":"Classical carved-letter proportions and a restrained champagne frame.","file":"03-inscribed-capitals.png"},{"id":"04","title":"Modern gallery","group":"Typography","detail":"Clear humanist sans serif with generous spacing and a quiet cursor.","file":"04-modern-gallery.png"},{"id":"05","title":"Gothic velvet","group":"Typography","detail":"A restrained gothic accent, luminous text and a narrow dark frame.","file":"05-gothic-velvet.png"},{"id":"06","title":"Platinum inlay","group":"Craft","detail":"Fine platinum rails and careful corner joins around a transparent centre.","file":"06-platinum-inlay.png"},{"id":"07","title":"Champagne filigree","group":"Craft","detail":"Delicate hand-engraved corners with warm luminous serif text.","file":"07-champagne-filigree.png"},{"id":"08","title":"Violet enamel","group":"Craft","detail":"A fine enamel rim, pearl edging and crisp condensed lettering.","file":"08-violet-enamel.png"},{"id":"09","title":"Brushed titanium","group":"Craft","detail":"Satin metal framing and precise monospaced menu typography.","file":"09-brushed-titanium.png"},{"id":"10","title":"Ink and gilt","group":"Craft","detail":"A subtle hand-drawn frame paired with fluid bright lettering.","file":"10-ink-and-gilt.png"},{"id":"11","title":"Crystal smoke","group":"Glass","detail":"A translucent smoked-crystal panel with restrained refracted edges.","file":"11-crystal-smoke.png"},{"id":"12","title":"Frost gradient","group":"Glass","detail":"Gentle frosting lends depth while retaining visible water.","file":"12-frost-gradient.png"},{"id":"13","title":"Violet quartz","group":"Glass","detail":"Very subtle violet glass with sharp pale-lilac lettering.","file":"13-violet-quartz.png"},{"id":"14","title":"Ruby veil","group":"Glass","detail":"A dark ruby tint and warm bright type echo the ground.","file":"14-ruby-veil.png"},{"id":"15","title":"Pearl interference","group":"Glass","detail":"An almost neutral glass panel with a faint pearlescent edge.","file":"15-pearl-interference.png"},{"id":"16","title":"Chamfer monolith","group":"Geometry","detail":"A firm geometric silhouette with disciplined horizontal divisions.","file":"16-chamfer-monolith.png"},{"id":"17","title":"Rounded precision","group":"Geometry","detail":"Soft rectangular corners and a balanced white selection surround.","file":"17-rounded-precision.png"},{"id":"18","title":"Offset double frame","group":"Geometry","detail":"Two nested rectangular outlines create a deliberate asymmetric margin.","file":"18-offset-double-frame.png"},{"id":"19","title":"Folded edge","group":"Geometry","detail":"Fine ivory edge folds surround a transparent dark centre.","file":"19-folded-edge.png"},{"id":"20","title":"Liquid silver","group":"Geometry","detail":"An organic silver perimeter keeps a recognisable rectangular silhouette.","file":"20-liquid-silver.png"}];
+const byId=id=>document.getElementById(id);
+const grid=byId('grid'),viewer=byId('viewer'),large=byId('large'),caption=byId('caption'),original=byId('original'),compare=byId('compare'),detail=byId('detail');
+let active=0,comparing=false,inspecting=false;
+const stage=byId('stage'),inspect=document.createElement('button');
+inspect.id='inspect';inspect.textContent='2× details (D)';inspect.setAttribute('aria-pressed','false');compare.after(inspect);
+function toggleInspect(){
+ inspecting=!inspecting;stage.classList.toggle('inspect',inspecting);
+ inspect.setAttribute('aria-pressed',String(inspecting));inspect.textContent=inspecting?'Fit image (D)':'2× details (D)';
+ requestAnimationFrame(()=>{stage.scrollLeft=inspecting?stage.clientWidth*.15:0;stage.scrollTop=inspecting?stage.clientHeight*.12:0;});
+}
+inspect.onclick=toggleInspect;
+const reference=new Image();reference.src='reference-selected.png';
+function render(){
+ const item=items[active];
+ large.src=comparing?'reference-selected.png':item.file;
+ large.alt=comparing?'Selected reference':item.id+' — '+item.title;
+ caption.textContent=comparing?'Selected reference · comparing with '+item.id:item.id+' — '+item.title;
+ original.href=large.getAttribute('src');
+ compare.setAttribute('aria-pressed',String(comparing));
+ compare.textContent=comparing?'Back to variation (B)':'Compare reference (B)';
+ detail.textContent=item.detail;
+}
+function show(index){
+ active=(index+items.length)%items.length;comparing=false;render();
+ if(!viewer.open)viewer.showModal();
+ const preload=new Image();preload.src=items[(active+1)%items.length].file;
+}
+function toggleCompare(){comparing=!comparing;render();}
+items.forEach((item,i)=>{
+ if(i===0||items[i-1].group!==item.group){
+  const heading=document.createElement('h2');heading.id=item.group.toLowerCase();
+  heading.textContent=item.id+'–'+items[Math.min(i+4,items.length-1)].id+' / '+item.group;grid.append(heading);
+ }
+ const card=document.createElement('article'),button=document.createElement('button'),img=document.createElement('img'),meta=document.createElement('div'),number=document.createElement('b'),description=document.createElement('p');
+ img.src=item.file;img.alt=item.id+' — '+item.title;img.loading='lazy';img.width=1672;img.height=941;img.style.height='auto';
+ meta.className='meta';number.textContent=item.id;description.textContent=item.detail;
+ meta.append(number,document.createTextNode(item.title),description);button.append(img,meta);button.onclick=()=>show(i);card.append(button);grid.append(card);
+});
+byId('prev').onclick=()=>show(active-1);byId('next').onclick=()=>show(active+1);
+compare.onclick=toggleCompare;byId('close').onclick=()=>viewer.close();
+document.addEventListener('keydown',e=>{
+ if(!viewer.open||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key==='ArrowRight'){e.preventDefault();show(active+1);}
+ if(e.key==='ArrowLeft'){e.preventDefault();show(active-1);}
+ if(e.key.toLowerCase()==='b'&&!e.repeat){e.preventDefault();toggleCompare();}
+ if(e.key.toLowerCase()==='d'&&!e.repeat){e.preventDefault();toggleInspect();}
+});
+viewer.addEventListener('click',e=>{if(e.target===viewer){const r=viewer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)viewer.close();}});
+</script></body></html>
+

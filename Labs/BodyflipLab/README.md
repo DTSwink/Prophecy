@@ -1,9 +1,207 @@
 # Bodyflip Lab
 
+**Pike steering replacement, November 2 (accepted; ported to Unreal):** removed the rejected
+06 world-chest lock and its winding history. The same optional saved checkbox
+is now labelled **Pike: steer through thrust**. It plans a continuous heading /
+five-spine elevation curve at Armed, mid-stroke and Hit in the moving carrier
+frame, evaluating the actual momentum response. Arm locals, source timing,
+ordinary aim/return and released-contact articulation are retained. Preparation
+is cooperative; no solver is added to the playback pose after momentum balance.
+Entry heading uses the shortest branch; an unconverged fit retains standard aim
+and explicitly reports that in the lab's sequence status instead of applying it.
+
+Current flip400/twist200 numerical motion checks at960Hz pass, including fresh
+reverse seeks and velocity boundaries at Armed, mid-stroke, cut and return-end.
+Added spine rotation peaks at22.82degrees per joint versus44.68 in rejected06;
+aim direction error4.25e-7, arm-local difference<2e-13degrees, momentum residual
+<3.4e-6. Front/rear, opposite/fast/inherited spin and Undo-off cases inspected
+numerically. Off, zero-spin and Slash L poses match the previous paths exactly.
+Production default, fresh reverse, front, original rear and fast-spin checks pass.
+Permanent check: `node Labs/BodyflipLab/verify-pike-steering.mjs` (optional fixture
+and `reverse` argument). Evidence: Saved/Diagnostics/PikeStroke20261102/.
+
+**Limits:** the current stroke still drifts about6.2degrees between fitted points
+(previous standard aim about69degrees); COM-relative contact path still has about
+15.5cm curvature. This is not an exact straight-line constraint or a claim that
+all dynamic movement looks correct. The full3D momentum test failed the bounded
+fit: it now reports unavailability and keeps standard aim. Do not conceal this
+fallback or call full3D Pike steering solved. User specifically clarified that
+stills cannot validate dynamic mistakes; rely on time-dependent checks and never
+claim that still images establish acceptable motion. No new videos were made.
+User accepted the replacement and requested the complete Unreal port and Git
+backup. Current captured setup has steering ON, Pike cut at source frame16,
+flip400/twist200 and a1s attack delay. The live state was read without writes.
+Native build, exact Unreal solver parity and clear-air physical replay pass.
+TestNN is open; the owned Play startup check passed. See Docs/BodyflipNative.md.
+Other earlier elbow-return concerns remain separate.
+
+**Earlier Pike06 visual rejection, November 2 (replaced above):** user reports the unwrapped
+motion tears/corkscrews the upper body. The wrap discontinuity was removed, but
+that did NOT validate the movement. Offline inspection of the reported scene
+with06 enabled measures223.41degrees of extra distributed torso rotation near
+Armed (44.68degrees per spine, on top of authored pose). At Hit it is116.90degrees.
+The full chest-orientation constraint cancels the carrier flip through the spine;
+continuous unwrapping retains the large rotation instead of making it plausible.
+Prior checks for continuity, arm-local preservation, momentum residual and endpoint
+aim missed total torso deformation. Do not claim06 is a satisfactory Pike solution.
+A replacement is not yet validated; do not add another clamp/counter-correction
+or assume the earlier rejected direction-only prototypes are solved.
+Current captured saved scene has06 off. No animation/settings changes during this
+review. Evidence: Saved/Diagnostics/Pike06TorsoReview20261102/torso-correction.json.
+User explicitly said to STOP MAKING VIDEOS; do not generate any unless asked again.
+
+**Earlier Pike06 numerical wrap fix, November 2 (visual result rejected above):** the reported180degree
+branch snap is fixed in the optional **Pike: spine absorbs rotation** path.
+The spine correction retains the equivalent rotation nearest the previous
+completed physical step before applying entry weight / five-spine distribution.
+Only completed fixed steps select winding; momentum trial poses and fractional
+or reverse seeks cannot change it. The physical articulation context now exposes
+its start/timestep; a continued segment starts with its own identity correction.
+The existing return carries the continuous correction and its outgoing velocity.
+
+Exact reported flip400/twist200 case: maximum spine step at960Hz falls from
+141.23degrees to1.94degrees. Forward/rear targets, opposite spin, flip800, and a
+Pike beginning during inherited spin pass through entry, strike and full return.
+Authored arm-local rotations and target direction pass; reported-case momentum
+residual<1e-7. Reverse-order poses match forward exactly. Original reviewed06
+forward/rear poses and checkbox-OFF poses remain position-exact (rotation roundoff
+<1e-13deg). Released-foot-follow regression passes. Permanent regression:
+`node Labs/BodyflipLab/verify-pike-spine-wrap.mjs` (with its regression fixture).
+Evidence: Saved/Diagnostics/Pike06Wrap20261102/verification.json, parity.json,
+per-case traces and 06-wrap-current.mp4 /06-wrap-front.mp4 (1080p60 before/after,
+two normal passes then quarter speed). Rendered frame comparison inspected.
+Only06 rotation-branch handling and physical-context metadata changed; elbow
+files verified untouched. Checkbox remains default OFF; Refresh then enable it
+to inspect. No live scene writes, UI control, Unreal changes or push.
+
+**Earlier scope clarification, November 2:** user meant the06 wrap snap,
+not the elbow-return body reaction. Keep this investigation focused on06.
+The verified cause is `physical-aim.js` taking a fresh shortest quaternion log
+before multiplying by entry weight and distributing it across the five spines.
+At1.80833s the correction is178.00degrees; at1.8125s its axis reverses with
+179.42degrees on the opposite branch. Partial entry weight / spine fractions
+make those equivalent full rotations different partial poses: measured137.75deg
+upper-body jump in4.17ms. A correction needs a continuous rotation path before
+weighting/distribution, including deterministic seeks and return; no additional
+elbow redesign is implied by this request. No animation code changed.
+
+**Earlier Pike rotation-snap investigation, November 2 (06 now fixed above):**
+user reports whole-body rotation snapping after the elbow fixes. Exact captured
+scene still has06 OFF: Pike, flip400/twist200, delay1, F16 cut. The shoulder-transfer
+workaround preserves forearm/hand orientation but moves the arm masses along a
+different path. Momentum compensation responds with a sharp carrier counter-turn.
+Offline controls: peak pelvis rotation839.12deg/s without either elbow protection,
+1154.01 with right-only protection,1220.10 with both. Removing just the shoulder
+transfer in an offline control removes that return burst (817.18deg/s overall
+peak occurs during entry); that diagnostic redirects the hand, so it was NOT
+installed as a fix. Previous elbow/hand/continuity checks were insufficient to
+validate the whole-body response. Do not describe the shoulder-transfer workaround
+as preserving whole-body motion/momentum without this qualification. The return
+needs a coherent legal arm trajectory, not another whole-body counter-correction.
+
+Separate06 failure reproduced in the same scene when enabled offline: at1.8125s
+the shortest rotation log flips across180degrees (178.00deg -> opposite179.42deg).
+Its weighted/distributed spine correction jumps137.75degrees in4.17ms. This is a
+true discontinuity;06 remains default OFF and is not the cause in the saved state.
+Evidence: Saved/Diagnostics/RotationSnap20261102/{fixture,audit,findings}.json/mjs
+and per-variant traces. All production animation hashes verified unchanged during
+this investigation; live scene preserved, no UI/Unreal work or push.
+
+**Earlier Pike other-elbow return fix, November 2 (body reaction now under review):** the earlier protection
+covered only the right/sword arm. In the new captured Pike setup (flip400,
+twist200, attackDelay1, F16 cut,06 off), the left elbow reached79.42degrees
+backwards during return (51.80degrees at the user's paused2.25s frame).
+Both Pike elbows now use the existing extension-braking/shoulder-transfer rule.
+No new clamp or return envelope: the blocked elbow turn passes into its shoulder,
+preserving the combined forearm/hand orientation and outgoing velocity.
+The actual-app960Hz return check now stays above3.55degrees flexion left and
+3.91degrees right. Both-arm audit checks transition orientation preservation,
+other local joints, rigid sockets, aim direction and boundaries. Original F16,
+F17 and four coupled slash return regressions pass; reverse seek is deterministic.
+Rendered before/after return frames inspected. Evidence:
+Saved/Diagnostics/OtherElbow20261102/ (fixture, before/after, verified-current,
+original-cut16/cut17 reports, coupled-returns.txt and comparison.png).
+Production changes are limited to accepting both protected elbow indices and
+passing both for Pike; other attacks retain their previous protection selection.
+Pike06 remains optional/default off. Refresh the lab to load this fix. No live
+settings writes, UI control, Unreal work or push.
+
+**Pike 06 rollback option, November 2:** More options now ends with
+**Pike: spine absorbs rotation** (`pikeSpineAbsorb`), default OFF. Off restores
+pre-06 Pike behavior; on enables the experimental06 articulation. Saved per
+scene, with the existing playback/time-preserving rebuild. Actual-app checks
+pass: exact pre-06 poses off (103 Pike frames), on activates06, off restores the
+baseline, saved on/off values and playback intent retained. The current captured
+scene uses Slash L, flip400/twist200: all176 checked frames are identical with
+the option on/off and pre-06 code. This option only affects Pike.
+Evidence: Saved/Diagnostics/Pike06Toggle20261102/{current-result,pike-result}.txt.
+Refresh to load the checkbox. No live scene writes, UI control, Unreal work or
+push. This supplies the requested rollback; it does not fix the new motion case.
+
+**Earlier Pike 06 installation, November 2 (now opt-in above):** user selected "Spine absorbs
+rotation" and explicitly requested installation. `physical-aim.js` now uses that
+orientation-only spine articulation for Pike with spin. It preserves authored
+arm locals and the accepted return, and composes the existing released-foot
+follow after the spine turn inside momentum balance. Other attacks retain their
+previous articulation. Production matches every archived06 forward/rear displayed
+pose through return within1.3e-13degrees /1.9e-15metres.480Hz continuity, reverse
+seeks,19 attack cuts,19 zero-spin attacks, four coupled weapon returns and physical
+slash aim pass. A focused Pike/contact composition check passes1,780 assertions
+(foot direction error<0.000002degrees, momentum residual<0.000015).
+Evidence: Saved/Diagnostics/Pike06Applied20261102/.
+Residual positional curve and the known faster-spin quaternion-branch limitation
+remain; this is the selected06 behavior, not a general straight-line constraint.
+The user stopped computer control with Escape before the green Refresh button
+could be clicked. Disk code is updated; the existing lab still needs Refresh.
+No live settings were changed by this work; no Unreal work or push.
+
+**Earlier Pike visual review correction, November 2 (before installation):** user reports severe twitching /
+snapping in the attempts except06 (spine absorbs rotation). Retain06 as the only
+candidate; reject01-05/07/08. Previous straightness/momentum/encoded-frame checks
+were insufficient to accept motion. Saved120Hz poses confirm individual bone
+jumps of up to174.45degrees per8.33ms in rejected variants. New06 forward/rear
+480Hz audits show converging pose continuity at Armed/Hit/return-end, identical
+reverse seeks, and authored sword-arm local rotations preserved within1.2e-13deg.
+These checks do not establish a general finished fix: residual curve, faster-spin
+quaternion branches and ground-contact-follow composition remain. No prototype
+installed; no Unreal work. Evidence and decision: Saved/Diagnostics/PikeFlip20261102/
+Videos/review-decision.json and continuity-06-orientation-{forward,back}.json.
+
+**Pike review playback fix, November 2:** the comparison is now served at
+http://127.0.0.1:8877/ by a read-only, allowlisted loopback server with byte-range
+support. This avoids broken relative media paths in the app's local-file preview.
+The page uses that media base and shows loading/playback errors instead of silently
+ignoring them. Open Review.cmd beside the videos restarts the service when needed.
+All nine video range requests pass; actual in-app browser baseline/variant06
+playback reached4.628/4.631s with readyState4. No animation changes.
+
+**Earlier Pike flip experiments, November 2 (before selection/installation):** the current 200-degree/s
+flip rotates the carrier during Armed-to-Hit; endpoint aiming alone does not
+preserve the thrust path. Experimental spine direction/line constraints have
+not passed the full regression set. No prototype was applied to the live lab.
+At the user's request, all eight attempts plus the baseline have archived code
+and forward/rear videos in
+[the local review page](../../Saved/Diagnostics/PikeFlip20261102/Videos/index.html).
+Every numbered MP4 is 1920x1080 at60fps, forward left/rear right, with full entry
+and return, two normal-speed passes and one quarter-speed pass. Camera/settings
+are identical across attempts; the forward case mirrors only target Z. Actual
+direction-dependent transition timing is preserved. A4K60 overview shows all nine.
+Videos were fully decoded and encoded-frame contact sheets inspected. Source,
+fixture, captured pose/mesh data and hashes are retained beside the videos.
+Variant06 preserves current forward/rear momentum but leaves curve;08 has a
+straight rear stroke but fails forward and other spin cases. Rejected prototypes
+can also depend on sampling order. User selection was pending at this stage; see the installed06 status above.
+
 Independent desktop lab, created October 24, 2026. Open **Bodyflip Lab** on the
 Windows desktop, or run `launch.ps1`. The loopback service is
 <http://127.0.0.1:8876/>. It uses its own Edge/Chrome app profile and saved settings.
 Unreal is not required for playback. Jolt and the frozen network weights are local.
+
+November 2 earlier Unreal port: the pre-pike_final solver and captured tuning are packaged
+and normally built. Exact script parity, saved native setup and airborne throws
+pass; one floor-contact Big Throw check remains unresolved. Existing game wiring
+and live lab state were preserved. See [native current handoff](../../Docs/BodyflipNative.md)
+for the saved-setup Blueprint node, build state and measured limits.
 
 UI placement rule: preserve existing controls and their order. Append new options
 at the bottom of the existing section; append horizontal controls on the right.
@@ -35,6 +233,321 @@ dx from yaw; the previously requested inverted vertical mapping still subtracts
 dy from pitch. Horizontal had retained its original sign, rather than being
 changed by the earlier Y edit. Pan, target drag, presets and saved camera remain
 unchanged. App syntax checked.
+
+**Pike source and stroke, November 2 (lab only):** `pike_final.fbx` from the
+user's stepper/ue5/slashes folder supplies Pike in timeline/bodyflips and the
+manual selector. 18 frames at 30 Hz; Armed 9, Hit 16, End 17 unchanged.
+`export_pike.py` validates hierarchy/units and records source SHA256. The
+existing hand-local sword contact gives Hit target
+[-0.2126673301, 0.9288209481, 1.4421885488] metres. The selector uses one new
+authored variant; old variants remain unused on disk. General exports preserve
+this explicit source override.
+
+**Pike restart after rear-target failure (current):** the previous November 2
+path fix was rejected. In the user's exact rear-target setup its unconstrained
+three-parameter fit selected about 119 degrees of torso bend, despite an almost
+zero endpoint direction error. The prior claim of success was insufficient.
+Rejected code, settings and failure evidence are retained under
+Saved/Diagnostics/PikeRestart20261102/rejected-*.
+
+Restarted from the pre-fix attack code. Pike now solves only heading and
+elevation, with elevation around the horizontal right axis after heading.
+The same world turn is held Armed-to-Hit and its pitch is shared over the five
+spines. No independent sideways bend, free roll or full-body-tilt fallback.
+The exact reported rear target now needs about 20.2 degrees of elevation turn.
+The previous wrist-position IK and frozen-shoulder translation correction were
+removed. Original component-quaternion interpolation and arm keys are retained.
+
+Only authored pelvis displacement is restored as whole-rig animation travel;
+it turns with the stroke. It is zero at Armed, matches incoming source velocity,
+and carries outgoing velocity through the existing return duration. Locomotion,
+compensation and skeletal lengths retain their normal paths. The physical
+flight controller continues to own airborne COM and spin, so spinning world
+trajectories are not asserted straight. Pike entry/return references the same
+resting pose shown by the renderer, avoiding a constraint-restoration snap.
+Other attacks, return inertia/tuning, source data and live settings are unchanged.
+
+Trimmed Pike arm return correction (November 2, current): cutting at Hit/source
+F16 retained rapid extension momentum and drove the elbow 81.71 degrees
+backwards. The first elbow-only brake prevented that, but redirected the sword
+upwards because the shoulder continued its old motion. It is superseded.
+
+Pike still plans decay of just the elbow-extension component, with continuous
+outgoing velocity and no post-sample clamp. The blocked relative turn now
+passes into the upper arm: upper-arm * forearm retains the original combined
+rotation. Thus the sword/forearm keep their original orientation and momentum,
+the wrist retains its original local return, and the elbow stays on its normal
+bending side. No independent hand/sword transform or limb stretch. This changes
+Pike's right shoulder together with its elbow only when protection is needed;
+safe F17 returns and all other attack returns are unchanged. Return duration,
+aiming, attack frames and compensation remain on their existing paths.
+
+The captured F16 return retains at least 4.35 degrees of elbow flexion. Actual
+transition comparisons preserve forearm/sword orientations within 6e-14 degrees
+and non-shoulder/elbow joint returns within 4e-14 degrees. Both shoulder and
+elbow outgoing velocities are checked. Full-app return orientation differs from
+the pre-elbow-fix recording by at most 0.0033 degrees (including its tiny timing
+and compensation difference). The updated orientation test rejects the former
+elbow-only implementation, whose sword rotation differs by over 100 degrees.
+
+Current F16 setup, original/distance-weighted return, F17, and F16 twist/flip
+checks pass at 960 Hz; strike direction, boundaries and rigid sockets retained.
+Rendered return inspected; sampled sword/head clearance remains positive for
+F16 with both duration modes and F17. 19 attack-cut and four coupled-return
+regressions pass. Evidence: Saved/Diagnostics/PikeArmReturn20261102/; earlier
+elbow-only diagnostics remain under PikeElbow20261102 for comparison. No live
+state edits, Unreal changes or push.
+
+Verification uses the exact captured rear-target state, the former front state,
+rear-target cut at Hit, original return duration, compensation/transfer toggles,
+and front/rear twist 360 plus combined flip 120/twist 180 (10 app fixtures).
+Each static fixture also moves one cached aim plan around 24 targets (eight
+headings at elevations -45/0/+45). Checks cover direction, steering degrees of
+freedom, torso pitch, fixed Armed-to-Hit turn, socket lengths and entry/return
+boundaries. All pass; the new torso check rejects the discarded implementation.
+24-target maximum tilt is 60.1 degrees, with direction error below 7.51e-9;
+spinning direction error is below 1.96e-7. Full rear entry/strike/return and strike
+meshes rendered and inspected. 19 attack-cut and four coupled-return cases pass.
+
+Current rear stroke chord deviation is 5.04 cm, versus source keys 2.35 cm:
+this is not claimed mathematically straight. Aim adds 0.011 cm in this scene;
+transfer-off adds 0.792 cm, covered by the explicit 1 cm aim-curvature gate.
+The previous fixed-shoulder implementation's smaller path metric is not a reason
+to restore it. Evidence: Saved/Diagnostics/PikeRestart20261102/verification.json,
+rear-final.png, rear-cycle.png and audit-pike-entry.mjs. No live-state writes,
+Unreal work or push. User deferred the final port. Refresh lab to load.
+
+**Pike pre-impact interpolation correction, November 2 (current, local):**
+Captured saved Pike setup (Direct to Armed) at Saved/BodyflipLab/pike-input.json.
+Violent pre-impact swings originated in source subframe interpolation, before
+compensation/aim: separate local forearm/wrist slerps added15.08deg/10.38deg hand
+detours between sourceF14-15/F15-16, where recorded hand keys differ7.14/4.33deg.
+Pike now samples root-normalized component rotations together, then reconstructs
+local joints for retargeting and pelvis transfer. Original integer poses retained;
+source sword direction matches component slerp at subframes within1.2e-13deg,
+with pelvis transfer on/off. Rigid local socket positions retained. Scope is Pike;
+slash/throw/kick interpolation and all return inertia/decay logic stay unchanged.
+Armed0.935847158s and Hit1.169180491s unchanged. Pre-impact authored peak hand
+rotation1432deg/s ->215deg/s; displayed aim peak1650deg/s ->430deg/s during strike.
+Actual rendered Armed-to-Hit contact sheet reviewed at Saved/BodyflipLab/Pike/
+return.png. Current captured-app assertions pass in audit-pike-entry.mjs; all four
+coupled sword-return regressions pass unchanged. No live state writes, native
+work or push. Refresh existing lab to review.
+
+**Coupled forearm/wrist return, November 2 (current, local):**
+User required continuing the trimmed Slash LU fix while retaining existing inertia.
+Return seeding now removes equal opposing axial forearm/wrist rates as a pair,
+relative to the upper arm. Net hand angular velocity, swing rates, starting pose,
+return polynomial/decay and duration policy are retained. Same-sign roll is
+untouched. This applies to the sword arm only for slashes/pike, in original and
+distance-weighted returns. The hand remains forearm-local throughout recovery.
+No independent world-hand override, added damping, speed cap, source interpolation
+change, or after-the-fact wrist clamp. Resting limits may still be exceeded briefly,
+as authorized for attacks. No guarantee of passive articulated momentum conservation.
+Original LU cutoff20: accumulated displayed hand travel about462deg ->260deg.
+Peak wrist limit excess127.7deg ->6.62deg; the small remaining transient is NOT
+claimed strictly within resting limits. LU cutoff21 and Slash L full end23 have
+valid wrists throughout sampled return. Conservative entire-sword mesh/head
+clearance bounds: LU20 >=5.66cm, LU21 >=0.30cm, L23 >=14.15cm (sampled at240Hz).
+Four actual-app cases pass weapon path, continuous pose/hand velocity, and seek
+checks, including zero distance weight. A synthetic counter-roll pair preserves
+net hand inertia to5.5e-16rad; non-cancelling motion remains exactly unchanged.
+All19 attack cutoff tests pass. Actual body/sword contact sheet reviewed. Live
+playback not controlled. Reload lab; no live state writes, native work or push.
+Regression: verify-coupled-weapon-return.mjs with saved original fixture
+../../Saved/BodyflipLab/trimmed-sword-input.json. Separate current Slash L audit:
+audit-sword-wrist.mjs ../../Saved/BodyflipLab/slashL-wrist-input.json final-L.
+
+**Slash L wrist/head regression rollback, November 2 (preceding correction):**
+User reported broken wrist and sword/head penetration in active Slash L (full
+source end23), screenshot at1.55s. The independent world-hand return introduced
+by the last attempt was the cause. It preserved arm motion but broke the wrist's
+relationship to that arm: at1.55s wrist exceeded limits by95.32deg; peak148.2deg.
+Its sword centerline passed9.1cm inside the head capsule during return.
+Removed that complete attempt from core.js/jump-attack.js, restoring both files
+byte-for-byte to pre-sword-fix snapshots (all earlier trim controls retained).
+The established forearm-local wrist return and full original inertia are restored.
+No new braking, clamping, world-hand override or source-interpolation change.
+Actual-app replay of the saved current setup now passes wrist limits throughout
+return (max error2.8e-14deg). A conservative capsule enclosing the entire actual
+sword mesh stays at least14.15cm from the rendered head capsule at240Hz samples.
+Audit: Labs/BodyflipLab/audit-sword-wrist.mjs with fixture
+../../Saved/BodyflipLab/slashL-wrist-input.json; before/after in Saved/BodyflipLab.
+Earlier independent-hand verification is retained as rejected history under
+Saved/BodyflipLab/rejected-independent-hand-verification.mjs, not a passing test.
+The original trimmed Slash LU complaint was not solved by that rollback; the
+coupled correction above supersedes this pending status. Future diagnosis must check
+wrist/forearm coherence and weapon clearance, not merely accumulated sword travel.
+No live state edits or native work; refresh the existing lab.
+
+**Sword return correction, November 2 (REVERTED: wrist/head regression):**
+The rejected braking/return-target projection was fully reverted first. Source
+interpolation was investigated but is unchanged. Existing return curves, decay,
+duration selection, compensation and joint-limit handoff remain unchanged.
+For sword attacks (slashes/pike), only hand_r return orientation now uses the
+actual hand/world quaternion and velocity in the same existing transition curve.
+Forearm-relative counter-twist was previously carried as independent rotational
+inertia, creating excess sword spin. The hand calculation is applied after the
+original compensation/return plan so it does not change body or arm trajectories.
+Throws, kicks and unarmed attacks retain their old path. No velocity clamp or
+new damping policy. No live state edits or native work; refresh lab for review.
+Before/after actual-app comparison on the captured Slash LU cutoff20: attack
+before cut and every non-hand return orientation match within1.25e-16rad;
+all joint positions match, incoming hand velocity and return deadlines retained.
+Checked distance weight0 and0.4, hand pose/velocity joins and deterministic seek.
+At weight0.4 displayed hand accumulated travel462.47deg ->258.21deg; this measures
+total travel, not a shortest-path guarantee. All19 cutoff checks pass. Actual
+renderer body/sword contact sheet reviewed; live user playback not controlled.
+Test: Labs/BodyflipLab/verify-sword-return-inertia.mjs, run with captured fixture
+../../Saved/BodyflipLab/trimmed-sword-input.json; baseline mode uses the pre-attempt
+core/jump-attack snapshots in Saved/BodyflipLab/trimmed-sword-before-*.js.
+
+**Trimmed sword return attempt REVERTED, November 2:**
+User rejected changing the established inertia. Restored core.js and jump-attack.js
+exactly to their pre-attempt state: no added rotation braking or return-target
+projection. Keep existing return inertia, duration, compensation and tuning.
+Earlier reduced-travel test/render are evidence of the rejected attempt only.
+Superseded by the scoped hand-coordinate correction immediately above.
+
+Jump window pin (November 2, local): Pin button appended beside Delete.
+Pinned window stays open on outside clicks, More options and Escape; unpinning
+restores normal dismissal. Other jump markers still select normally; deleting
+the selected jump hides its editor. Pin is session UI state and does not rebuild
+motion or change saved jump tuning. Existing editor checks pass (89 total,
+including pin/dismissal behavior); browser layout not verified. Refresh lab.
+
+## Attack end-frame dropdown - November 2 (current, local)
+
+More options now contains a collapsible Attack end frames section with separate
+source-frame controls for all 19 attacks, including both throws. This replaces
+the single Sweep end frame field. Blank uses existing ending timing; explicit
+cuts are clamped between Hit/Release and the full clip end. Saved attackEndFrames
+map applies to manual and timeline attacks. Existing sweep cutoff migrates;
+throw +frames settings remain the defaults when no per-attack override is set.
+Source playback rate and release timing are unchanged. The selected frame starts
+the existing return, seeded from that pose and velocity. Play intent is preserved.
+Actual-app tests pass for all 19 cutoff/save/return cases and independent reset;
+eight sweep entry/cut continuity cases also pass. Tests intercept state writes;
+no live state edits, native changes or push. Refresh the lab to load the controls.
+Tests: verify-attack-cuts.mjs and verify-sweep-cut.mjs in Labs/BodyflipLab.
+UI follow-up: each attack now occupies its own row with a right-aligned input;
+explicit grid/flex styles fix the inline labels wrapping into neighbouring fields.
+Number inputs now contain the effective default instead of an empty value with
+a placeholder, so native arrow steps start there (Slash RU 24 to 23, not 18).
+Clearing restores the default without storing an override.
+
+## Sweep end frame - November 2 (superseded UI; behavior retained)
+
+User explicitly accepted the sweep including its whole-body aim after the inversion
+explanation. Preserve that behavior. Added Sweep end frame at the bottom of More
+options, using source-animation frames17 (Hit) through35 (original End), default35.
+Global saved sweepKickEndFrame applies to timeline and manual sweep kicks; other
+kicks retain full clips. Entry and native playback rate stay unchanged. Recording
+ends at the selected frame and derives return pose/velocity from that frame,
+using existing Attack return/distance weight. Preview cache includes the cut.
+Early cuts allow aim recovery through the return so cutting at Hit cannot snap
+steering to zero; it always completes by the actual return deadline. Timeline
+source-frame diagnostics stop at the selected frame. Playback intent retained.
+Eight actual-app checks pass across full/direct entry and cuts35/24/18/17:
+aim at Hit, continuous cut/return, save/sanitize and Play/pause preservation.
+Existing full-turn continuity and404 normal-kick comparisons pass. No live state
+writes, native work or push. Refresh existing lab; default35 preserves full clip.
+Test: Labs/BodyflipLab/verify-sweep-cut.mjs.
+
+## Sweep inversion - November 1 (accepted November 2)
+
+User reports upside-down head with forward target after last correction.
+Actual saved frame1.116667s: source pelvis tilt52.77deg, compensated57.46deg,
+aimed126.26deg. At Hit, compensated foot ray points59.06deg below horizontal;
+target ray is20.52deg above. Rigid aim pitches the complete body79.58deg
+(and yaws48.50deg), producing inversion. The whole-body aiming rule preserves
+limb spacing but has no posture preference and allows an upside-down result.
+User subsequently explicitly accepted this behavior on November 2; preserve it.
+No production changes made in this diagnosis. Read-only captured setup:
+Saved/BodyflipLab/SweepFollowup/inverted-input.json; audit-sweep-inversion.mjs.
+
+## Sweep crossing and full-turn interpolation - November 1 (current, local)
+
+User reported compensation making the leg traverse the arms and a whole-body
+hitch at timelineF100-105. Previous strike-only world protection caused the
+first issue: the body/arms counter-rotated into the fixed leg. Sweep balance
+now rotates the complete authored pose together, preserving all local joint
+rotations and arm-to-leg spacing; final aim uses the compensated foot direction.
+This supersedes the prior world-fixed-strike contract for sweeps only. Normal
+KickL/R retain their accepted protection/balance path.
+The hitch originated in recording interpolation, before balance or aim. F0-relative
+unwrapped rotation vectors become singular near the completed360deg turn; at
+sourceF32.5 the interpolator took a13.75deg detour between nearby recorded poses.
+Circular clips now use neighbouring quaternion SQUAD with continuous angular
+velocity; recorded integer-frame orientations are preserved (<2.4e-15rad).
+Current displayed pelvis increments F100-105:1.598,1.251,.955,.731,.571,.460deg,
+progressively slowing. Source hitch before was13.75/13.42deg atF102/103.
+Six actual-app saved-target/aim-off/comp-off/twist+/twist-/flip cases pass;
+arm-leg spacing error<8e-16m, authored local articulation error<9e-16rad,
+final direction error<7e-16.404 normal-kick comparisons match previous code
+within1.6e-16. Current collider sheet reviewed; user live playback not controlled.
+Regression: verify-sweep-continuity.mjs uses the before-source snapshots under
+Saved/BodyflipLab/SweepFollowup; input.json is a read-only live-state capture.
+verify-sweep-current.mjs now checks local strike and arm-leg spacing, rather
+than requiring the rejected world-fixed striking leg. Source FBX unchanged.
+No live writes, native work or push. Refresh the lab for review.
+
+## Sweep kick correction - November 1 (superseded strike protection)
+
+User approved fixing sweep while keeping compensation off the striking motion
+and preserving normal kicks. Circular kicks now use the existing common-body
+momentum solver with the strike chain protected, instead of independently
+folding spine/shoulders/free leg. Authored full body turn retained; only added
+balance fades over Hit-to-End. Motion compensation checkbox works for sweep.
+Sweep aiming rotates the complete compensated pose about COM using heading /
+elevation, preserving all local joints. Steering fades over native follow-through
+(Hit-to-End), so it no longer holds a hip offset until the final short return.
+Spinning sweep aims the predicted compensated result as an explicit rigid command;
+no iterative counter-rotation cancels that turn. It updates carrier/velocity and
+momentum metadata; this prescribed aim is external angular drive, not passive
+conservation. Normal kick/slash/throw steering stays on its accepted path.
+Sweep entry/return uses the projected base that actually takes over afterward,
+removing the reported2.494/1.462deg knee jumps at the final handoff.
+Six offline actual-app cases pass: saved scene, aim off, compensation off, both
+200deg/s twist signs and120deg/s flip. Strike orientation error<4.1e-16rad;
+free joint and aim articulation errors<1e-15rad; hit direction error<5e-16.
+End-handoff difference across +/-1e-7s is~1.07e-6rad (moving fall animation),
+not the previous2.5deg discontinuity.414 normal KickL/R direct/full-entry
+samples match checkpoint b445835d within1.6e-16. Five existing pose+slash /
+kick/throw app regressions pass; playback/save checks pass. Offline actual-mesh
+source/compensated/aimed sheet reviewed; live playback still needs user review.
+Evidence: verify-sweep-current.mjs and Saved/BodyflipLab/SweepCurrent/
+{verification.json,comparison-current.png,audit.json}. No live state writes,
+Unreal/native edits or new push. Refresh existing lab to load the correction.
+
+## Sweep kick audit - November 1 (prior diagnosis)
+
+Accepted Bodyflip checkpoint b445835d was pushed and remote-verified before
+this audit, with recovery inventory verified. Saved-profile captures the user's
+current sweep setup; live state was only read. No sweep implementation changed.
+
+Actual-app offline stage trace in `audit-sweep-current.mjs` uses saved-profile,
+local data and one Jolt world, intercepting all state writes. Evidence is in
+`Saved/BodyflipLab/SweepCurrent/audit.json`. Current setup is Space, direct to
+Armed, no active spin or pose. Source/retarget/balance/integration/aim/projection
+are sampled independently at240Hz; exact return boundary sampled at +/-1e-7s.
+
+- Old articulated balance deforms free hip49.70deg, shoulder33.77deg and
+  spine01 23.51deg at Hit relative to retargeted recording.
+- Aim adds43.26deg at striking hip at Hit, then still47.70deg at sourceF32 and
+  48.10deg at native End. Correction is held through source follow-through,
+  then released with the0.216825s return (Hit1.183333s, End1.783333s).
+- At returnEnd2.000159s, raw kick is continuous but final pose knees jump
+  2.494deg left/1.462deg right when attackFree ends and resting projection
+  resumes. Source/retarget/aim also contain changing velocities; the smaller
+  reported jitter has not yet been isolated to a unique cause.
+
+Proposed correction: retain authored full-body sweep and complete turn, replace
+independent balancing-joint distortion with shared carrier compensation, aim a
+coherent sweep plane and recover steering with the authored follow-through.
+Use one return to the same projected base that takes over afterward. Validate
+entire trajectories and handoff, not only the contact direction or shared-path
+parity. Analysis delivered before implementation per user request.
 
 ## Authored airborne poses - November 1 (current, local)
 

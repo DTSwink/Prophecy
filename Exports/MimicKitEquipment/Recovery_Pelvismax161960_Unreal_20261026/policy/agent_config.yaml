@@ -1,0 +1,38 @@
+agent_name: PPO
+model:
+  actor_net: fc_1024_1024_512
+  actor_init_output_scale: 0.01
+  actor_std_type: FIXED
+  action_std: 0.075
+  critic_net: fc_1024_1024_512
+  auto_phase_unit_output: true
+actor_optimizer:
+  type: Adam
+  learning_rate: 1.125e-06
+  weight_decay: 0.0
+critic_optimizer:
+  type: Adam
+  learning_rate: 0.0001
+  weight_decay: 0.0
+  grad_clip: 10.0
+discount: 0.99
+steps_per_iter: 32
+iters_per_output: 100
+test_episodes: 32
+normalizer_samples: 100000000
+use_mixed_precision: false
+actor_epochs: 5
+actor_batch_size: 4
+critic_epochs: 2
+critic_batch_size: 2
+td_lambda: 0.98
+ppo_clip_ratio: 0.2
+norm_adv_clip: 4.0
+action_bound_weight: 10.0
+action_entropy_weight: 0.0
+action_reg_weight: 0.0
+iters_per_log: 10
+auto_phase_weight: 0.1493611754212674
+actor_kl_limit: 0.18
+actor_kl_probe_size: 2048
+actor_min_learning_rate: 1.0e-07

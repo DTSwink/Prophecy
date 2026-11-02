@@ -1,0 +1,317 @@
+{
+  "status": "WOOD_FINISH_APPLIED_AND_EXPORTED_REVIEW_BUILD",
+  "region": [
+    0,
+    2048,
+    2048,
+    4096
+  ],
+  "patch_size": [
+    2048,
+    2048
+  ],
+  "seed": 27102731,
+  "circumference_mm": 100.0,
+  "axial_mm": 1570.0,
+  "physical_texel_mm": [
+    0.20161290322580644,
+    0.19315944881889763
+  ],
+  "native_size_px": [
+    496,
+    8128
+  ],
+  "strip_count": 4,
+  "strip_native_size_px": [
+    496,
+    2032
+  ],
+  "strip_cell_size_px": [
+    512,
+    2048
+  ],
+  "gutter_px": 8,
+  "strip_length_mm": 392.5,
+  "source_z_top_m": 1.66,
+  "source_z_bottom_m": 0.08999999999999986,
+  "uv_mapping": [
+    {
+      "strip_index": 0,
+      "source_z_top_m": 1.66,
+      "source_z_bottom_m": 1.2674999999999998,
+      "atlas_pixel_box": [
+        8,
+        2056,
+        504,
+        4088
+      ],
+      "atlas_uv_bounds": [
+        0.001953125,
+        0.001953125,
+        0.123046875,
+        0.498046875
+      ]
+    },
+    {
+      "strip_index": 1,
+      "source_z_top_m": 1.2674999999999998,
+      "source_z_bottom_m": 0.8749999999999999,
+      "atlas_pixel_box": [
+        520,
+        2056,
+        1016,
+        4088
+      ],
+      "atlas_uv_bounds": [
+        0.126953125,
+        0.001953125,
+        0.248046875,
+        0.498046875
+      ]
+    },
+    {
+      "strip_index": 2,
+      "source_z_top_m": 0.8749999999999999,
+      "source_z_bottom_m": 0.48249999999999993,
+      "atlas_pixel_box": [
+        1032,
+        2056,
+        1528,
+        4088
+      ],
+      "atlas_uv_bounds": [
+        0.251953125,
+        0.001953125,
+        0.373046875,
+        0.498046875
+      ]
+    },
+    {
+      "strip_index": 3,
+      "source_z_top_m": 0.48249999999999993,
+      "source_z_bottom_m": 0.08999999999999986,
+      "atlas_pixel_box": [
+        1544,
+        2056,
+        2040,
+        4088
+      ],
+      "atlas_uv_bounds": [
+        0.376953125,
+        0.001953125,
+        0.498046875,
+        0.498046875
+      ]
+    }
+  ],
+  "uv_formula": "s=(1.66-z)*1000 mm; j=min(3,floor(s/392.5)); t=(s-j*392.5)/392.5; u=(j*512+8+496*angle_fraction)/4096; v=1-(2048+8+2032*t)/4096. Split geometry at z=1.2675,.875,.4825; separate corner UVs at slice borders.",
+  "gutter_mode": "8px periodic circumference; neighboring native axial rows across strip borders; clamp only at shaft ends",
+  "native_to_packed_interiors_lossless": true,
+  "packed_map_continuity": {
+    "BaseColor": {
+      "u_wrap_max_encoded_error": 0.0,
+      "axial_cut_max_encoded_error": 0.0,
+      "sample_method": "Bilinear boundary samples, all four U wraps and three axial cuts"
+    },
+    "ORM": {
+      "u_wrap_max_encoded_error": 0.0,
+      "axial_cut_max_encoded_error": 0.0,
+      "sample_method": "Bilinear boundary samples, all four U wraps and three axial cuts"
+    },
+    "NormalGL": {
+      "u_wrap_max_encoded_error": 0.0,
+      "axial_cut_max_encoded_error": 0.0,
+      "sample_method": "Bilinear boundary samples, all four U wraps and three axial cuts"
+    },
+    "NormalDX": {
+      "u_wrap_max_encoded_error": 0.0,
+      "axial_cut_max_encoded_error": 0.0,
+      "sample_method": "Bilinear boundary samples, all four U wraps and three axial cuts"
+    },
+    "Height16": {
+      "u_wrap_max_encoded_error": 0.0,
+      "axial_cut_max_encoded_error": 0.0,
+      "sample_method": "Bilinear boundary samples, all four U wraps and three axial cuts"
+    }
+  },
+  "normal_quality": {
+    "length_min_max": [
+      0.9940925240516663,
+      1.0062702894210815
+    ],
+    "maximum_unit_length_error": 0.006270289421081543,
+    "directx_green_exact_inverse": true
+  },
+  "normal_generation": "V7 primary height plus short flow-warped micrograin; V7 normal gain fixed; continuous native gradients before packing; no mesh displacement",
+  "normal_relief_gain": 2.977022428967656,
+  "base_slope_p90": 0.17919397354125977,
+  "target_normal_slope_p90": 0.52,
+  "target_note": "V7 calibration target; V8 adds micrograin without changing the calibrated V7 normal gain",
+  "v7_primary_height_max_error_mm": 3.2335519790649414e-06,
+  "v7_primary_height_unchanged_within_16bit_quantization": true,
+  "micrograin_height_min_max_mm": [
+    -0.024980278685688972,
+    0.024986781179904938
+  ],
+  "micrograin_height_rms_mm": 0.008039845153689384,
+  "micrograin_scale_mm": {
+    "across": [
+      0.3,
+      0.36
+    ],
+    "along": [
+      1.43,
+      2.62
+    ]
+  },
+  "micrograin_albedo_modulation": 0.025,
+  "micrograin_roughness_modulation": 0.015,
+  "effective_normal_height_min_max_mm": [
+    -0.29913055896759033,
+    0.6376558542251587
+  ],
+  "height_preview_physical_size_mm": [
+    100,
+    200
+  ],
+  "height_preview_size_px": [
+    500,
+    1000
+  ],
+  "rounded_rib_count": 96,
+  "rib_fwhm_mm": [
+    0.35,
+    0.85
+  ],
+  "rib_spacing": "Unequal coherent curved bundles, tapered split/rejoin lenses and local deflections",
+  "split_rejoin_lenses": 682,
+  "small_knot_deflections": 10,
+  "shared_flow_lateral_excursion_mm": [
+    3,
+    5
+  ],
+  "shared_flow_axial_span_mm": [
+    25,
+    65
+  ],
+  "axial_fibre_variation_span_mm": [
+    10,
+    35
+  ],
+  "longer_run_fraction": 0.25,
+  "longer_run_span_mm": [
+    30,
+    80
+  ],
+  "short_forks_per_track": [
+    6,
+    8
+  ],
+  "short_fork_separation_mm": [
+    0.6,
+    2.0
+  ],
+  "individual_lateral_flow_mm": 0.8,
+  "individual_flow_axial_span_mm": [
+    15,
+    35
+  ],
+  "shoulder_variation_height_mm": 0.009,
+  "pore_width_mm": [
+    0.3,
+    0.65
+  ],
+  "pore_count": 1050,
+  "cross_check_count": 150,
+  "shallow_dent_count": 75,
+  "height_gain": 1.0,
+  "fine_fibre_count": 420,
+  "fine_fibre_width_mm": [
+    0.22,
+    0.48
+  ],
+  "fine_fibre_run_mm": [
+    12,
+    130
+  ],
+  "polished_crest_mask_mean": 0.2796410918235779,
+  "roughness_behavior": "Polished curved grain ~.28-.38; unpolished valleys ~.55-.65",
+  "correlated_grain_albedo_contrast": 0.17,
+  "albedo_tone_percentiles_05_50_95": [
+    0.8798143267631531,
+    0.9405984580516815,
+    1.2664680063724518
+  ],
+  "authored_wood_ao_added": false,
+  "pore_check_albedo_darkening": [
+    0.13,
+    0.11
+  ],
+  "rib_height_mm": [
+    0.065,
+    0.145
+  ],
+  "base_rgb": [
+    57,
+    29,
+    27
+  ],
+  "height_min_max_mm": [
+    -0.10047978162765503,
+    0.2141924947500229
+  ],
+  "height_peak_to_valley_mm": 0.3146722912788391,
+  "slope_percentiles_50_90_99_max": [
+    0.1544886976480484,
+    0.5334645271301272,
+    0.8606351888179776,
+    1.67054283618927
+  ],
+  "roughness_min_mean_max": [
+    0.2800000011920929,
+    0.5265059471130371,
+    0.6499999761581421
+  ],
+  "specular_min_mean_max": [
+    0.44600000977516174,
+    0.4654473662376404,
+    0.48000001907348633
+  ],
+  "wood_ao_and_metallic_preserved": true,
+  "production_atlases_byte_unchanged": true,
+  "accepted_spearhead_pixels_untouched": true,
+  "source_file_sha256": {
+    "T_ImperialSpear_BaseColor.png": "d01fba254cf163c933faf71e4517063ca75de89592f68e4fa499e48fbf235312",
+    "T_ImperialSpear_ORM.png": "db7fd73bda9cc48a49962dca3f20c1bf39660dfcce8486458bb9058445fbee95",
+    "T_ImperialSpear_NormalGL.png": "387db3bf8406799a3089cb9fef0d8e26a316eaea3a84a4f251cc558e6dbae639",
+    "T_ImperialSpear_NormalDX.png": "73e842cfce4f9cd7dc226ca5827a81bc15fc9502a340363dc258144199bf1588"
+  },
+  "outputs": {
+    "BaseColor": {
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\wood_v8\\Wood_BaseColor.png",
+      "sha256": "b327c15e87e61274dcb7338646ebee5b26b3704b4c6981dc3c36a3e869a9c6cb"
+    },
+    "ORM": {
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\wood_v8\\Wood_ORM.png",
+      "sha256": "c44f721b4a104eb5bbd048b07d12ef873463443027c3bb627f30e4d48925361e"
+    },
+    "NormalGL": {
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\wood_v8\\Wood_NormalGL.png",
+      "sha256": "40047b98a8b28e37a77d3b1e79a21185ccd5b1b74776a2d4642c24ffe71dea6e"
+    },
+    "NormalDX": {
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\wood_v8\\Wood_NormalDX.png",
+      "sha256": "e1d78c3343e88265f868450b6d5227c9cf336ba733a5bda033a691b028755e45"
+    },
+    "Height16": {
+      "path": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\wood_v8\\Wood_Height16.png",
+      "sha256": "7a1e81126f3493b8691c211599df8e37ce7cad23709e44cbf91b1744c69b5520",
+      "decode_mm": "-0.14 + (uint16/65535)*0.42"
+    }
+  },
+  "elapsed_seconds": 6.586454499978572,
+  "generation_status": "STANDALONE V8 PATCHES; REQUIRE FOUR-STRIP SHAFT UV REMAP; NOT APPLIED OR RENDER-VALIDATED",
+  "selected_revision": "wood_v8",
+  "uv_repack_audit": "Wood_UV_Repack_Verification.json",
+  "user_appearance_acceptance_recorded": false
+}

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 import hashlib
@@ -18,7 +19,8 @@ import uuid
 
 import numpy as np
 import soundfile as sf
-from scipy.signal import resample_poly
+from scipy.signal import resample_poly, sosfilt
+from scipy.fft import rfft, irfft, rfftfreq, next_fast_len
 from pedalboard import Pedalboard, Reverb, Compressor, LowShelfFilter, HighShelfFilter, PeakFilter, time_stretch
 
 HERE = Path(__file__).resolve().parent
@@ -27,6 +29,135 @@ DEFAULT_SOURCE = Path.home() / 'Documents' / 'Sounds'
 DEFAULT_TARGET = Path.home() / 'Documents' / 'Sounds Mixed'
 DATA_DIR = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'ProphecySoundStudio'
 EQ_FREQUENCIES = (80, 250, 1000, 4000, 12000)
+EQ_CUT = -61.0  # finite UI/recipe sentinel for zero linear gain (−infinity dB)
+
+
+class RenderCache:
+    """Worker-owned intermediate audio, bounded to 128 MiB per studio."""
+    def __init__(self, max_bytes=128*1024*1024):
+        self.max_bytes = max_bytes
+        self.audio = None
+        self.entries = OrderedDict()
+        self.bytes = 0
+
+    def bind(self,audio):
+        if self.audio is not audio:
+            self.audio = audio
+            self.entries.clear()
+            self.bytes = 0
+
+    def get(self,key):
+        value = self.entries.get(key)
+        if value is None:
+            return None
+        self.entries.move_to_end(key)
+        return value[0].copy(),list(value[1])
+
+    def put(self,key,samples,notes):
+        if samples.nbytes > self.max_bytes:
+            return
+        previous = self.entries.pop(key,None)
+        if previous is not None:
+            self.bytes -= previous[0].nbytes
+        while self.entries and self.bytes+samples.nbytes > self.max_bytes:
+            _,value = self.entries.popitem(last=False)
+            self.bytes -= value[0].nbytes
+        self.entries[key] = samples.copy(),tuple(notes)
+        self.bytes += samples.nbytes
+
+
+def peaking_sos(frequency,gain,q,rate):
+    """Normalized RBJ bell / full-cut coefficients shared with the graph."""
+    w = 2*np.pi*min(frequency,rate*.45)/rate
+    a = 10**((EQ_CUT+.1 if gain <= EQ_CUT else gain)/40)
+    alpha = np.sin(w)/(2*q)
+    # CUT places zeros at the band centre, keeping the deepest finite bell's
+    # poles/width so the last slider step does not jump to a narrower notch.
+    numerator_alpha = 0. if gain <= EQ_CUT else alpha*a
+    coefficients = np.array([1+numerator_alpha,-2*np.cos(w),1-numerator_alpha,
+                             1+alpha/a,-2*np.cos(w),1-alpha/a],dtype=np.float64)
+    return coefficients/coefficients[3]
+
+
+def apply_tone_eq(samples,rate,settings):
+    sections = []
+    if settings.highpass:
+        # FFmpeg's previous default width is exactly Q=0.707, not sqrt(0.5).
+        w = 2*np.pi*settings.highpass/rate
+        cosine = np.cos(w)
+        alpha = np.sin(w)/(2*.707)
+        highpass = np.array([(1+cosine)/2,-1-cosine,(1+cosine)/2,
+                             1+alpha,-2*cosine,1-alpha])
+        sections.append(highpass/highpass[3])
+    for f,g,q in zip(settings.eq_frequencies[1:4],settings.eq[1:4],settings.eq_q[1:4]):
+        if g:
+            sections.append(peaking_sos(f,g,q,rate))
+    if not sections:
+        return samples
+    return sosfilt(np.asarray(sections),samples,axis=0).astype(np.float32)
+
+
+def apply_compression(samples,rate,amount):
+    """One-knob downward compression with linked stereo and exact off bypass."""
+    if not amount:
+        return samples
+    detector = np.max(np.abs(samples),axis=1)
+    peak = float(np.max(detector,initial=0))
+    if peak == 0:
+        return samples
+    # Normalize only the detector: the threshold follows the clip's level, so
+    # quiet assets respond too. The audio never receives automatic makeup gain.
+    detector /= peak
+    compressor = Compressor(threshold_db=-30*amount,ratio=1+7*amount,
+                            attack_ms=10,release_ms=120)
+    compressed = compressor(detector,rate)
+    gain = np.divide(compressed,detector,out=np.ones_like(detector),where=detector>0)
+    np.clip(gain,0,1,out=gain)
+    return samples*gain[:,None]
+
+
+def edge_eq_response(settings, rate, frequencies):
+    """Outer handles hold their gain all the way to DC / Nyquist.
+
+    Transition toward the centre only, with a smooth log-frequency shoulder.
+    This exact response is shared by processing and the displayed EQ curve.
+    """
+    response = np.ones_like(frequencies, dtype=np.float64)
+    for index in (0, 4):
+        gain = settings.eq[index]
+        if gain == 0:
+            continue
+        frequency = min(settings.eq_frequencies[index], rate*.45)
+        width = np.clip(.85/settings.eq_q[index], .25, 2.)
+        distance = np.log2(np.maximum(frequencies, 1e-20)/frequency)
+        if index == 4:
+            distance = -distance
+        t = np.clip(distance/width, 0, 1)
+        # Quintic smoothstep: no overshoot, with flat first/second derivatives.
+        shoulder = t*t*t*(t*(6*t-15)+10)
+        floor = 0. if gain <= EQ_CUT else 10**(gain/20)
+        response *= floor + (1-floor)*shoulder
+    return response
+
+
+def apply_edge_eq(samples, rate, settings, cancel=None):
+    if settings.eq[0] == 0 and settings.eq[4] == 0:
+        return samples
+    # Silence padding prevents treating the clip end/start as a joined loop.
+    # Process channels independently to bound memory; preserve sample alignment.
+    padding = 2*rate
+    size = next_fast_len(len(samples)+2*padding, real=True)
+    response = edge_eq_response(settings,rate,rfftfreq(size,1/rate)).astype(np.float32)
+    output = np.empty_like(samples)
+    for channel in range(samples.shape[1]):
+        check_cancel(cancel)
+        padded = np.zeros(size,dtype=np.float32)
+        padded[padding:padding+len(samples)] = samples[:,channel]
+        spectrum = rfft(padded,workers=1,overwrite_x=True)
+        spectrum *= response
+        filtered = irfft(spectrum,n=size,workers=1,overwrite_x=True)
+        output[:,channel] = filtered[padding:padding+len(samples)]
+    return output
 
 
 class Cancelled(Exception):
@@ -61,8 +192,8 @@ def atomic_json(path, value):
 class Settings:
     start: float = 0.0
     end: float = 0.0  # zero means full source length
-    fade_in_ms: float = 5.0
-    fade_out_ms: float = 5.0
+    fade_in_ms: float = 0.0
+    fade_out_ms: float = 0.0
     pitch: float = 0.0
     speed: float = 1.0
     eq: tuple = (0.0, 0.0, 0.0, 0.0, 0.0)
@@ -72,14 +203,15 @@ class Settings:
     reverb: float = 0.0
     room: float = 0.35
     polish: float = 0.0
+    compression: float = 0.0
     denoise: float = 0.0
     noise_floor: float = -60.0
     gain_db: float = 0.0
     normalize: bool = False
     normalize_db: float = -3.0
-    protect: bool = True
-    sample_rate: int = 48000  # zero means source rate
-    subtype: str = 'PCM_16'
+    protect: bool = False
+    sample_rate: int = 0  # zero means source rate
+    subtype: str = 'SOURCE'
     channels: str = 'Keep source'
     reverse: bool = False
     formants: bool = False
@@ -195,21 +327,23 @@ def statistics(samples, rate):
 def validate(settings, audio):
     s = settings
     scalars = [s.start, s.end, s.fade_in_ms, s.fade_out_ms, s.pitch, s.speed, *s.eq, *s.eq_frequencies, *s.eq_q,
-               s.highpass, s.reverb, s.room, s.polish, s.denoise, s.noise_floor, s.gain_db, s.normalize_db]
+               s.highpass, s.reverb, s.room, s.polish, s.compression, s.denoise, s.noise_floor, s.gain_db, s.normalize_db]
     if not all(math.isfinite(float(x)) for x in scalars):
         raise ValueError('All audio controls must be finite numbers.')
     if not (0 <= s.start < (s.end or audio.duration) <= audio.duration + 1e-6):
         raise ValueError('Trim end must be after trim start and inside the source.')
     if not (-12 <= s.pitch <= 12 and .5 <= s.speed <= 2):
         raise ValueError('Pitch must be within ±12 semitones; speed within 50–200%.')
-    if len(s.eq) != 5 or any(abs(x) > 12 for x in s.eq):
-        raise ValueError('Each of the five EQ bands must be within ±12 dB.')
+    if len(s.eq) != 5 or any(not EQ_CUT <= x <= 12 for x in s.eq):
+        raise ValueError('All EQ bands allow CUT through +12 dB.')
     if len(s.eq_frequencies) != 5 or any(not 20 <= x <= 20000 for x in s.eq_frequencies):
         raise ValueError('EQ frequencies must be between 20 Hz and 20 kHz.')
     if len(s.eq_q) != 5 or any(not .2 <= x <= 8 for x in s.eq_q):
         raise ValueError('EQ width Q must be between 0.2 and 8.')
     if not (0 <= s.reverb <= .5 and 0 <= s.room <= 1 and 0 <= s.polish <= 1):
         raise ValueError('Invalid reverb or polish amount.')
+    if not 0 <= s.compression <= 1:
+        raise ValueError('Compression must be between 0 and 100%.')
     if not (0 <= s.denoise <= 12 and -80 <= s.noise_floor <= -20):
         raise ValueError('Invalid noise reduction setting.')
     if not (0 <= s.fade_in_ms <= 10000 and 0 <= s.fade_out_ms <= 10000 and 0 <= s.highpass <= 500):
@@ -218,11 +352,11 @@ def validate(settings, audio):
         raise ValueError('Invalid output level setting.')
     if s.sample_rate not in (0, 44100, 48000, 96000):
         raise ValueError('Unsupported export sample rate.')
-    if s.subtype not in ('PCM_16', 'PCM_24', 'FLOAT') or s.channels not in ('Keep source', 'Mono', 'Stereo'):
+    if s.subtype not in ('SOURCE', 'PCM_16', 'PCM_24', 'FLOAT') or s.channels not in ('Keep source', 'Mono', 'Stereo'):
         raise ValueError('Unsupported WAV format or channel mode.')
 
 
-def render(audio, settings, cancel=None, progress=lambda text: None):
+def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipping_preview=False, cache=None):
     validate(settings, audio)
     s = settings
     check_cancel(cancel)
@@ -230,79 +364,102 @@ def render(audio, settings, cancel=None, progress=lambda text: None):
     a, b = round(s.start * audio.rate), round((s.end or audio.duration) * audio.rate)
     if b <= a:
         raise ValueError('The trim must contain at least one sample.')
-    x = audio.samples[a:b].copy()
+    prefix_key = ('prepared',s.start,s.end,s.reverse,s.channels,s.pitch,s.speed,s.formants,s.denoise,s.noise_floor)
+    wet_key = ('wet',prefix_key,s.highpass,tuple(s.eq),tuple(s.eq_frequencies),tuple(s.eq_q),
+               s.polish,s.fade_in_ms,s.fade_out_ms,s.reverb,s.room)
+    if cache is not None:
+        cache.bind(audio)
+    cached_wet = cache.get(wet_key) if cache is not None else None
     rate = audio.rate
-    notes = []
-    if s.reverse:
-        x = x[::-1].copy()
-    if s.channels == 'Mono' and x.shape[1] == 2:
-        x = np.mean(x, axis=1, keepdims=True)
-        notes.append('Stereo averaged to mono; check phase cancellation by ear.')
-    elif s.channels == 'Stereo' and x.shape[1] == 1:
-        x = np.repeat(x, 2, axis=1)
-    filters = []
-    if s.pitch or s.speed != 1:
-        progress('Changing pitch / speed with offline Rubber Band R3…')
-        # Two-pass offline processing retains the complete clip and exact intended duration.
-        x = time_stretch(np.ascontiguousarray(x.T), rate, stretch_factor=s.speed,
-                         pitch_shift_in_semitones=s.pitch, high_quality=True,
-                         preserve_formants=s.formants).T.copy()
+    if cached_wet is not None:
+        x,notes = cached_wet
+    else:
+        cached_prepared = cache.get(prefix_key) if cache is not None else None
+        if cached_prepared is not None:
+            x,notes = cached_prepared
+        else:
+            x = audio.samples[a:b].copy()
+            rate = audio.rate
+            notes = []
+            if s.reverse:
+                x = x[::-1].copy()
+            if s.channels == 'Mono' and x.shape[1] == 2:
+                x = np.mean(x, axis=1, keepdims=True)
+                notes.append('Stereo averaged to mono; check phase cancellation by ear.')
+            elif s.channels == 'Stereo' and x.shape[1] == 1:
+                x = np.repeat(x, 2, axis=1)
+            filters = []
+            if s.pitch or s.speed != 1:
+                progress('Changing pitch / speed with offline Rubber Band R3…')
+                # Two-pass offline processing retains the complete clip and exact intended duration.
+                x = time_stretch(np.ascontiguousarray(x.T), rate, stretch_factor=s.speed,
+                                 pitch_shift_in_semitones=s.pitch, high_quality=True,
+                                 preserve_formants=s.formants).T.copy()
+                check_cancel(cancel)
+            if s.denoise:
+                # afftdn's 3-hop overlap-add window delays audio by 2 hops and does not
+                # flush its own tail. Feed silence, then compensate in samples (not ms).
+                # This is essential for clicks/impacts and clips shorter than 25 ms.
+                hop = rate // 80
+                filters += [f'apad=pad_len={3*hop}',
+                            f'afftdn=nr={s.denoise}:nf={s.noise_floor}:tn=0:gs=5:nl=min',
+                            f'atrim=start_sample={2*hop}:end_sample={2*hop+len(x)}', 'asetpts=PTS-STARTPTS']
+                notes.append('Noise reduction is optional; compare transients and quiet tails with the original.')
+            if filters:
+                x, rate = ffmpeg_filter(x, rate, filters, cancel)
+            if cache is not None:
+                cache.put(prefix_key,x,notes)
         check_cancel(cancel)
-    if s.denoise:
-        # afftdn's 3-hop overlap-add window delays audio by 2 hops and does not
-        # flush its own tail. Feed silence, then compensate in samples (not ms).
-        # This is essential for clicks/impacts and clips shorter than 25 ms.
-        hop = rate // 80
-        filters += [f'apad=pad_len={3*hop}',
-                    f'afftdn=nr={s.denoise}:nf={s.noise_floor}:tn=0:gs=5:nl=min',
-                    f'atrim=start_sample={2*hop}:end_sample={2*hop+len(x)}', 'asetpts=PTS-STARTPTS']
-        notes.append('Noise reduction is optional; compare transients and quiet tails with the original.')
-    if s.highpass:
-        filters.append(f'highpass=f={s.highpass}:poles=2')
-    for f, gain, q in zip(s.eq_frequencies, s.eq, s.eq_q):
-        if gain:
-            # Below Nyquist even for low-rate source WAVs.
-            freq = min(f, rate * .45)
-            filters.append(f'equalizer=f={freq}:t=q:w={q}:g={gain}')
-    if filters:
-        x, rate = ffmpeg_filter(x, rate, filters, cancel)
-    if not len(x):
-        raise ValueError('This combination produced no audio. Use a longer trim.')
-    if s.polish:
-        progress('Applying gentle polish…')
-        amount = s.polish
-        board = Pedalboard([
-            LowShelfFilter(cutoff_frequency_hz=140, gain_db=-.7*amount),
-            PeakFilter(cutoff_frequency_hz=320, gain_db=-1.5*amount, q=.8),
-            HighShelfFilter(cutoff_frequency_hz=min(6500, rate*.35), gain_db=1.5*amount),
-            Compressor(threshold_db=-18, ratio=1+.8*amount, attack_ms=25, release_ms=140),
-        ])
-        x = board(np.ascontiguousarray(x.T), rate).T.copy()
-        notes.append('Polish: gentle low-mid cut, air shelf and slow-attack compression; no AI or automatic loudness boost.')
+        x = apply_tone_eq(x, rate, s)
+        x = apply_edge_eq(x, rate, s, cancel)
+        if not len(x):
+            raise ValueError('This combination produced no audio. Use a longer trim.')
+        if s.polish:
+            progress('Applying gentle polish…')
+            amount = s.polish
+            board = Pedalboard([
+                LowShelfFilter(cutoff_frequency_hz=140, gain_db=-.7*amount),
+                PeakFilter(cutoff_frequency_hz=320, gain_db=-1.5*amount, q=.8),
+                HighShelfFilter(cutoff_frequency_hz=min(6500, rate*.35), gain_db=1.5*amount),
+                Compressor(threshold_db=-18, ratio=1+.8*amount, attack_ms=25, release_ms=140),
+            ])
+            x = board(np.ascontiguousarray(x.T), rate).T.copy()
+            notes.append('Polish: gentle low-mid cut, air shelf and slow-attack compression; no AI or automatic loudness boost.')
+        check_cancel(cancel)
+        # Times are in output milliseconds, independent of speed. Overlap is allowed.
+        for fade_ms, at_end in ((s.fade_in_ms, False), (s.fade_out_ms, True)):
+            n = min(len(x), round(fade_ms * rate / 1000))
+            if n:
+                ramp = np.sin(np.linspace(0, math.pi/2, n, dtype=np.float32)) ** 2
+                if at_end:
+                    x[-n:] *= ramp[::-1, None]
+                else:
+                    x[:n] *= ramp[:, None]
+        if s.reverb:
+            progress('Rendering reverb and its tail…')
+            # Freeverb is offline, stereo-linked; append silence to flush internal delay lines.
+            tail = int(rate * (2 + 8*s.room))
+            padded = np.pad(x, ((0, tail), (0, 0)))
+            board = Pedalboard([Reverb(room_size=.15+.7*s.room, damping=.55, wet_level=s.reverb,
+                                      dry_level=1-s.reverb, width=1, freeze_mode=0)])
+            x = board(np.ascontiguousarray(padded.T), rate).T.copy()
+            active = np.flatnonzero(np.max(np.abs(x), axis=1) > 1e-5)
+            end = min(len(x), max(len(padded)-tail, (int(active[-1])+int(.04*rate)) if len(active) else 0))
+            x = x[:end]
+            n = min(len(x), max(2, round(.01*rate)))
+            x[-n:] *= np.linspace(1, 0, n, dtype=np.float32)[:, None]
+            notes.append('Reverb tail retained after the trimmed clip; fades shape the dry clip before reverb.')
+        if cache is not None:
+            cache.put(wet_key,x,notes)
     check_cancel(cancel)
-    # Times are in output milliseconds, independent of speed. Overlap is allowed.
-    for fade_ms, at_end in ((s.fade_in_ms, False), (s.fade_out_ms, True)):
-        n = min(len(x), round(fade_ms * rate / 1000))
-        if n:
-            ramp = np.sin(np.linspace(0, math.pi/2, n, dtype=np.float32)) ** 2
-            if at_end:
-                x[-n:] *= ramp[::-1, None]
-            else:
-                x[:n] *= ramp[:, None]
-    if s.reverb:
-        progress('Rendering reverb and its tail…')
-        # Freeverb is offline, stereo-linked; append silence to flush internal delay lines.
-        tail = int(rate * (2 + 8*s.room))
-        padded = np.pad(x, ((0, tail), (0, 0)))
-        board = Pedalboard([Reverb(room_size=.15+.7*s.room, damping=.55, wet_level=s.reverb,
-                                  dry_level=1-s.reverb, width=1, freeze_mode=0)])
-        x = board(np.ascontiguousarray(padded.T), rate).T.copy()
-        active = np.flatnonzero(np.max(np.abs(x), axis=1) > 1e-5)
-        end = min(len(x), max(len(padded)-tail, (int(active[-1])+int(.04*rate)) if len(active) else 0))
-        x = x[:end]
-        n = min(len(x), max(2, round(.01*rate)))
-        x[-n:] *= np.linspace(1, 0, n, dtype=np.float32)[:, None]
-        notes.append('Reverb tail retained after the trimmed clip; fades shape the dry clip before reverb.')
+    # Outside the wet cache: compression drags reuse pitch, EQ, polish and reverb.
+    if s.compression:
+        progress('Applying compression…')
+        x = apply_compression(x,rate,s.compression)
+        notes.append(f'Compression {s.compression:.0%}: linked channels, '
+                     f'{1+7*s.compression:.2f}:1 ratio, threshold {30*s.compression:.1f} dB below clip peak, '
+                     '10 ms attack / 120 ms release; no makeup gain.')
+    check_cancel(cancel)
     x *= np.float32(10 ** (s.gain_db / 20))
     final_rate = s.sample_rate or rate
     if final_rate != rate:
@@ -326,22 +483,35 @@ def render(audio, settings, cancel=None, progress=lambda text: None):
             reduction = db(ceiling / peak)
             x *= np.float32(ceiling / peak)
             notes.append(f'Peak protection applied {reduction:.2f} dB globally to preserve dynamics.')
-    if s.subtype != 'FLOAT':
-        bits = 16 if s.subtype == 'PCM_16' else 24
+    export_blocked = None
+    subtype = output_subtype(audio, s)
+    unchanged = rate == audio.rate and subtype == audio.subtype and np.array_equal(x, audio.samples[a:b])
+    if subtype.startswith('PCM_') and not unchanged:
+        bits = {'PCM_U8':8, 'PCM_16':16, 'PCM_24':24, 'PCM_32':32}[subtype]
         scale = 2 ** (bits-1)
         if np.max(np.abs(x), initial=0) >= 1:
-            raise ValueError('The integer WAV would clip. Enable peak protection or reduce gain.')
-        # Reproducible TPDF dither: preview and export have exactly the same samples.
-        rng = np.random.default_rng(0x50524F50)
-        out = x.astype(np.float64)
-        out += (rng.random(x.shape) - rng.random(x.shape)) / scale
-        out = np.rint(out * scale)
-        x = (np.clip(out, -scale, scale-1) / scale).astype(np.float32)
+            export_blocked = 'The integer WAV would clip. Enable peak protection or reduce gain.'
+            if not allow_clipping_preview:
+                raise ValueError(export_blocked)
+        else:
+            # Reproducible TPDF dither: preview and export have exactly the same samples.
+            rng = np.random.default_rng(0x50524F50)
+            out = x.astype(np.float64)
+            out += (rng.random(x.shape) - rng.random(x.shape)) / scale
+            out = np.rint(out * scale)
+            x = (np.clip(out, -scale, scale-1) / scale).astype(np.float32)
     metrics = statistics(x, rate)
     metrics['protection_gain_db'] = reduction
     metrics['notes'] = notes
+    metrics['export_blocked'] = export_blocked
     check_cancel(cancel)
     return x, rate, metrics
+
+
+def output_subtype(audio, settings):
+    if settings.subtype != 'SOURCE':
+        return settings.subtype
+    return audio.subtype if audio.subtype in ('PCM_U8','PCM_16','PCM_24','PCM_32','FLOAT','DOUBLE') else 'FLOAT'
 
 
 def output_stem(name):
@@ -366,10 +536,12 @@ def save_render(audio, settings, result, target, name, cancel=None):
     if not audio.path.exists() or file_hash(audio.path) != audio.sha256:
         raise ValueError('The source file changed or moved after loading. Select it again before generating.')
     x, rate, metrics = result
+    if metrics.get('export_blocked'):
+        raise ValueError(metrics['export_blocked'])
     temp = target / ('.soundstudio-' + uuid.uuid4().hex + '.tmp')
     destination = None
     try:
-        sf.write(temp, x, rate, subtype=settings.subtype, format='WAV')
+        sf.write(temp, x, rate, subtype=output_subtype(audio, settings), format='WAV')
         check_cancel(cancel)
         for number in range(1, 100000):
             suffix = '' if number == 1 else f'_{number:03d}'

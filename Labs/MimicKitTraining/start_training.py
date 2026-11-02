@@ -49,7 +49,13 @@ def main():
         if args.source_package:
             assert args.source_sha256 and hashlib.sha256(args.source_package.read_bytes()).hexdigest()==args.source_sha256
             with zipfile.ZipFile(args.source_package) as package:
-                current={entry:hashlib.sha256(package.read(entry)).hexdigest() for entry in current}
+                # An explicitly pinned package carries its own runtime inventory;
+                # newer modules in another branch must not invalidate that package.
+                inventory={}
+                exec(compile(package.read('pipeline/uefn_package.py'),'packaged_uefn_inventory','exec'),inventory)
+                entries=inventory['runtime_files'](root)
+                assert 'pipeline/train.py' in entries and 'pipeline/uefn_engine.py' in entries
+                current={entry:hashlib.sha256(package.read(entry)).hexdigest() for entry in entries}
         preflight+='\nimport hashlib\nfor entry,digest in '+repr(current)+'.items():\n    assert hashlib.sha256((r/entry).read_bytes()).hexdigest()==digest, "Stale UEFN runtime; deploy current source before training: "+entry\n'
     cloud.ssh('python -c ' + shlex.quote(preflight))
     for helper in ('billing_stop.py','failure_stop.py'):

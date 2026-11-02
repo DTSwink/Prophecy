@@ -30,6 +30,8 @@ class Recorder:
         self.data=torch.empty((self.capacity,3),device=env._device)
         self.components=torch.empty((self.capacity,env.loss_terms.shape[1]),device=env._device) if hasattr(env,'loss_terms') else None
         self.impacts=torch.empty((self.capacity,3),device=env._device) if getattr(env,'floor_impact_limit_n',None) is not None else None
+        self.pelvis_target_values=torch.empty((self.capacity,3),device=env._device) if getattr(env,'world_pelvis_termination',False) else None
+        self.pelvis_window_values=torch.empty((self.capacity,3),device=env._device) if hasattr(env,'_pelvis_window') else None
         self.count=0
         self.enabled=False
         self.capture_seconds=0.0
@@ -56,6 +58,10 @@ class Recorder:
             ang=self.engine.get_body_ang_vel(self.char)[self.world]
             vel=self.engine.get_body_vel(self.char)[self.world]-torch.cross(ang,q.quat_rotate(self.pose[i,:,3:],self.env._body_com[self.world]),dim=-1)
             self.absolute_velocities[i].copy_(torch.cat([vel,ang,self.env.reward_target_vel[self.world],self.env.reward_target_ang[self.world]],-1))
+        if self.pelvis_target_values is not None:self.pelvis_target_values[i].copy_(getattr(self.env,'_pelvis_target_world',self.env._ref_body_pos[:,self.env._pelvis_id])[self.world])
+        if self.pelvis_window_values is not None:
+            w=self.env._pelvis_window
+            self.pelvis_window_values[i].copy_(torch.stack((w.radius[self.world],w.ready[self.world].float(),w.age[self.world].float())))
         self.data[i,0].copy_(self.env._done_buf[self.world])
         self.data[i,1].copy_(self.env._time_buf[self.world])
         self.data[i,2].copy_(self.env._reward_buf[self.world])
@@ -120,6 +126,11 @@ class Recorder:
             metadata.update(extra_metadata)
         metadata.update(getattr(self,'equipment_metadata',{}))
         arrays={}
+        if self.pelvis_target_values is not None:
+            metadata['frame_world_pelvis_target']=self.pelvis_target_values[:n].cpu().tolist()
+        if self.pelvis_window_values is not None:
+            metadata['frame_pelvis_window']=self.pelvis_window_values[:n].cpu().tolist()
+            metadata['pelvis_window_columns']=['horizontal_radius_m','horizontal_check_active','window_age_ticks']
         if self.prior_values is not None:
             prior=self.prior_values[:n].cpu().numpy()
             metadata.update(frame_ae_raw=prior[:,0].tolist(),frame_tracking_mix=prior[:,1].tolist(),
@@ -181,6 +192,12 @@ class Recorder:
                         points=[dict(point, radius_m=radii.get(point['body'], metadata['target_radius_m']))
                                 for point in metadata['target_deviation']['points']
                                 if active_bodies is None or point['body'] in active_bodies])
+                rule = metadata.get('target_deviation', {})
+                motion_radii = rule.get('radius_by_motion_m', {}).get(metadata.get('motion_name'))
+                if motion_radii is not None:
+                    metadata['target_deviation'] = dict(rule,
+                        points=[dict(point, radius_m=motion_radii[point['body']])
+                                for point in rule['points'] if motion_radii.get(point['body']) is not None])
                 metadata['rollout_losses']=dict(zip((*self.env.loss_term_names,'total'),[*map(float,totals),float(totals.sum())]))
             elif hasattr(self.env,'loss_term_names'):
                 names=self.env.loss_term_names

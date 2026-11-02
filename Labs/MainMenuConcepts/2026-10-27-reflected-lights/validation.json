@@ -1,0 +1,175 @@
+{
+  "summary": {
+    "count": 20,
+    "unique": 20,
+    "dimensions": [
+      "1672x941",
+      "1671x941"
+    ],
+    "totalBytes": 34469534.0,
+    "MiB": 32.87,
+    "referenceMatches": true
+  },
+  "images": [
+    {
+      "id": "01",
+      "file": "01-softened-white.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1681270,
+      "sha256": "DBB3CFF06DD793D7E42016795BAD1C8CD4698F0E1B332A19D70D3120C310C42D"
+    },
+    {
+      "id": "02",
+      "file": "02-fine-silver-threads.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1722188,
+      "sha256": "848CBBB64105B1889AC9324DA44F34DDE09559F320C0BECB25C31F561C9F6E6E"
+    },
+    {
+      "id": "03",
+      "file": "03-broad-soft-glow.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1790577,
+      "sha256": "EBDC50299997DD897F25DFF289CF4414013BF24FFB5AF9C84DEDCF4C0FE5B652"
+    },
+    {
+      "id": "04",
+      "file": "04-short-glints.png",
+      "width": 1671,
+      "height": 941,
+      "bytes": 1677039,
+      "sha256": "C1A21F48964C74132F58C0FF8B9D8A1E8E28AE3F3F94A0FA0B0CF140CC4D99C8"
+    },
+    {
+      "id": "05",
+      "file": "05-long-silver-trails.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1762153,
+      "sha256": "97E5A0E2566BF269F8F73ABEBB28FC7D2A0EEF72E6762D91DF5A420715CFA5BD"
+    },
+    {
+      "id": "06",
+      "file": "06-single-right-light.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1645666,
+      "sha256": "2EF6BCBC49E7E35B7B0386B17757CCD9A1B80996DDF8031AFF25C0570F534B8F"
+    },
+    {
+      "id": "07",
+      "file": "07-twin-framing-lights.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1683107,
+      "sha256": "14909BDDB1FE8FE553478F725B8BE06391A42A0DBCC3DB4AE453401AECEBF165"
+    },
+    {
+      "id": "08",
+      "file": "08-three-uneven-lights.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1718906,
+      "sha256": "1DAE755B24045B296114F3AFD1743DC9AFFC449CE84F096273278E7FC5136644"
+    },
+    {
+      "id": "09",
+      "file": "09-edge-lights.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1710731,
+      "sha256": "9AD95A56E0C4B6A6EB3478CCE70DD7120A9D6796A8E709A9995AFD392FCCD906"
+    },
+    {
+      "id": "10",
+      "file": "10-right-side-cluster.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1680761,
+      "sha256": "C17ABF8F5F440481A5EE33F890D2D5DBA93B0B8CEA13252FA6C19B3EB2CC726A"
+    },
+    {
+      "id": "11",
+      "file": "11-large-softbox.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1814462,
+      "sha256": "5D1BD6239F8148A77D466DEBF1B39EF3B1F057F9C4B89A363659CD4EB9354995"
+    },
+    {
+      "id": "12",
+      "file": "12-horizontal-ribbons.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1768207,
+      "sha256": "2B9F5EC551A28A257BE7DA5212FB7C8297EAFC138164543A3FA86A9651263416"
+    },
+    {
+      "id": "13",
+      "file": "13-soft-oval-pools.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1740272,
+      "sha256": "25B2F61C3E7CB4A9756951DD3F574CADD687C4C212B1C26672C29548EF793FF5"
+    },
+    {
+      "id": "14",
+      "file": "14-segmented-light.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1651694,
+      "sha256": "496EE32A044324C7D814BBC72CBD2292B71295721315CE65B31D8C7ACF83B339"
+    },
+    {
+      "id": "15",
+      "file": "15-slanted-soft-strips.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1735785,
+      "sha256": "94379A349BA49AC99E4CB58CAF979AF393788646EFEF17CE1C592C5BAF977F49"
+    },
+    {
+      "id": "16",
+      "file": "16-cool-pearl.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1751939,
+      "sha256": "0D8F1EA8EEB759A499A6C54E9402A4074D09C20AC05B5C62C93D38684E46BCB9"
+    },
+    {
+      "id": "17",
+      "file": "17-warm-ivory.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1748793,
+      "sha256": "38B2DC46D69B4B0EBD6F72AABDA3232803372214E7DAE457D1653EF6FB9D976D"
+    },
+    {
+      "id": "18",
+      "file": "18-pale-lavender.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1772341,
+      "sha256": "751D96B4116460E9D13EA0C747171A3F43275794DBE1E4E55E16AE1CE2E13947"
+    },
+    {
+      "id": "19",
+      "file": "19-silver-and-lavender.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1705357,
+      "sha256": "BB317B8DD1FC7B0C0F6AB816AD9A9747E1CF22B1BA9045D673D372C8A52033F2"
+    },
+    {
+      "id": "20",
+      "file": "20-warm-cool-pair.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1708286,
+      "sha256": "870909091FB48FF43EB3F48EBE6E27E8158F7421DAE035E4B385362D119512C7"
+    }
+  ]
+}

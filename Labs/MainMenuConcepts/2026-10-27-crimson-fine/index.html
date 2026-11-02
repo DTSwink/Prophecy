@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crimson / 20 close refinements</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#100d12;color:#f1ebef}*{box-sizing:border-box}body{margin:0}
+header{padding:32px 4vw 22px;border-bottom:1px solid #34242e}header small{letter-spacing:.18em;color:#c9a4bc}h1{font:36px Georgia,serif;margin:10px 0}p{color:#b7aab2;line-height:1.5}
+a{color:#e7b9d7}header nav{display:flex;flex-wrap:wrap;gap:20px}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;padding:22px 4vw}
+h2{grid-column:1/-1;font:28px Georgia,serif;scroll-margin-top:20px;margin:24px 0 0}
+article{border:1px solid #3c2b36;border-radius:8px;overflow:hidden;background:#1a141b}
+button{font:inherit;color:inherit;cursor:pointer}article button{padding:0;width:100%;border:0;text-align:left;background:transparent}
+article button:hover{background:#2b1e2a}article img{display:block;width:100%;aspect-ratio:1672/941;object-fit:contain;background:#050405}
+.meta{padding:15px 18px}.meta b{color:#d2a3c2;margin-right:12px}.meta p{font-size:13px;margin:8px 0 0}
+footer{padding:20px 4vw 32px;color:#aa9ba6;font-size:13px}
+dialog{border:1px solid #58404f;background:#100c12;color:#fff;padding:12px;width:97vw;max-width:1900px;max-height:97vh}
+dialog::backdrop{background:#000e}dialog nav{display:flex;align-items:center;gap:10px;padding:0 0 10px;flex-wrap:wrap}
+dialog strong{flex:1;min-width:180px}dialog button{border:1px solid #58404f;background:#2a1d28;border-radius:5px;padding:8px 13px}
+#compare[aria-pressed=true]{background:#6d375b;border-color:#efbce0}
+#large{width:100%;height:calc(91vh - 110px);object-fit:contain;display:block;background:#060406}#detail{font-size:13px;margin:9px 4px 0}
+button:focus-visible,a:focus-visible{outline:2px solid #e4b0d7;outline-offset:3px}
+@media(min-width:1900px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){main{grid-template-columns:1fr}h1{font-size:29px}#large{height:auto;max-height:70vh}}
+</style></head>
+<body>
+<header><small>GROUND REFINEMENT / 27 OCTOBER 2026</small>
+<h1>Crimson / 20 close refinements</h1>
+<p>Small changes to your selected surface. The menu, character and composition remain consistent.</p>
+<nav><a href="#colour">01–05 Colour</a><a href="#pattern">06–10 Pattern</a><a href="#reflections">11–15 Reflections</a><a href="#water">16–20 Water</a></nav>
+<p>Click to enlarge. Arrow keys browse. Press <b>B</b> or use <b>Compare reference</b> to switch to your selected image. Esc closes.</p>
+</header>
+<main id="grid"></main>
+<footer><a href="reference-selected.png">Your selected reference</a> · <a href="manifest.json">Full prompts and provenance</a> · Generated with built-in imagegen.</footer>
+<dialog id="viewer" aria-label="Concept preview">
+<nav><button id="prev" aria-label="Previous concept">←</button><strong id="caption"></strong><button id="next" aria-label="Next concept">→</button><button id="compare" aria-pressed="false">Compare reference (B)</button><a id="original" target="_blank">Open image</a><button id="close">Close</button></nav>
+<img id="large" alt=""><p id="detail"></p></dialog>
+<script>
+const items=[{"id":"01","title":"Deep garnet","group":"Colour","detail":"A slightly deeper wine-red ground, with the same bright water glints.","file":"01-deep-garnet.png"},{"id":"02","title":"Clear ruby","group":"Colour","detail":"A cleaner ruby red with slightly less orange in the lit areas.","file":"02-clear-ruby.png"},{"id":"03","title":"Warm carmine","group":"Colour","detail":"A small warmer shift in the red, still dark and restrained.","file":"03-warm-carmine.png"},{"id":"04","title":"Smoked crimson","group":"Colour","detail":"Slightly quieter saturation while preserving the red identity.","file":"04-smoked-crimson.png"},{"id":"05","title":"Velvet depth","group":"Colour","detail":"Darker crimson shadows with unchanged bright red areas.","file":"05-velvet-depth.png"},{"id":"06","title":"Broader clouds","group":"Pattern","detail":"Larger, slower-flowing dark shapes beneath the water.","file":"06-broader-clouds.png"},{"id":"07","title":"Finer marbling","group":"Pattern","detail":"Smaller flowing red-and-black shapes with no extra surface roughness.","file":"07-finer-marbling.png"},{"id":"08","title":"Long currents","group":"Pattern","detail":"A gentle directional flow in the submerged pattern.","file":"08-long-currents.png"},{"id":"09","title":"Soft transitions","group":"Pattern","detail":"Softer edges between the dark and red areas.","file":"09-soft-transitions.png"},{"id":"10","title":"Clear crimson fields","group":"Pattern","detail":"Fewer black swirls and more uninterrupted red surface.","file":"10-clear-crimson-fields.png"},{"id":"11","title":"Quieter glare","group":"Reflections","detail":"Less intense white glare, with the same glossy surface.","file":"11-quieter-glare.png"},{"id":"12","title":"Narrow glints","group":"Reflections","detail":"Slimmer specular streaks and more visible red between them.","file":"12-narrow-glints.png"},{"id":"13","title":"Soft lustre","group":"Reflections","detail":"A slightly satin finish beneath the clear water.","file":"13-soft-lustre.png"},{"id":"14","title":"Glass depth","group":"Reflections","detail":"A little more optical depth in the red material.","file":"14-glass-depth.png"},{"id":"15","title":"Balanced sheen","group":"Reflections","detail":"A gentler central reflection with more delicate side glints.","file":"15-balanced-sheen.png"},{"id":"16","title":"Still water","group":"Water","detail":"Calmer water while retaining the small rings at the feet.","file":"16-still-water.png"},{"id":"17","title":"Fine ripple silk","group":"Water","detail":"Smaller, tightly spaced ripples over the same floor.","file":"17-fine-ripple-silk.png"},{"id":"18","title":"Long gentle ripples","group":"Water","detail":"Broader, lower waves with fewer broken highlights.","file":"18-long-gentle-ripples.png"},{"id":"19","title":"Footfall rings","group":"Water","detail":"The subtle circular rings around the feet become more legible.","file":"19-footfall-rings.png"},{"id":"20","title":"Quiet foreground","group":"Water","detail":"Calmer water near the camera, subtle movement near the character.","file":"20-quiet-foreground.png"}];
+const byId=id=>document.getElementById(id);
+const grid=byId('grid'),viewer=byId('viewer'),large=byId('large'),caption=byId('caption'),original=byId('original'),compare=byId('compare'),detail=byId('detail');
+let active=0,comparing=false;
+const reference=new Image();reference.src='reference-selected.png';
+function render(){
+ const item=items[active];
+ large.src=comparing?'reference-selected.png':item.file;
+ large.alt=comparing?'Selected reference':item.id+' — '+item.title;
+ caption.textContent=comparing?'Selected reference · comparing with '+item.id:item.id+' — '+item.title;
+ original.href=large.getAttribute('src');
+ compare.setAttribute('aria-pressed',String(comparing));
+ compare.textContent=comparing?'Back to variation (B)':'Compare reference (B)';
+ detail.textContent=item.detail;
+}
+function show(index){
+ active=(index+items.length)%items.length;comparing=false;render();
+ if(!viewer.open)viewer.showModal();
+ const preload=new Image();preload.src=items[(active+1)%items.length].file;
+}
+function toggleCompare(){comparing=!comparing;render();}
+items.forEach((item,i)=>{
+ if(i===0||items[i-1].group!==item.group){
+  const heading=document.createElement('h2');heading.id=item.group.toLowerCase();
+  heading.textContent=item.id+'–'+items[Math.min(i+4,items.length-1)].id+' / '+item.group;grid.append(heading);
+ }
+ const card=document.createElement('article'),button=document.createElement('button'),img=document.createElement('img'),meta=document.createElement('div'),number=document.createElement('b'),description=document.createElement('p');
+ img.src=item.file;img.alt=item.id+' — '+item.title;img.loading='lazy';img.width=1672;img.height=941;img.style.height='auto';
+ meta.className='meta';number.textContent=item.id;description.textContent=item.detail;
+ meta.append(number,document.createTextNode(item.title),description);button.append(img,meta);button.onclick=()=>show(i);card.append(button);grid.append(card);
+});
+byId('prev').onclick=()=>show(active-1);byId('next').onclick=()=>show(active+1);
+compare.onclick=toggleCompare;byId('close').onclick=()=>viewer.close();
+document.addEventListener('keydown',e=>{
+ if(!viewer.open||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key==='ArrowRight'){e.preventDefault();show(active+1);}
+ if(e.key==='ArrowLeft'){e.preventDefault();show(active-1);}
+ if(e.key.toLowerCase()==='b'&&!e.repeat){e.preventDefault();toggleCompare();}
+});
+viewer.addEventListener('click',e=>{if(e.target===viewer){const r=viewer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)viewer.close();}});
+</script></body></html>
+

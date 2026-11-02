@@ -4,10 +4,10 @@
 const node=typeof module!=='undefined',R=node?require('./recovery.js'):root.Recovery,C=node?require('./core.js'):root.BodyflipCore,H=node?require('./attack-inertia.js'):root.BodyflipAttackInertia,K=node?require('./airborne-motion.js'):root.BodyflipAirborneMotion;
 const cache=new WeakMap(),clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x));};
 const accepts=name=>C.effector(name).startsWith('foot_');
-function preview({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false,timingPose=reference}){
+function preview({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false,timingPose=reference,compensation=true,endFrame=clip.poses.length-1}){
  let entries=cache.get(clip);if(!entries){entries=[];cache.set(clip,entries);}
- const found=entries.find(e=>e.reference===reference&&e.lead===lead&&e.tail===tail&&e.directArmed===directArmed&&e.timingPose===timingPose);if(found)return found;
- const track=K.recording({clip,names,parents,reference,lead,tail,directArmed,timingPose}),pelvis=names.indexOf('pelvis');
+ const found=entries.find(e=>e.reference===reference&&e.lead===lead&&e.tail===tail&&e.directArmed===directArmed&&e.timingPose===timingPose&&e.compensation===compensation&&e.endFrame===endFrame);if(found)return found;
+ const track=K.recording({clip,names,parents,reference,lead,tail,directArmed,timingPose,endFrame}),pelvis=names.indexOf('pelvis');
  let limb=names.indexOf(C.effector(clip.meta.name));while(limb>=0&&parents[limb]!==pelvis)limb=parents[limb];
  if(limb<0)throw Error('Kick needs a striking leg');
  const turn=K.bodyTurn(track,names,reference);
@@ -16,13 +16,19 @@ function preview({clip,names,parents,reference,lead=.18,tail=.45,directArmed=fal
  // keeps playing. Returning the pelvis's absolute Hit orientation erased
  // the rest of a turn and bent the torso against the recovering pelvis.
  const balanceEnd=Math.max(track.end,hitTime+tail);
- const conserved=K.createBalanced({source:turn.remove,names,parents,reference,duration:track.stop+1.2,strikeRoot:limb,strikeWeight:track.strikeWeight,recoveryStart:hitTime,recoveryEnd:balanceEnd});
+ // Preserve the complete circular sweep under one common balance rotation.
+ // Protecting only the leg rotated the arms through its unchanged trajectory.
+ const sweepPlane=clip.meta.circular===true;
+ const conserved=sweepPlane?K.create({source:turn.remove,names,parents,reference,duration:track.stop+1.2,recoveryStart:hitTime,recoveryEnd:balanceEnd}):K.createBalanced({source:turn.remove,names,parents,reference,duration:track.stop+1.2,strikeRoot:limb,strikeWeight:track.strikeWeight,recoveryStart:hitTime,recoveryEnd:balanceEnd});
  const response=turn.restore(conserved);
- const result={track,response,hitTime,reference,lead,tail,directArmed,timingPose};entries.push(result);if(entries.length>8)entries.shift();return result;
+ if(sweepPlane&&!compensation)response.sample=response.uncorrected;
+ const result={track,response,hitTime,reference,lead,tail,directArmed,timingPose,compensation,sweepPlane,endFrame};entries.push(result);if(entries.length>8)entries.shift();return result;
 }
 function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,directArmed=false,returnSettings={}}){
+ const sweepPlane=clip.meta.circular===true;
+ if(sweepPlane){const Target=node?require('./target-rig.js'):root.BodyflipTargetRig,project=Target.create(names,parents,reference).project,source=base;base=t=>project(source(t));}
  tail=C.attackReturn(returnSettings,tail).horizon;
- const plan=preview({clip,names,parents,reference,lead,tail,directArmed,timingPose:directArmed?base(start):reference}),{track,response}=plan,pelvis=names.indexOf('pelvis'),rest=R.localize(reference.points,reference.q,parents);
+ const plan=preview({clip,names,parents,reference,lead,tail,directArmed,timingPose:directArmed?base(start):reference,compensation:returnSettings.motionCompensation!==false,endFrame:C.attackEndFrame(returnSettings,clip.meta.name,clip.meta.phases.hit,clip.poses.length-1)}),{track,response}=plan,pelvis=names.indexOf('pelvis'),rest=R.localize(reference.points,reference.q,parents);
  const returnPolicy=C.attackReturn(returnSettings,tail),end=start+track.end,returnEnd=end+returnPolicy.horizon,hitTime=start+plan.hitTime;
  function active(time){
   const baseline=base(time),age=time-start;if(age<=0||time>=returnEnd)return baseline;
@@ -36,8 +42,10 @@ function create({clip,names,parents,reference,base,start=0,lead=.18,tail=.45,dir
   result.points=result.points.map(p=>R.add(p,shift));result.points[0]=baseline.points[0].slice();return result;
  }
  function sample(time){if(time<start||time>=returnEnd)return base(time);const pose=active(time);return {...pose,attackFree:true};}
- const result={returnPolicy,sample,start,end,returnEnd,hitTime,plan,armedTime:start+track.armedTime,fullBodyKick:true,arming:track.arming};
- const J=node?require('./jump-attack.js'):root.BodyflipJumpAttack;return J.distanceReturn(result,base,clip,names,parents,returnSettings,reference,true);
+ const result={returnPolicy,sample,start,end,returnEnd,hitTime,plan,armedTime:start+track.armedTime,fullBodyKick:true,sweepPlane,aimRecoveryStart:sweepPlane?hitTime:undefined,aimRecoveryEnd:sweepPlane?Math.max(end,hitTime+tail):undefined,arming:track.arming};
+ const J=node?require('./jump-attack.js'):root.BodyflipJumpAttack;const final=J.distanceReturn(result,base,clip,names,parents,returnSettings,reference,true);
+ if(sweepPlane)final.aimRecoveryEnd=Math.min(final.returnEnd,result.aimRecoveryEnd);
+ return final;
 }
 const api={accepts,preview,create};if(node)module.exports=api;else root.BodyflipKickAttack=api;
 })(globalThis);

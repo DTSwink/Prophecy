@@ -14,6 +14,14 @@ static bool PreserveTickPinningHinge()
     return true;
 #endif
 }
+static void DiscardFootIKWalkPinCache(const AProphecyAgent* Agent,ProphecyWalkPinning::FTickPinning* Cache)
+{
+    // Reset normally restores the old Walk base into the pose store. Foot IK
+    // already owns that store, so discard the obsolete base without replaying
+    // it over the newly published terrain pose. Keep the user's pin settings.
+    if(Cache)Cache->HasBase=false;
+    ProphecyWalkPinning::ResetTickPinning(Agent);
+}
 static void MoveTickPinningEndpoint(const FPelvisLegGeometry& G,int32 O,
     const FVector3f& Shift,const float* Source,float* Changed,bool ClampOuter,bool Preserve,const float* StableReference=nullptr)
 {
@@ -69,6 +77,7 @@ void AProphecyNNLocomotionManager::UpdateWalkTickPinning(float DeltaSeconds)
     for(int32 Index=0;Index<AgentActors.Num();++Index)
     {
         const AProphecyAgent* A=AgentActors[Index];auto* T=ProphecyWalkPinning::FindTickPinning(A);
+        if(ProphecyFootIK::Active(A) || ProphecyBodyflip::Active(A)){DiscardFootIKWalkPinCache(A,T);continue;}
         if(!T || !T->HasBase)continue;
         const auto* S=ProphecyWalkPinning::FindSmoothing(A);
         auto& Agent=Impl->Agents[Index];
@@ -143,6 +152,7 @@ void AProphecyNNLocomotionManager::CommitWalkTickPinning()
     {
         if(Clock && !Clock->Step->Due[Index])continue;
         const AProphecyAgent* A=AgentActors[Index];auto* T=ProphecyWalkPinning::FindTickPinning(A);
+        if(ProphecyFootIK::Active(A) || ProphecyBodyflip::Active(A)){DiscardFootIKWalkPinCache(A,T);continue;}
         if(!T || !T->HasBase)continue;
         const auto& Agent=Impl->Agents[Index];
         if(!A->bNNInferenceEnabled || (Agent.Slash.bActive && !Agent.Slash.bHalf) || Agent.DefensePose)continue;

@@ -1,0 +1,10 @@
+{
+  "major_long_fibres": 50,
+  "roughness_and_specular_unchanged": true,
+  "normal_depth_mm": 0.015,
+  "outside_wood_sha256": {
+    "T_ImperialSpear_BaseColor.png": "668f90b89502614c128b78110b3269a302d0a13763cddcba3fe2e7d420e060a8",
+    "T_ImperialSpear_NormalGL.png": "db9f0b811f2a92587f805109b2430b2ef26385bfdf7f4c547b559456046997e0",
+    "T_ImperialSpear_NormalDX.png": "fc48d9c5d5f14d56b43c4be35810dda61b6c7d8bd45208dfbe942dbe9cb854c9"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "scope": "Offline stair planner extent sensitivity, using the same fixed cached NN input. No runtime change; surface sessions are separate.",
+  "coreSha256": "7587560821de5bb278ffaecc06175cf926321187eae664cbcde1107a9d3bd0e4",
+  "bankSha256": {
+    "walk": "55bb17afeeba04c963e9189b45a596066414242d304d2340db963b7f486d3086",
+    "run": "5ca392d9dfb559ac75075c1f92cc15e9e0c62553c3999109fc830e483e53f7e7"
+  },
+  "cases": [
+    {
+      "gait": "walk",
+      "settings": {
+        "gait": "walk",
+        "phase": 0.21,
+        "terrain": "stairs",
+        "clearance": 1,
+        "height": 16,
+        "depth": 35,
+        "steps": 12
+      },
+      "shortEndTime": 1,
+      "extendedEndTime": 5,
+      "sampleHz": 120,
+      "maxPrefixDifferenceMeters": 0.10809210646600015,
+      "worst": {
+        "frame60": 60,
+        "joint": "foot_r"
+      },
+      "maxBoundaryDifferenceMeters": 0.10809210646600015,
+      "blindSpliceStepMeters": 0.07807196215806175,
+      "acceptedNextStepMeters": 0.04109496465879192,
+      "shortBoundaryStates": [
+        "ROLL",
+        "SWING"
+      ],
+      "fullBoundaryStates": [
+        "ROLL",
+        "SWING"
+      ]
+    },
+    {
+      "gait": "walk",
+      "settings": {
+        "gait": "walk",
+        "phase": 0.21,
+        "terrain": "stairs",
+        "clearance": 1,
+        "height": 16,
+        "depth": 35,
+        "steps": 12
+      },
+      "shortEndTime": 1.5,
+      "extendedEndTime": 5,
+      "sampleHz": 120,
+      "maxPrefixDifferenceMeters": 0.1656850714387458,
+      "worst": {
+        "frame60": 88.5,
+        "joint": "foot_l"
+      },
+      "maxBoundaryDifferenceMeters": 0.16282103136881504,
+      "blindSpliceStepMeters": 0.1941496719687208,
+      "acceptedNextStepMeters": 0.033197599605711565,
+      "shortBoundaryStates": [
+        "SWING",
+        "ROLL"
+      ],
+      "fullBoundaryStates": [
+        "SWING",
+        "SWING"
+      ]
+    },
+    {
+      "gait": "run",
+      "settings": {
+        "gait": "run",
+        "phase": 0.21,
+        "terrain": "stairs",
+        "clearance": 1,
+        "height": 16,
+        "depth": 35,
+        "steps": 12
+      },
+      "shortEndTime": 1,
+      "extendedEndTime": 5,
+      "sampleHz": 120,
+      "maxPrefixDifferenceMeters": 0.5564684133788389,
+      "worst": {
+        "frame60": 60,
+        "joint": "foot_r"
+      },
+      "maxBoundaryDifferenceMeters": 0.5564684133788389,
+      "blindSpliceStepMeters": 0.6087838030259418,
+      "acceptedNextStepMeters": 0.06401065954590239,
+      "shortBoundaryStates": [
+        "SWING",
+        "SWING"
+      ],
+      "fullBoundaryStates": [
+        "SWING",
+        "SWING"
+      ]
+    },
+    {
+      "gait": "run",
+      "settings": {
+        "gait": "run",
+        "phase": 0.21,
+        "terrain": "stairs",
+        "clearance": 1,
+        "height": 16,
+        "depth": 35,
+        "steps": 12
+      },
+      "shortEndTime": 1.5,
+      "extendedEndTime": 5,
+      "sampleHz": 120,
+      "maxPrefixDifferenceMeters": 0.5173099698860899,
+      "worst": {
+        "frame60": 79.5,
+        "joint": "foot_l"
+      },
+      "maxBoundaryDifferenceMeters": 0.1427435315768721,
+      "blindSpliceStepMeters": 0.19659631871045172,
+      "acceptedNextStepMeters": 0.059391118705479695,
+      "shortBoundaryStates": [
+        "NN",
+        "NN"
+      ],
+      "fullBoundaryStates": [
+        "SWING",
+        "NN"
+      ]
+    }
+  ],
+  "consequence": "Full-span contact fitting, swing endpoints, knee/pelvis lookahead and minimum-curvature fitting can revise the prefix when duration changes. A blind prefix/tail splice is unsafe; preserving the existing stair motion requires its existing lookahead until a causal boundary-state planner is implemented."
+}

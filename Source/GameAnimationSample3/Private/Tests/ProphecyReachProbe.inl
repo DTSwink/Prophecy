@@ -2,6 +2,7 @@
 #include "HAL/IConsoleManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "UObject/Package.h"
 #include "ProphecyReachWristProbe.inl"
 #include "ProphecyReachLabPortProbe.inl"
 #include "ProphecyReachCheckpointProbe.inl"

@@ -32,10 +32,11 @@ function curve(values,f){
   const a=1-u;return a*values[i][axis]+u*values[i+1][axis]+((a*a*a-a)*d[i]+(u*u*u-u)*d[i+1])/6;
  });
 }
-function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false,timingPose=reference}){
+function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=false,timingPose=reference,endFrame=clip.poses.length-1}){
  // Direct mode times the current-to-Armed angular travel against GT.
  // Post-Armed source time still advances at 1x.
  const sourceStart=directArmed?clip.meta.phases.armed:0;
+ const sourceEnd=Math.round(clamp(endFrame,clip.meta.phases.hit,clip.poses.length-1));
 
  const locals=clip.poses.map(p=>R.localize(p.points,p.q,parents)),rest=R.localize(reference.points,reference.q,parents),pelvis=names.indexOf('pelvis');
  const hinges=H.legHinges(names,reference),kneeCurves=[];
@@ -52,11 +53,26 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
   }
   kneeCurves.push({h,bends,restBend});
  }
+ // Interpolate circular clips between neighbouring quaternions. A rotation
+ // vector measured from F0 is singular when the completed turn approaches 2pi:
+ // tiny changes of its axis become large detours between otherwise nearby keys.
+ const spherical=clip.meta.circular===true,quaternions=spherical?names.map((_,j)=>locals.map(p=>p.q[j])):null;
+ const controls=quaternions?.map(keys=>keys.map((q,i)=>{
+  if(i===0||i===keys.length-1)return q;
+  const a=qlog(qm(qinv(q),keys[i-1])),b=qlog(qm(qinv(q),keys[i+1]));return qm(q,qexp(mul(add(a,b),-.25)));
+ }));
+ function sphericalAt(keys,tangents,f){
+  const last=keys.length-1;
+  if(f<0)return qm(keys[0],qexp(mul(qlog(qm(qinv(keys[0]),keys[1])),f)));
+  if(f>last)return qm(keys[last],qexp(mul(qlog(qm(qinv(keys[last-1]),keys[last])),f-last)));
+  const i=Math.min(last-1,Math.floor(f)),u=f-i;
+  return R.qslerp(R.qslerp(keys[i],keys[i+1],u),R.qslerp(tangents[i],tangents[i+1],u),2*u*(1-u));
+ }
  const vectors=names.map((_,j)=>locals.map(p=>qlog(qm(p.q[j],qinv(locals[0].q[j])))));
  // Unwrap the same rotation-vector branch before interpolation.
  for(const a of vectors)for(let i=1;i<a.length;i++){const n=length(a[i]);if(n>1e-8){const axis=mul(a[i],1/n),turns=Math.round(dot(sub(a[i-1],a[i]),axis)/(2*Math.PI));a[i]=add(a[i],mul(axis,turns*2*Math.PI));}}
  function at(frame){
-  const q=vectors.map((v,j)=>unit(qm(qexp(curve(v,frame)),locals[0].q[j])));
+  const q=spherical?quaternions.map((keys,j)=>sphericalAt(keys,controls[j],frame)):vectors.map((v,j)=>unit(qm(qexp(curve(v,frame)),locals[0].q[j])));
   for(const {h,bends,restBend} of kneeCurves)q[h.knee]=qm(rest.q[h.knee],qexp(mul(h.kneeAxis,curve(bends,frame)[0]-restBend)));
   q[0]=rest.q[0];q[pelvis]=qm(qm(rest.q[pelvis],qinv(locals[0].q[pelvis])),q[pelvis]);
   return R.fk({p:rest.p,q},parents);
@@ -70,7 +86,7 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
   const indices=names.map((_,i)=>i).filter(i=>{if(i===pelvis)return true;for(let j=i;j>=0;j=parents[j])if(j===spine||j===strike)return true;return false;});
   arming=Entry.plan({from,targetAt:f=>{const p=at(f);return R.localize(p.points,p.q,parents);},armed:sourceStart,fps:clip.meta.fps,indices,names,minimum:lead});lead=arming.duration;
  }
- const duration=(clip.poses.length-1)/clip.meta.fps,end=lead+duration-sourceStart/clip.meta.fps,stop=end+tail;
+ const duration=sourceEnd/clip.meta.fps,end=lead+duration-sourceStart/clip.meta.fps,stop=end+tail;
  const h=1e-4;
  // Interpolate in hierarchy-local rotation space, preserving hinge axes and
  // sockets. Match the target's velocity/acceleration to avoid stopping at Armed.
@@ -101,12 +117,12 @@ function recording({clip,names,parents,reference,lead=.18,tail=.45,directArmed=f
  // Brake the terminal motion without carrying its sideways velocity through
  // most of the return. Critical decay preserves the initial derivative; a C2
  // end window reaches the reference pose without a hard stop or knee spread.
- const last=R.localize(at(clip.poses.length-1).points,at(clip.poses.length-1).q,parents),before=R.localize(at((duration-h)*clip.meta.fps).points,at((duration-h)*clip.meta.fps).q,parents),before2=R.localize(at((duration-2*h)*clip.meta.fps).points,at((duration-2*h)*clip.meta.fps).q,parents);
+ const last=R.localize(at(sourceEnd).points,at(sourceEnd).q,parents),before=R.localize(at((duration-h)*clip.meta.fps).points,at((duration-h)*clip.meta.fps).q,parents),before2=R.localize(at((duration-2*h)*clip.meta.fps).points,at((duration-2*h)*clip.meta.fps).q,parents);
  const errors=last.q.map((q,i)=>qlog(qm(q,qinv(rest.q[i])))),prevErrors=before.q.map((q,i)=>qlog(qm(q,qinv(rest.q[i])))),prev2Errors=before2.q.map((q,i)=>qlog(qm(q,qinv(rest.q[i])))),rates=errors.map((v,i)=>mul(add(sub(mul(v,3),mul(prevErrors[i],4)),prev2Errors[i]),1/(2*h))),accelerations=errors.map((v,i)=>mul(add(sub(v,mul(prevErrors[i],2)),prev2Errors[i]),1/(h*h)));
  const exit=t=>{const x=clamp(t/tail,0,1),window=1-x*x*x*(10+x*(-15+6*x)),w=8/tail,decay=Math.exp(-w*t);return R.fk({p:rest.p,q:rest.q.map((q,i)=>{const a=errors[i],b=add(rates[i],mul(a,w)),c=mul(add(add(accelerations[i],mul(rates[i],2*w)),mul(a,w*w)),.5);return qm(qexp(mul(add(add(a,mul(b,t)),mul(c,t*t)),decay*window)),q);})},parents);};
  function sample(t){if(t<=0)return reference;if(t<lead)return entry(t);if(t<=end)return at(sourceStart+(t-lead)*clip.meta.fps);if(t<stop)return exit(t-end);return reference;}
  const strikeWeight=t=>{const x=clamp((t-end)/tail,0,1);return 1-x*x*x*(10+x*(-15+6*x));};
- return {sample,at,lead,end,stop,clip,hinges,arming,strikeWeight,directArmed,sourceStart,armedTime:lead+(clip.meta.phases.armed-sourceStart)/clip.meta.fps,sourceFrame:t=>sourceStart+Math.max(0,t-lead)*clip.meta.fps};
+ return {sample,at,lead,end,stop,clip,hinges,arming,strikeWeight,directArmed,sourceStart,sourceEnd,armedTime:lead+(clip.meta.phases.armed-sourceStart)/clip.meta.fps,sourceFrame:t=>sourceStart+Math.max(0,t-lead)*clip.meta.fps};
 }
 // Treat the authored heading as a prescribed body turn, independent of the
 // zero-spin balance solve for articulation. Sampling/unwrapping a scalar yaw
@@ -136,7 +152,7 @@ function bodyTurn(track,names,reference){
  }
  return {rotationAt,remove,restore};
 }
-function create({source,names,parents,reference,duration,sampleRate=120,angularMomentum=[0,0,0],trajectory=null,preserve=[]}){
+function create({source,names,parents,reference,duration,sampleRate=120,angularMomentum=[0,0,0],trajectory=null,preserve=[],recoveryStart=Infinity,recoveryEnd=Infinity}){
  const rig=H.model(names,parents,reference),dt=1/sampleRate,count=Math.ceil(duration/dt),first=source(0),origin=center(H.bodies(first,rig),rig),comAt=trajectory||(()=>origin),states=[{q:[0,0,0,1],rate:[0,0,0]}];
  const chains=preserve.map(({bone,weight=()=>1})=>{
   if(!(bone>0&&bone<names.length))throw Error('Preserved strike needs a valid limb root');
@@ -185,7 +201,7 @@ function create({source,names,parents,reference,duration,sampleRate=120,angularM
   const c=qm(qexp(mul(v0,dt/3)),a),d=qm(qexp(mul(v1,-dt/3)),b),s=R.qslerp;
   return s(s(s(a,c,u),s(c,d,u),u),s(s(c,d,u),s(d,b,u),u),u);
  }
- function sample(t){t=clamp(t,0,count*dt);return poseAt(source(t),rotationAt(t),t);}
+ function sample(t){t=clamp(t,0,count*dt);return poseAt(source(t),R.qslerp([0,0,0,1],rotationAt(t),R.returnWeight(t,recoveryStart,recoveryEnd)),t);}
  function uncorrected(t){const raw=source(t),com=center(H.bodies(raw,rig),rig);return transform(raw,[0,0,0,1],com,comAt(t));}
  return {sample,uncorrected,rotationAt,states,rig,diagnostics,center:origin,duration:count*dt};
 }

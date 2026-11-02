@@ -8,7 +8,12 @@ from followup_candidates import adapter_class,OUT,generate
 def main():
     p=argparse.ArgumentParser();p.add_argument('--kind',default='warm');p.add_argument('--ticks',type=int,default=64)
     p.add_argument('--ppo-shared',action='store_true',help='Compare one identical-data PPO update before old-policy rollouts')
-    p.add_argument('--worlds',type=int,default=512);p.add_argument('--label',required=True);p.add_argument('--record',action='store_true');p.add_argument('--once',action='store_true');a=p.parse_args()
+    p.add_argument('--staged',action='store_true')
+    p.add_argument('--scalar-iterations',type=int,default=0)
+    p.add_argument('--register-scalar',action='store_true')
+    p.add_argument('--scalar-relaxation',type=float,default=.5)
+    p.add_argument('--worlds',type=int,default=512);p.add_argument('--label',required=True);p.add_argument('--record',action='store_true');p.add_argument('--once',action='store_true')
+    p.add_argument('--contact-iterations',type=int,default=100);p.add_argument('--seed-iterations',type=int,default=50);p.add_argument('--projection-iterations',type=int,default=20);a=p.parse_args()
     generate();destination=OUT/(a.label+'.json');assert not destination.exists()
     directory=ROOT/'Saved/MimicKitLocal/runs/2026-10-16_02-00_transfer_finetune_512'
     torch.set_num_threads(1);torch.set_num_interop_threads(1);wp.init();wp.set_device('cuda:0');mp_util.init(0,1,'cuda:0',6732);os.chdir(SOURCE/'MimicKit')
@@ -24,7 +29,7 @@ def main():
     cfg['engine']['uefn_asset_directory']=body.as_posix();cfg['engine']['transfer_capture_failures']=False
     env=LocalTransferEnv(cfg['env'],cfg['engine'],a.worlds,'cuda:0',False)
     agent=OmniPPOAgent(cfg['agent'],env,'cuda:0');agent.load(str(directory/'model.pt'));agent.eval();agent.set_mode(AgentMode.TEST)
-    agent._compute_actor_loss=agent._compute_actor_loss_reference
+    if a.ppo_shared:agent._compute_actor_loss=agent._compute_actor_loss_reference
     ppo_reports=[];models={}
     if a.ppo_shared:
         import copy
@@ -47,6 +52,17 @@ def main():
             assert all(torch.isfinite(p).all() for p in agent.parameters())
         agent.eval();agent.set_mode(AgentMode.TEST)
     engine=env._engine;s=engine._solver;m=s.mjw_model;d=s.mjw_data
+    if a.staged:
+        from staged_contact_candidate import install
+        install(engine,ROOT/'Labs/MimicKitTransfer',ROOT/'Saved/MimicKitTransfer/getup-transfer-20261023')
+    if a.scalar_iterations:
+        from finite_contact_candidate import install
+        install(engine,a.scalar_iterations,a.register_scalar,a.scalar_relaxation)
+    if (a.contact_iterations,a.seed_iterations,a.projection_iterations)!=(100,50,20):
+        engine.transfer_contact.iterations=a.contact_iterations;engine.transfer_contact.seed_iterations=a.seed_iterations
+        apply=engine.transfer_projection.apply
+        engine.transfer_projection.apply=lambda inv,**kw:apply(inv,**(kw|{'iterations':a.projection_iterations}))
+        engine._build_graphs()
     custom={'baseline':engine.transfer_contact};graphs={'baseline':engine._graph}
     if a.kind!='baseline':
         if a.kind=='warm':
@@ -63,7 +79,8 @@ def main():
         if a.ppo_shared:agent.load_state_dict(models[kind])
         physics='baseline' if a.ppo_shared else kind
         engine.transfer_contact=custom[physics];engine._graph=graphs[physics];m.transfer_contact_test=custom[physics]
-        c=custom[physics];c.p.warm_state.zero_()
+        c=custom[physics]
+        if c.p.warm_state is not None:c.p.warm_state.zero_()
         if hasattr(c,'cache'):c.cache.count.zero_();c.cache.group_count.zero_()
         torch.manual_seed(753);np.random.seed(753);obs,info=env.reset()
         engine._sim_state.pre_step_update();engine._body_velocity.update(engine._sim_state.raw_state)

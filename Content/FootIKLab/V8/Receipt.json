@@ -1,0 +1,14 @@
+{
+  "package": "Microsoft.ClearScript.V8.Native.win-x64",
+  "version": "7.5.1.1",
+  "source": "https://api.nuget.org/v3-flatcontainer/microsoft.clearscript.v8.native.win-x64/7.5.1.1/microsoft.clearscript.v8.native.win-x64.7.5.1.1.nupkg",
+  "packageSha256": "798453061d5e868c2c296943e4fcdfce53ae39783fe5459a630b9e82bca2137d",
+  "dllSha256": "23f7b297c59cd77e103e5c3e39eb784e7d43d50670d2dd9ae51bdcefe51a883a",
+  "dllBytes": 29893768,
+  "license": "License.txt",
+  "backend": "Native V8 only; no CLR, browser, Node, or child process",
+  "trigWasmSha256": "dd9d4807cb9b1a292798b3e93013e4b0e8e1a83d678376e21b8d824d0edfc74d",
+  "trigSource": "V8 13.6.233.17 fdlibm",
+  "zigVersion": "0.15.2",
+  "zigArchiveSha256": "3a0ed1e8799a2f8ce2a6e6290a9ff22e6906f8227865911fb7ddedc3cc14cb0c"
+}

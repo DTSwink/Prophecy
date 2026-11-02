@@ -20,7 +20,10 @@ while time.time()<deadline.read():
                 # Give the remote exit watcher time to finish the small evidence
                 # upload; stopping retains its volume if that watcher is broken.
                 if failure_seen is None or failure_seen[0]!=name:failure_seen=(name,time.time())
-                if time.time()-failure_seen[1]>=30:
+                control=json.loads((cloud.OUT/'runtime_control.json').read_text())
+                remaining=float(control.get('hard_stop_unix',0))-time.time()
+                setup_repair=control.get('setup_watchdog') and 0 < remaining <= 1200
+                if time.time()-failure_seen[1]>=30 and not setup_repair:
                     reason='local fallback: trainer failure '+name
                     break
     except (OSError,ValueError,KeyError):pass

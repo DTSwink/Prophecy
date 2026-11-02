@@ -981,4 +981,133 @@ bool FProphecyJoltLocalConnectedRecoveryTest::RunTest(const FString&)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltFiniteCarryTest,
+    "Prophecy.Jolt.Servo.FiniteJointCarry", ProphecyJolt::VelocityServoTests::Flags)
+bool FProphecyJoltFiniteCarryTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;using namespace ProphecyJolt::Conversions;using namespace ProphecyJolt::VelocityServoTests;
+    if(!RuntimeReady(*this))return false;
+    // Large finite rotations, offset COM, displaced joints and reversed packet
+    // order distinguish this from a world/relative positional servo and W x r.
+    for(bool Reverse:{false,true})for(bool Trajectory:{false,true})
+    {
+        FServoFixture F;
+        const JPH::RefConst<JPH::Shape> Sphere=new JPH::SphereShape(.05f);
+        const FVector COM(7,-3,11);
+        const JPH::RefConst<JPH::Shape> Shape=new JPH::OffsetCenterOfMassShape(Sphere.GetPtr(),ToJoltLinearVelocity(COM));
+        const FQuat Q0(FVector::UpVector,-.17);
+        const FTransform Actual[]={FTransform(Q0,FVector(10,20,90)),
+            FTransform(FQuat(FVector::ForwardVector,.12),FVector(50,30,120)),
+            FTransform(FQuat(FVector::RightVector,-.23),FVector(70,10,145))};
+        const FQuat RootEnd(FVector::RightVector,.65);
+        const FQuat ChildEnd=RootEnd*FQuat(FVector::ForwardVector,-.35);
+        const FQuat GrandEnd=ChildEnd*FQuat(FVector::UpVector,.45);
+        const FQuat Ends[]={RootEnd,ChildEnd,GrandEnd};
+        TArray<FVelocityServo::FTarget> Targets;
+        for(int32 I=0;I<3;++I)
+        {
+            auto& T=Targets.AddDefaulted_GetRef();T.Body=F.Add(Shape,Actual[I]);
+            T.bFiniteJointCarry=true;T.StartPositionCm=Actual[I].GetLocation();T.StartRotation=Actual[I].GetRotation();
+            T.TargetPositionCm=I==0?FVector(25,15,100):FVector(900,-700,600); // Child positions must have no effect.
+            T.TargetRotation=Ends[I];T.GravityCompensationCmPerSecondSquared=981.f;
+            T.TrajectoryDurationSeconds=Trajectory?.2f:0.f;
+            if(I)
+            {
+                T.Parent=Targets[I-1].Body;T.WorldAlpha=0;
+                T.ParentStart=Actual[I-1];T.ParentTarget=FTransform(Ends[I-1],Targets[I-1].TargetPositionCm);
+                T.ParentAnchorCOMCm=FVector(6+I,-4,19);T.ChildAnchorCOMCm=FVector(-5,3+I,-17);
+            }
+            // Saved follow and offsets must be ignored only by the active profile.
+            F.Listener().SetBodyFollow(T.Body,FVector::ZeroVector,FVector::ZeroVector);
+            F.Listener().SetBodyTargetOffset(T.Body,FTransform(FQuat(FVector::UpVector,1.),FVector(1000,0,0)));
+        }
+        const auto Original=Targets;
+        if(Reverse)Swap(Targets[0],Targets[2]);
+        constexpr float H=.1f;
+        if(!F.Publish(*this,Targets,.7f) || !F.Step(*this,H) || !F.CheckSamples(*this,3))return false;
+        TArray<FQuat> End;TArray<FVector> V;
+        for(int32 I=0;I<3;++I)
+        {
+            const auto& S=F.Listener().GetLastSamples()[Reverse?2-I:I];
+            const double Speed=S.AngularAfterRadiansPerSecond.Size();
+            End.Add((FQuat(S.AngularAfterRadiansPerSecond/Speed,Speed*H)*S.Rotation).GetNormalized());
+            V.Add(S.LinearAfterCmPerSecond);
+            const double A=Trajectory?.5:1.;
+            const FQuat Expected=I ? End[I-1]*FQuat::Slerp(Actual[I-1].GetRotation().Inverse()*Actual[I].GetRotation(),
+                Ends[I-1].Inverse()*Ends[I],A) : FQuat::Slerp(Q0,RootEnd,A);
+            TestTrue(TEXT("Command reaches local angular endpoint including current parent command"),End[I].Equals(Expected,2.e-6));
+            if(!I)
+            {
+                const FVector Endpoint=Actual[0].GetLocation()+Actual[0].GetRotation().RotateVector(COM)
+                    +(V[0]-FVector(0,0,981.*H))*H-End[0].RotateVector(COM);
+                TestNearlyEqual(TEXT("Root origin reaches exact requested endpoint despite finite COM rotation"),Endpoint,
+                    FMath::Lerp(Actual[0].GetLocation(),Original[0].TargetPositionCm,A),.002);
+            }
+            else
+            {
+                const auto& T=Original[I];
+                const FVector Before=Actual[I].GetLocation()+Actual[I].GetRotation().RotateVector(COM+T.ChildAnchorCOMCm)
+                    -Actual[I-1].GetLocation()-Actual[I-1].GetRotation().RotateVector(COM+T.ParentAnchorCOMCm);
+                const FVector After=Actual[I].GetLocation()+Actual[I].GetRotation().RotateVector(COM)+V[I]*H+End[I].RotateVector(T.ChildAnchorCOMCm)
+                    -Actual[I-1].GetLocation()-Actual[I-1].GetRotation().RotateVector(COM)-V[I-1]*H-End[I-1].RotateVector(T.ParentAnchorCOMCm);
+                TestNearlyEqual(TEXT("Finite carry preserves anchor separation; no positional correction or repeated gravity"),After,Before,.002);
+            }
+        }
+        for(const auto& T:Original)F.Listener().RemoveBodyTargetOffset(T.Body);
+    }
+    return !HasAnyErrors();
+}
+
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltFiniteKinematicCarryTest,
+    "Prophecy.Jolt.Servo.FiniteKinematicParent", ProphecyJolt::VelocityServoTests::Flags)
+bool FProphecyJoltFiniteKinematicCarryTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt;using namespace ProphecyJolt::Conversions;using namespace ProphecyJolt::VelocityServoTests;
+    if(!RuntimeReady(*this))return false;
+    for(bool Sleeping:{false,true})for(bool Reverse:{false,true})
+    {
+        FServoFixture F;constexpr float H=.02f;
+        const FVector COM(7,-3,11),V(18,-31,27),W(2,-3,4);
+        const JPH::RefConst<JPH::Shape> Sphere=new JPH::SphereShape(.05f);
+        const JPH::RefConst<JPH::Shape> Shape=new JPH::OffsetCenterOfMassShape(Sphere.GetPtr(),ToJoltLinearVelocity(COM));
+        const FTransform ParentStart(FQuat(FVector::UpVector,-.17),FVector(10,20,90));
+        const FTransform ChildStart(FQuat(FVector::RightVector,.12),FVector(30,50,130));
+        const FTransform GrandStart(FQuat(FVector::ForwardVector,-.11),FVector(55,35,165));
+        const auto Parent=F.Add(Shape,ParentStart),Child=F.Add(Shape,ChildStart),Grand=F.Add(Shape,GrandStart);
+        F.Bodies().SetMotionType(Parent,JPH::EMotionType::Kinematic,JPH::EActivation::Activate);
+        F.Bodies().SetLinearAndAngularVelocity(Parent,ToJoltLinearVelocity(V),ToJoltAngularVelocity(W));
+        const FQuat ParentEnd=(FQuat(W.GetSafeNormal(),W.Size()*H)*ParentStart.GetRotation()).GetNormalized();
+        const FQuat ChildEnd=ParentEnd*FQuat(FVector::ForwardVector,.2),GrandEnd=ChildEnd*FQuat(FVector::UpVector,-.15);
+        FVelocityServo::FTarget C,G;C.Body=Child;C.Parent=Parent;C.WorldAlpha=0;C.bFiniteJointCarry=true;
+        C.ParentStart=ParentStart;C.ParentTarget=FTransform(ParentEnd,ParentStart.GetLocation());
+        C.TargetRotation=ChildEnd;C.ParentAnchorCOMCm=FVector(6,-4,19);C.ChildAnchorCOMCm=FVector(-5,3,-17);
+        C.TargetPositionCm=FVector(900,-500,800);
+        G.Body=Grand;G.Parent=Child;G.WorldAlpha=0;G.bFiniteJointCarry=true;
+        G.ParentStart=ChildStart;G.ParentTarget=FTransform(ChildEnd,ChildStart.GetLocation());
+        G.TargetRotation=GrandEnd;G.ParentAnchorCOMCm=FVector(3,7,18);G.ChildAnchorCOMCm=FVector(-6,-2,-19);
+        G.TargetPositionCm=FVector(-800,700,900);
+        TArray<FVelocityServo::FTarget> Targets{C,G};if(Reverse)Swap(Targets[0],Targets[1]);
+        if(Sleeping){F.Bodies().DeactivateBody(Child);F.Bodies().DeactivateBody(Grand);}
+        if(!F.Publish(*this,Targets,H)||!F.Step(*this,H))return false;
+        TestEqual(TEXT("Kinematic parent needs no dynamic servo entry"),F.Listener().GetLastSamples().Num(),2);
+        TestEqual(TEXT("No invalid parent or child body"),F.Listener().GetInvalidBodyCount(),uint64(0));
+        const auto& CS=F.Listener().GetLastSamples()[Reverse?1:0];
+        const auto& GS=F.Listener().GetLastSamples()[Reverse?0:1];
+        const FVector CV=V+(ParentEnd.RotateVector(C.ParentAnchorCOMCm)-ParentStart.GetRotation().RotateVector(C.ParentAnchorCOMCm)
+            -ChildEnd.RotateVector(C.ChildAnchorCOMCm)+ChildStart.GetRotation().RotateVector(C.ChildAnchorCOMCm))/H;
+        const FVector GV=CV+(ChildEnd.RotateVector(G.ParentAnchorCOMCm)-ChildStart.GetRotation().RotateVector(G.ParentAnchorCOMCm)
+            -GrandEnd.RotateVector(G.ChildAnchorCOMCm)+GrandStart.GetRotation().RotateVector(G.ChildAnchorCOMCm))/H;
+        TestNearlyEqual(TEXT("Child inherits actual kinematic COM velocity and finite anchor rotation"),CS.LinearAfterCmPerSecond,CV,.005);
+        TestNearlyEqual(TEXT("Dynamic descendants inherit the same current-step command"),GS.LinearAfterCmPerSecond,GV,.005);
+        const auto Reached=[=](const FVelocityServo::FSample& S){const double Speed=S.AngularAfterRadiansPerSecond.Size();
+            return (FQuat(S.AngularAfterRadiansPerSecond/Speed,Speed*H)*S.Rotation).GetNormalized();};
+        TestTrue(TEXT("Kinematic parent's end frame drives child angle"),Reached(CS).Equals(ChildEnd,2.e-6));
+        TestTrue(TEXT("Dynamic grandchild follows the completed chain"),Reached(GS).Equals(GrandEnd,2.e-6));
+        TestTrue(TEXT("Moving kinematic parent wakes sleeping child and grandchild"),F.Bodies().IsActive(Child)&&F.Bodies().IsActive(Grand));
+        TestTrue(TEXT("Saved parent motion type remains kinematic"),F.Bodies().GetMotionType(Parent)==JPH::EMotionType::Kinematic);
+    }
+    return !HasAnyErrors();
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -1,4 +1,7 @@
 #include "ProphecyAgent.h"
+#include "ProphecyBodyflipRuntime.h"
+#include "ProphecyFootIKGame.h"
+#include "ProphecyRobotLocomotion.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecyReachRuntime.h"
 #include "ProphecySwordHolster.h"
@@ -1011,21 +1014,23 @@ namespace
 	{
 		FQuat Start = A.GetNormalized();
 		FQuat End = B.GetNormalized();
-		float CosHalfAngle = Start | End;
-		if (CosHalfAngle < 0.0f)
+		if (Alpha == 0.0f) return Start;
+		if (Alpha == 1.0f) return End;
+		double CosHalfAngle = Start | End;
+		if (CosHalfAngle < 0.0)
 		{
 			End = End * -1.0f;
 			CosHalfAngle = -CosHalfAngle;
 		}
-		CosHalfAngle = FMath::Clamp(CosHalfAngle, 0.0f, 1.0f);
-		const float Angle = 2.0f * FMath::Acos(CosHalfAngle);
+		CosHalfAngle = FMath::Clamp(CosHalfAngle, 0.0, 1.0);
+		const double Angle = 2.0 * FMath::Acos(CosHalfAngle);
 		if (Angle <= 1.0e-6f)
 		{
 			return Start;
 		}
 
 		// Match the Stepper viewer / kinematic proxy's matrix-lerp polar factor.
-		const float WeightedAngle = FMath::Atan2(
+		const double WeightedAngle = FMath::Atan2(
 			Alpha * FMath::Sin(Angle),
 			(1.0f - Alpha) + Alpha * FMath::Cos(Angle));
 		FQuat Result = FQuat::Slerp(Start, End, WeightedAngle / Angle);
@@ -1606,6 +1611,7 @@ bool AProphecyAgent::PlayAnimationOverlay(
 	bool bLoop,
 	bool bRestart)
 {
+	if (ProphecyBodyflip::Active(this)) return false;
 	UProphecyNNLocomotionAnimInstance* AnimInstance = GetProphecyAnimInstance();
 	if (!AnimInstance || !Animation)
 	{
@@ -1638,6 +1644,7 @@ bool AProphecyAgent::StopAnimationOverlay(float BlendOutSeconds)
 
 bool AProphecyAgent::RestartAnimationOverlay()
 {
+	if (ProphecyBodyflip::Active(this)) return false;
 	UProphecyNNLocomotionAnimInstance* AnimInstance = GetProphecyAnimInstance();
 	if (!AnimInstance || !AnimInstance->OverlayAnimation)
 	{
@@ -1871,6 +1878,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 		{
 			FProphecyNNPoseStore::ApplyRigidCalves(PoseAgentId,Pose,Names,Transforms,InterpolationAlpha);
 			InterpolatedWorldTransform=Transforms[Selected];
+			ProphecyFootIKGame::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
 			return true;
 		}
 	}
@@ -1914,6 +1922,7 @@ bool AProphecyAgent::GetAuthoredBodyWorldTarget(
 	}
 	ProphecySwordHolsterPose::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
 	ProphecyReach::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
+	ProphecyFootIKGame::Apply(PoseAgentId,MakeArrayView(&BoneName,1),MakeArrayView(&InterpolatedWorldTransform,1));
 	return true;
 }
 
@@ -2109,7 +2118,7 @@ bool AProphecyAgent::ReadNNFutureWorldPose(
 
 bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 	TArray<FTransform>& FutureWorldTransforms, TArray<FTransform>& InterpolatedWorldTransforms,
-	float& InterpolationAlpha, FProphecyNNPoseSnapshot& Pose) const
+	float& InterpolationAlpha, FProphecyNNPoseSnapshot& Pose,bool bApplyFootIK) const
 {
 	BoneNames.Reset();
 	FutureWorldTransforms.Reset();
@@ -2169,6 +2178,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 		ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	ProphecySwordHolsterPose::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	ProphecyReach::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
+		if(bApplyFootIK)ProphecyFootIKGame::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 		return BoneNames.Num() > 0;
 	}
 
@@ -2191,6 +2201,7 @@ bool AProphecyAgent::ReadNNFutureWorldPoseWithSnapshot(TArray<FName>& BoneNames,
 	ProphecyAttackStartInertia::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	ProphecySwordHolsterPose::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	ProphecyReach::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
+	if(bApplyFootIK)ProphecyFootIKGame::Apply(PoseAgentId,BoneNames,InterpolatedWorldTransforms);
 	return true;
 }
 
@@ -2288,6 +2299,12 @@ void AProphecyAgent::ConfigureRootAndJointTorquePhysics(
 bool AProphecyAgent::SetSimulationMode(EProphecyAgentSimulationMode NewMode)
 {
     if (!IsInGameThread() || IsActorBeingDestroyed()) return false;
+    if(NewMode!=EProphecyAgentSimulationMode::Physical&&ProphecyRobot::IsActive(this))
+    {
+        FString Error;const bool Result=ProphecyRobot::ExitToSimulationMode(this,NewMode,Error);
+        if(!Result)UE_LOG(LogProphecyAgentPhysical,Error,TEXT("Robot mode exit: %s"),*Error);
+        return Result;
+    }
     if(NewMode==EProphecyAgentSimulationMode::Physical && bUseJoltForPhysicalMode
         && GetSimulationMode()==EProphecyAgentSimulationMode::Kinematic)
     {

@@ -1,5 +1,7 @@
 # Throw controls — native port
 
+For another lab, start with the short [throw integration handoff](ThrowLabIntegrationHandoff.md).
+
 October29 initial port of the approved Throw Lab checkpoint `a193d263`.
 Normal Editor build and all four `Prophecy.Throws` tests pass. The native DLLs
 are current; the main project was not opened interactively.

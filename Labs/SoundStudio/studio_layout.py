@@ -4,7 +4,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QWidget,QFrame,QLabel,QVBoxLayout,QHBoxLayout,QGridLayout,
     QSlider,QDoubleSpinBox,QLineEdit,QComboBox,QCheckBox,QSplitter,QDialog,QScrollArea,
     QProgressBar,QSizePolicy)
-from audio_engine import HERE,Settings,DEFAULT_SOURCE,DEFAULT_TARGET,EQ_FREQUENCIES
+from audio_engine import HERE,Settings,DEFAULT_SOURCE,DEFAULT_TARGET,EQ_FREQUENCIES,EQ_CUT
 from visual_audio import AudioDisplay,frequency_color
 
 
@@ -46,15 +46,17 @@ def build(w,state,source,target,label,button,panel,Control,FolderPane):
     for index,freq in enumerate(EQ_FREQUENCIES):
         box=QWidget();column=QVBoxLayout(box);column.setContentsMargins(2,0,2,0);column.setSpacing(5)
         top=QHBoxLayout();top.setSpacing(4)
-        band=label(str(index+1));band.setStyleSheet(f'color:{frequency_color(freq).name()};font-weight:700;');top.addWidget(band)
+        band=label('L' if index==0 else ('H' if index==4 else str(index+1)));band.setStyleSheet(f'color:{frequency_color(freq).name()};font-weight:700;');top.addWidget(band)
         frequency=QDoubleSpinBox();frequency.setRange(20,20000);frequency.setDecimals(0)
         frequency.setValue(freq);frequency.setSuffix(' Hz');frequency.setFixedWidth(85)
         frequency.setKeyboardTracking(False);top.addWidget(frequency)
         top.addStretch()
-        gain=QDoubleSpinBox();gain.setRange(-12,12);gain.setSingleStep(.1);gain.setDecimals(1)
+        minimum=EQ_CUT
+        gain=QDoubleSpinBox();gain.setRange(minimum,12);gain.setSingleStep(.1);gain.setDecimals(1)
+        gain.setSpecialValueText('CUT')
         gain.setSuffix(' dB');gain.setFixedWidth(70);gain.setKeyboardTracking(False);top.addWidget(gain)
         column.addLayout(top)
-        slider=QSlider(Qt.Orientation.Horizontal);slider.setRange(-120,120);slider.setValue(0)
+        slider=QSlider(Qt.Orientation.Horizontal);slider.setRange(round(minimum*10),120);slider.setValue(0)
         slider.setStyleSheet(f'QSlider::sub-page:horizontal {{background:{frequency_color(freq).name()};}} QSlider::handle:horizontal {{background:{frequency_color(freq).name()};}}')
         slider.valueChanged.connect(lambda value,spin=gain:spin.setValue(value/10))
         gain.valueChanged.connect(lambda value,s=slider:s.setValue(round(value*10)))
@@ -89,18 +91,14 @@ def build(w,state,source,target,label,button,panel,Control,FolderPane):
     pitch_layout.addWidget(semis);graph_row.addWidget(pitch_box)
     surface_layout.addLayout(graph_row,1)
     transport=QHBoxLayout();transport.setSpacing(7)
-    w.original_button=button('▶  Original',w.play_original)
-    w.preview_button=button('▶  Processed',w.preview,'preview')
+    w.play_button=button('▶  Play',w.toggle_play,'preview')
     w.stop_button=button('■',w.stop);w.stop_button.setFixedWidth(33)
-    for b in (w.original_button,w.preview_button,w.stop_button):transport.addWidget(b)
+    for b in (w.play_button,w.stop_button):transport.addWidget(b)
+    w.play_original_check=QCheckBox('Play original')
+    w.play_original_check.toggled.connect(w.bypass_changed);transport.addWidget(w.play_original_check)
     w.loop=QCheckBox('Loop');w.loop.toggled.connect(lambda x:setattr(w.player,'loop',x));transport.addWidget(w.loop)
     transport.addStretch()
-    w.zoom=QComboBox();w.zoom.addItems(['Auto','1×','4×','16×']);w.zoom.setFixedWidth(69)
-    w.zoom.setToolTip('Waveform magnification only. Auto is fixed from the original, so gain/peak changes stay visible.')
-    w.zoom.currentTextChanged.connect(w.wave.set_zoom);transport.addWidget(label('View','muted'));transport.addWidget(w.zoom)
-    transport.addWidget(label('Listen','muted'))
-    w.monitor=QSlider(Qt.Orientation.Horizontal);w.monitor.setRange(0,100);w.monitor.setValue(50);w.monitor.setFixedWidth(70)
-    w.monitor.valueChanged.connect(lambda v:setattr(w.player,'volume',v/100));transport.addWidget(w.monitor)
+    transport.addWidget(label('Space  pause / resume    ← →  0.25 s','muted'))
     surface_layout.addLayout(transport)
     w.preview_info=label('Change any control — the audio display updates automatically.','muted')
     w.preview_info.setMinimumHeight(16);surface_layout.addWidget(w.preview_info)
@@ -108,11 +106,13 @@ def build(w,state,source,target,label,button,panel,Control,FolderPane):
     # Compact always-present effects, freeing the canvas above.
     w.editor=QFrame();w.editor.setObjectName('strip');control_grid=QGridLayout(w.editor)
     control_grid.setContentsMargins(10,6,10,7);control_grid.setHorizontalSpacing(12)
-    descriptors=[('fade_in_ms','Fade in',0,2000,5,1,' ms'),('fade_out_ms','Fade out',0,2000,5,1,' ms'),
+    descriptors=[('fade_in_ms','Fade in',0,2000,0,1,' ms'),('fade_out_ms','Fade out',0,2000,0,1,' ms'),
                  ('speed','Speed',50,200,100,1,' %'),('reverb','Reverb',0,50,0,1,' %'),
-                 ('polish','Polish',0,100,0,1,' %'),('gain_db','Gain',-24,18,0,.5,' dB')]
+                 ('polish','Polish',0,100,0,1,' %'),('compression','Compression',0,100,0,1,' %'),
+                 ('gain_db','Gain',-24,18,0,.5,' dB')]
     for col,(key,*args) in enumerate(descriptors):
         control=Control(*args);control.spin.setFixedWidth(66)
+        if key=='compression':control.spin.setSpecialValueText('Off')
         control.setStyleSheet('QLabel {font-size:11px;color:#a6b5cc;} QDoubleSpinBox {font-size:11px;padding:2px;}')
         control.changed.connect(w.edited);w.controls[key]=control;control_grid.addWidget(control,0,col)
     main.addWidget(w.editor)
@@ -142,15 +142,14 @@ def build(w,state,source,target,label,button,panel,Control,FolderPane):
     w.output_name=QLineEdit();w.output_name.setPlaceholderText('Name your mix')
     output.addWidget(w.output_name,1)
     w.rate=QComboBox()
-    for title,value in [('48 kHz',48000),('44.1 kHz',44100),('96 kHz',96000),('Source rate',0)]:w.rate.addItem(title,value)
+    for title,value in [('Source rate',0),('48 kHz',48000),('44.1 kHz',44100),('96 kHz',96000)]:w.rate.addItem(title,value)
     w.format=QComboBox()
-    for title,value in [('16-bit WAV','PCM_16'),('24-bit WAV','PCM_24'),('32-bit float','FLOAT')]:w.format.addItem(title,value)
+    for title,value in [('Source format','SOURCE'),('16-bit WAV','PCM_16'),('24-bit WAV','PCM_24'),('32-bit float','FLOAT')]:w.format.addItem(title,value)
     w.channel_mode=QComboBox();w.channel_mode.addItems(['Keep source','Mono','Stereo'])
     for combo in (w.rate,w.format,w.channel_mode):combo.currentIndexChanged.connect(w.edited);output.addWidget(combo)
     w.generate_button=button('Generate  →',w.generate,'primary');output.addWidget(w.generate_button);export.addLayout(output)
     options=QHBoxLayout();options.setSpacing(9)
-    w.protect=QCheckBox('Protect peaks');w.protect.setChecked(True)
-    w.protect.setToolTip('Limit estimated true peak to −1 dBTP by reducing the whole clip only when necessary.')
+    w.protect=QCheckBox('Protect peaks');w.protect.setChecked(False)
     w.protect.toggled.connect(w.edited);options.addWidget(w.protect)
     w.normalize=QCheckBox('Peak normalize');w.normalize.toggled.connect(w.edited);options.addWidget(w.normalize)
     w.normalize_target=QDoubleSpinBox();w.normalize_target.setRange(-24,-1);w.normalize_target.setValue(-3)
@@ -161,6 +160,8 @@ def build(w,state,source,target,label,button,panel,Control,FolderPane):
     main.addWidget(w.export_panel)
     w.split.addWidget(middle);w.split.addWidget(w.target);w.split.setStretchFactor(1,1);w.split.setSizes([190,1120,190])
     outer.addWidget(w.split,1)
-    bottom=QHBoxLayout();w.status=label('Choose a WAV to begin.','muted');bottom.addWidget(w.status,1)
+    bottom=QHBoxLayout()
+    w.refresh_app_button=button('↻  Refresh app',w.refresh_app);bottom.addWidget(w.refresh_app_button)
+    w.status=label('Choose a WAV to begin.','muted');bottom.addWidget(w.status,1)
     w.cancel_button=button('Cancel',w.cancel_job);w.cancel_button.hide();bottom.addWidget(w.cancel_button);outer.addLayout(bottom)
     w.progress=QProgressBar();w.progress.setRange(0,0);w.progress.setTextVisible(False);w.progress.hide();outer.addWidget(w.progress)

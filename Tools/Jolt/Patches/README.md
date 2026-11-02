@@ -10,6 +10,23 @@ SixDOF's free/fixed axis changes invalidate only the affected translation or rot
 
 `Prophecy.Jolt.Joints.RuntimeLimitContinuity` checks nonzero attachment impulses, unchanged off-center loaded motion, stable registration order with another registered constraint, wrapping/unwrapping, and correct angular impulse invalidation. Existing Joints boundary tests and RigWorld live-limit tests cover actual enforcement and player-policy transitions. Causal evidence is in `Docs/JoltWristLimitActivationDiagnosis.md`.
 
+## Robot contact points (2026-10-26)
+
+`ContactSettings::mEnableSpeculativeContacts` defaults to true, preserving ordinary
+body pairs. Admitted Get Up and Clanker rigs opt out in the shared robot contact
+callback. Separated points retain their cache but contribute no normal impulse;
+friction centre/radius and angular friction use responding points only. Inactive
+points skip position correction. This replaces whole-manifold sensor filtering,
+which missed separated corners in mixed touching/separated foot manifolds.
+
+The setting is transient per contact callback, with no per-agent timer or scan.
+Robot ownership keeps the contact listener installed even without hit events;
+the scoped protection listener invokes the same robot rule. Existing body cleanup
+retires that ownership/listener on exit, preserving other listener users.
+The cumulative patch/hash is required for both dependency configurations; rebuild
+native consumers after installing because `ContactSettings` layout changed.
+Paired frozen walking and100-start Get Up evidence is in `Docs/RobotLocomotion.md`.
+
 ## Numerical safety
 
 The patch contains a high-magnetization crash in rigid-body joint correction. Ordinary finite rotation corrections retain the original arithmetic. Corrections above 10,000 radians use a double norm and scalar trigonometry, avoiding overflow in the float squared norm or SIMD quadrant reduction. This threshold selects arithmetic; it does not clamp a rotation or change magnetization strength.

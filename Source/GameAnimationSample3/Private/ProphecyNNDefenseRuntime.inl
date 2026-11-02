@@ -150,6 +150,7 @@ bool AProphecyNNLocomotionManager::StartAgentNNParry(FProphecyAgentHandle Handle
     float MaximumSeconds,FString& Error)
 {
     AProphecyAgent* Actor=ResolveAgent(Handle);
+    if(ProphecyBodyflip::Active(Actor)){Error=TEXT("Stop this agent's Bodyflip controller before parrying");return false;}
     if (!Actor || !IsValid(Attacker) || Actor==Attacker || ResolveAgent(Attacker->GetAgentHandle())!=Attacker
         || !Actor->bNNInferenceEnabled || !Attacker->bNNInferenceEnabled || !FMath::IsFinite(MaximumSeconds) || MaximumSeconds<=0)
     { Error=TEXT("Parry needs two distinct, initialized agents in this manager and a positive duration.");return false; }

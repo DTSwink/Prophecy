@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/amazon-far/holosoma",
+  "commit": "874f83de7b830b55f9b14fc988f694b58af88400",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+      "bytes": 10142
+    },
+    {
+      "path": "src/holosoma/holosoma/agents/fast_sac/fast_sac.py",
+      "sha256": "d78ae7dd769ceb9b1b1ccc753ea82d358e5e04744e9be90b7219df2c4f96ddc7",
+      "bytes": 18446
+    },
+    {
+      "path": "src/holosoma/holosoma/agents/fast_sac/fast_sac_agent.py",
+      "sha256": "84bb6cb7baa6e054e637b58e38052cb2b4b296aad0fa611add814c2372ac0fa3",
+      "bytes": 48480
+    },
+    {
+      "path": "src/holosoma/holosoma/agents/fast_sac/fast_sac_utils.py",
+      "sha256": "cf571e3356fed1986967464eb9f12e2019e9067bec5cd26ee0b59ca18b6ca458",
+      "bytes": 17588
+    }
+  ]
+}

@@ -177,7 +177,7 @@ function plantedRoll(p,l,hit){
  const captured={...p,points:p.points.slice()},delta=sub(hit.target,p.points[l.foot]);
  captured.points[l.foot]=hit.target;captured.points[l.toe]=add(p.points[l.toe],delta);
  const frame=S.footFrame(captured,l.foot,l.toe,l.side),forward=unit([frame.forward[0],0,frame.forward[2]]);
- const axis=unit(cross([0,1,0],forward)),surface=S.rectangle(hit.tile.id,[0,hit.height,0],[1,0,0],[0,0,1],[hit.tile.x0,hit.tile.x1,hit.tile.z0,hit.tile.z1],.1);
+ const axis=unit(cross([0,1,0],forward)),surface=hit.tile.surface||S.rectangle(hit.tile.id,[0,hit.height,0],[1,0,0],[0,0,1],[hit.tile.x0,hit.tile.x1,hit.tile.z0,hit.tile.z1],.1);
  const terminal={pose:captured,foot:hit.target,rotation:{footQ:l.footQ,toeQ:l.toeQ}};
  const positive=S.roll(terminal,{...l,plant:{right:axis}},surface,140);
  const negative=S.roll(terminal,{...l,plant:{right:mul(axis,-1)}},surface,140);
@@ -273,31 +273,37 @@ function clearanceCurve(reference, floor, fixed, strength, ceiling=null){
  }
  return y;
 }
-function prepare(run,input){
- const settings=sanitize(input),terrain=T.create(settings),fps=120,count=Math.round(run.duration*fps)+1;
- const descendingTerrain=terrain.rootHeight(terrain.end)<terrain.rootHeight(terrain.start)-.005;
- const {parents,names}=run,origin=run.poses[0].points[0];
+function prepare(run,input,host={}){
+ const settings=sanitize(input),terrain=host.terrain||T.create(settings),fps=120,count=Math.round(run.duration*fps)+1;
+ const descendingTerrain=host.rootAtTime?host.rootAtTime(run.duration)[1]<host.rootAtTime(0)[1]-.005:terrain.rootHeight(terrain.end)<terrain.rootHeight(terrain.start)-.005;
+ const {parents,names}=run,origin=host.origin||run.poses[0].points[0];
  const source=Array.from({length:count},(_,i)=>moved(at(run,i/fps),[-origin[0],0,-origin[2]]));
  // Turning is already inferred from the NN root window; never spin its output.
  const raw=source;
- const base=raw.map(p=>moved(p,[0,terrain.rootHeight(p.points[0][2]),0]));
+ const rootHeight=i=>host.rootAtTime?host.rootAtTime(i/fps)[1]:terrain.rootHeight(raw[i].points[0][2]);
+ const base=raw.map((p,i)=>moved(p,[0,rootHeight(i),0]));
  const speed=(raw.at(-1).points[0][2]-raw[0].points[0][2])/run.duration;
+ const yawAt=time=>host.yawAt?host.yawAt(time):commandYaw(settings,time,speed);
  const facingAngle=(run.directionMeta?.facingDegrees??0)*Math.PI/180,travelHeading=R.qexp([0,-facingAngle,0]);
- const forwardTravel=i=>clamp(Math.cos(facingAngle+commandYaw(settings,i/fps,speed)*Math.PI/180),0,1);
+ const travelAt=i=>host.travelAt?host.travelAt(i/fps):[0,0,1];
+ const ahead=(a,b,i)=>host.travelAt?dot(sub(b,a),travelAt(i)):b[2]-a[2];
+ const localContact=(p,tile)=>terrain.local?terrain.local(p,tile):sub(p,[0,tile.y,tile.z0]);
+ const forwardTravel=i=>clamp(host.travelAt?dot(host.headingAt?host.headingAt(i/fps):[0,0,1],travelAt(i)):host.headingAt?host.headingAt(i/fps)[2]:Math.cos(facingAngle+commandYaw(settings,i/fps,speed)*Math.PI/180),0,1);
  const legs=raw.map(p=>['L','R'].map(side=>stableLeg(p,names,side)));
- const weights=raw.map((p,i)=>influence(p,legs[i],terrain,settings)),plans=[];
+ const weights=raw.map((p,i)=>host.influence?host.influence(p,legs[i],i/fps):influence(p,legs[i],terrain,settings)),plans=[];
  // Root arrival on the exit must not dissolve a still-planted trailing foot.
  // Finish through the existing complete-shoe fade beyond the final riser.
- const exitIndex=settings.terrain==='stairs'?base.findIndex((p,i)=>p.points[0][2]>=terrain.end&&weights[i]===0):-1;
+ const exitIndex=host.rootAtTime?-1:settings.terrain==='stairs'?base.findIndex((p,i)=>p.points[0][2]>=terrain.end&&weights[i]===0):-1;
 
  for(let side=0;side<2;side++){
-  const offsets=raw.map((p,i)=>geometry(p,legs[i][side])),flags=[];let stance=false;
+  const offsets=raw.map((p,i)=>geometry(p,legs[i][side])),flags=[];let stance=host.initialStance?.[side]??false;
   for(let i=0;i<count;i++){
    const l=legs[i][side],lo=Math.max(0,i-1),hi=Math.min(count-1,i+1);
    // Measure stance from the actual turning NN, before terrain correction.
    const v=mul(sub(source[hi].points[l.foot],source[lo].points[l.foot]),fps/Math.max(1,hi-lo));
    const sole=raw[i].points[l.foot][1]+Math.min(...offsets[i].map(o=>o[1])),fast=Math.hypot(v[0],v[2]);
-   stance=stance?sole<.045&&fast<speed*.85:sole<.028&&fast<speed*.58;flags.push(stance);
+   const stanceSpeed=host.speedAt?host.speedAt(i/fps):speed;
+   stance=stance?sole<.045&&fast<stanceSpeed*.85:sole<.028&&fast<stanceSpeed*.58;flags.push(stance);
   }
   const spans=[];
   for(let i=0;i<count;){const start=i,planted=flags[i];while(i+1<count&&flags[i+1]===planted)i++;spans.push({start,end:i,planted});i++;}
@@ -308,7 +314,7 @@ function prepare(run,input){
    const hit=terrain.landing(raw[span.start].points[l.foot],footprint);
    if(!hit)continue;
    hit.target[1]=terrain.floorFor(hit.target,offsets[span.start]);
-   const shaped=hit.tile.id.startsWith('step')||hit.tile.id.startsWith('tile');
+   const shaped=hit.tile.shaped??(hit.tile.id.startsWith('step')||hit.tile.id.startsWith('tile'));
    let roll=shaped?plantedRoll(raw[span.start],l,hit):null;
    if(roll){
     const angles=[];
@@ -322,7 +328,9 @@ function prepare(run,input){
      hit.target=fitted.target;hit.target[1]=terrain.floorFor(hit.target,offsets[span.start]);roll=plantedRoll(raw[span.start],l,hit);
      // Overhang above a lower previous tread is harmless. Keep the material
      // heel contact on this tread while reserving toe-off room before a riser.
-     if(terrain.height(hit.target[0],hit.tile.z1+.001)>hit.height+.001&&terrain.height(hit.target[0],hit.tile.z0-.001)<=hit.height+.001){
+     if(terrain.rollRetreat){
+      hit.target=terrain.rollRetreat(hit,roll.sample(0).contact,travelAt(span.start));hit.target[1]=terrain.floorFor(hit.target,offsets[span.start]);roll=plantedRoll(raw[span.start],l,hit);
+     }else if(terrain.height(hit.target[0],hit.tile.z1+.001)>hit.height+.001&&terrain.height(hit.target[0],hit.tile.z0-.001)<=hit.height+.001){
       const margin=Math.min(.06,Math.max(0,roll.sample(0).contact[2]-hit.tile.z0-.008));
       hit.target[2]-=margin;hit.target[1]=terrain.floorFor(hit.target,offsets[span.start]);roll=plantedRoll(raw[span.start],l,hit);
      }
@@ -367,7 +375,7 @@ function prepare(run,input){
     // A lower tread can arrive in the NN's stance interval before the actual
     // leg can reach it. Continue the swing until contact is reachable instead
     // of pulling the pelvis down by an entire step to manufacture that plant.
-    const lowerLanding=descendingTerrain&&hit.height<terrain.rootHeight(raw[i].points[0][2])-.005;
+    const lowerLanding=descendingTerrain&&hit.height<rootHeight(i)-.005;
     const loweredHip=add(hip,[0,-Math.min(.02,settings.pelvis/100),0]);
     if(!acquired&&lowerLanding&&(!chosen.valid||length(sub(chosen.foot,loweredHip))>current.reach*.995))continue;
     acquired=true;
@@ -376,13 +384,13 @@ function prepare(run,input){
     // it must also leave room for the source gait's downward leg posture.
     const supportHip=loweredHip.slice();
     if(descendingTerrain)supportHip[1]=Math.max(supportHip[1],chosen.foot[1]+raw[i].points[l.hip][1]-raw[i].points[l.foot][1]-.02);
-    if(descendingTerrain&&weights[i]>0&&chosen.foot[2]<hip[2]-.15&&length(sub(chosen.foot,supportHip))>current.reach*.995)break;
+    if(descendingTerrain&&weights[i]>0&&(host.travelAt?ahead(hip,chosen.foot,i)<-.15:chosen.foot[2]<hip[2]-.15)&&length(sub(chosen.foot,supportHip))>current.reach*.995)break;
     // Also release when the rolling contact exceeds physical leg reach.
-    if(i>span.start&&weights[i]>0&&chosen.foot[2]<hip[2]-.15&&length(sub(chosen.foot,loweredHip))>current.reach*.995)break;
+    if(i>span.start&&weights[i]>0&&(host.travelAt?ahead(hip,chosen.foot,i)<-.15:chosen.foot[2]<hip[2]-.15)&&length(sub(chosen.foot,loweredHip))>current.reach*.995)break;
     limits[i]=softReach(length(sub(chosen.foot,hip)),current.reach*.995,weights[i]);
     targets[i]=chosen.foot;rotations[i]=chosen.rotation;states[i]='PIN';
     offsets[i]=geometry(raw[i],current,chosen.rotation);
-    contacts[i]={surface:hit.tile.id,point:chosen.contact,local:sub(chosen.contact,[0,hit.height,hit.tile.z0]),
+    contacts[i]={surface:hit.tile.id,point:chosen.contact,local:localContact(chosen.contact,hit.tile),
      localPoint:chosen.localPoint,pivotKey:chosen.pivotKey,stanceId:side+':'+span.start,angle:chosen.angle,extraPitch:chosen.angle-natural,valid:chosen.valid};
    }
   }
@@ -395,7 +403,7 @@ function prepare(run,input){
    // A strafe can meet a higher neighbouring tile before its next landing.
    // Look at the complete departing shoe, not only the next contact height,
    // so the retained roll finishes while there is still time to lift smoothly.
-   const nonforward=settings.rootYawSpeed!==0||(run.direction&&run.direction!=='forward'),l=legs[end][side],offset=sub(targets[end],raw[end].points[l.foot]);
+   const nonforward=!!host.travelAt||settings.rootYawSpeed!==0||(run.direction&&run.direction!=='forward'),l=legs[end][side],offset=sub(targets[end],raw[end].points[l.foot]);
    let approachingObstacle=false;
    if(nonforward)for(let j=end+1;j<=Math.min(next,end+Math.round(fps*.12));j++){
     const point=add(raw[j].points[l.foot],offset),shape=geometry(raw[j],legs[j][side],rotations[end]);
@@ -432,7 +440,7 @@ function prepare(run,input){
     const old=contacts[i],l=legs[i][side];
     targets[i]=chosen.foot;rotations[i]=chosen.rotation;offsets[i]=shape;
     limits[i]=softReach(length(sub(chosen.foot,base[i].points[l.hip])),l.reach*.995,weights[i]);
-    contacts[i]={...old,point:chosen.contact,local:sub(chosen.contact,[0,surface.y,surface.z0]),localPoint:chosen.localPoint,pivotKey:chosen.pivotKey,angle:chosen.angle,extraPitch:old.extraPitch+chosen.angle-old.angle,valid:chosen.valid};
+    contacts[i]={...old,point:chosen.contact,local:localContact(chosen.contact,surface),localPoint:chosen.localPoint,pivotKey:chosen.pivotKey,angle:chosen.angle,extraPitch:old.extraPitch+chosen.angle-old.angle,valid:chosen.valid};
    }
    for(let i=end-lead+1;i<=end;i++){states[i]='SWING';contacts[i]=null;targets[i]=undefined;limits[i]=undefined;rotations[i]={footQ:legs[i][side].footQ,toeQ:legs[i][side].toeQ};offsets[i]=geometry(raw[i],legs[i][side]);}
   }
@@ -461,9 +469,10 @@ function prepare(run,input){
    }
    targets[i]=turned.foot;rotations[i]=turned.rotation;offsets[i]=geometry(raw[i],l,turned.rotation);
    const tile=terrain.tiles.find(t=>t.id===c.surface);
-   contacts[i]={...c,point:turned.contact,local:sub(turned.contact,[0,tile.y,tile.z0]),localPoint:turned.localPoint,pivotKey:turned.pivotKey,yaw:turned.yaw,yawError:turned.yawError,pivotKind:turned.pivotKind};
+   contacts[i]={...c,point:turned.contact,local:localContact(turned.contact,tile),localPoint:turned.localPoint,pivotKey:turned.pivotKey,yaw:turned.yaw,yawError:turned.yawError,pivotKind:turned.pivotKind};
    limits[i]=softReach(length(sub(turned.foot,base[i].points[l.hip])),l.reach*.995,weights[i]);
   }
+  if(host.contacts)host.contacts({side,targets,contacts,states,rotations,offsets,limits,legs,base,raw,terrain,fps});
   const swings=[];
   for(let i=0;i<count;i++){if(states[i]!=='SWING')continue;const start=i;while(i+1<count&&states[i+1]==='SWING')i++;swings.push({start,end:i});}
   for(const span of swings){
@@ -474,9 +483,12 @@ function prepare(run,input){
    // Start preparing a higher landing at toe-off, not when the toe is already
    // next to its riser. The old proximity fade multiplied a prepared clearance
    // by almost zero, then restored it within three frames.
-   if(settings.terrain==='stairs'&&to[1]>from[1]+.005&&raw[a].points[0][2]<terrain.start){
+   if(settings.terrain==='stairs'&&to[1]>from[1]+.005&&(host.rootAtTime||raw[a].points[0][2]<terrain.start)){
     for(let j=a;j<=b;j++)weights[j]=Math.max(weights[j],smooth((j-a)/Math.max(1,(b-a)*.5)));
    }
+   // An initializing host replaces every retained past sample with actual
+   // history. Keep shared weight updates/contact limits, omit its unused tail.
+   if(host.initialCheckpoint)continue;
    if(weights[a]===0&&weights[b]>0&&!(settings.terrain==='stairs'&&to[1]>from[1]+.005)){while(start<b&&weights[start]===0)start++;}
    const path=[];let rotationRelease=0;
    const footDelta=qm(rotations[a].footQ,qinv(legs[a][side].footQ)),toeDelta=qm(rotations[a].toeQ,qinv(legs[a][side].toeQ));
@@ -487,17 +499,17 @@ function prepare(run,input){
     const blendFrames=Math.min(fps*.10,(b-a)/2),release=smooth((i-a)/blendFrames),arrive=smooth(1-(b-i)/blendFrames);
     const nextFoot=qm(rotations[b].footQ,qinv(legs[b][side].footQ)),nextToe=qm(rotations[b].toeQ,qinv(legs[b][side].toeQ));
     rotations[i]={footQ:qm(qslerp(qslerp(footDelta,[0,0,0,1],release),nextFoot,arrive),legs[i][side].footQ),toeQ:qm(qslerp(qslerp(toeDelta,[0,0,0,1],release),nextToe,arrive),legs[i][side].toeQ)};
-    if(contacts[a]&&targets[a][2]<base[a].points[l.hip][2]-.15){
+    if(contacts[a]&&(host.travelAt?ahead(base[a].points[l.hip],targets[a],a)<-.15:targets[a][2]<base[a].points[l.hip][2]-.15)){
      // Toe-off orientation follows swing progress, not a fixed 100ms timer.
      // Keep the released shoe pointed down while it still trails the pelvis.
-     rotationRelease=Math.max(rotationRelease,Math.min(release,smooth((p[2]-base[i].points[l.hip][2]+.15)/.27)));
+     rotationRelease=Math.max(rotationRelease,Math.min(release,smooth(((host.travelAt?ahead(base[i].points[l.hip],p,i):p[2]-base[i].points[l.hip][2])+.15)/.27)));
      const sourceRotation={footQ:qm(nextFoot,legs[i][side].footQ),toeQ:qm(nextToe,legs[i][side].toeQ)};
      // During a turn, waiting for course-forward swing progress can hold an
      // obsolete heading until the last landing frames. Release that heading
      // over the swing while the separate pitch cap preserves toe-off.
-     const turning=Math.abs(commandYaw(settings,b/fps,speed)-commandYaw(settings,a/fps,speed))>1e-6;
+     const turning=Math.abs(yawAt(b/fps)-yawAt(a/fps))>1e-6;
      const blend=Math.max(rotationRelease,arrive,turning?smooth((i-a)/(fps*.18)):0);
-     const yaw=(commandYaw(settings,i/fps,speed)-commandYaw(settings,a/fps,speed))*Math.PI/180;
+     const yaw=(yawAt(i/fps)-yawAt(a/fps))*Math.PI/180;
      const held=yaw?{footQ:qm(R.qexp([0,yaw,0]),rotations[a].footQ),toeQ:qm(R.qexp([0,yaw,0]),rotations[a].toeQ)}:rotations[a];
      rotations[i]={footQ:qslerp(held.footQ,qslerp(legs[i][side].footQ,sourceRotation.footQ,arrive),blend),toeQ:qslerp(held.toeQ,qslerp(legs[i][side].toeQ,sourceRotation.toeQ,arrive),blend)};
     }
@@ -529,7 +541,7 @@ function prepare(run,input){
       rotations[i]=at(lo);offsets[i]=geometry(raw[i],legs[i][side],rotations[i]);
      }
     }
-    if(contacts[a]&&i-a<fps*.15&&p[2]>targets[a][2]){
+    if(contacts[a]&&i-a<fps*.15&&(host.travelAt?ahead(targets[a],p,i)>0:p[2]>targets[a][2])){
      // Lift out of the retained toe contact before translating through a riser.
      // A colliding toe delays forward travel, rather than teleporting upward.
      const startFoot=targets[a],ceiling=Math.max(p[1],startFoot[1]+raw[i].points[l.foot][1]-raw[a].points[l.foot][1]+2*(i-a)/fps);
@@ -551,13 +563,16 @@ function prepare(run,input){
     row.p[1]+=Math.max(row.need,lift*taper);targets[row.i]=row.p;
    }
   }
-  for(let i=0;i<count;i++)targets[i]??=base[i].points[legs[i][side].foot];
-  for(let i=0;i<count;i++)if(weights[i]<1){
-   rotations[i]={footQ:qslerp(legs[i][side].footQ,rotations[i].footQ,weights[i]),toeQ:qslerp(legs[i][side].toeQ,rotations[i].toeQ,weights[i])};
-   offsets[i]=geometry(raw[i],legs[i][side],rotations[i]);
+  if(!host.initialCheckpoint){
+   for(let i=0;i<count;i++)targets[i]??=base[i].points[legs[i][side].foot];
+   for(let i=0;i<count;i++)if(weights[i]<1){
+    rotations[i]={footQ:qslerp(legs[i][side].footQ,rotations[i].footQ,weights[i]),toeQ:qslerp(legs[i][side].toeQ,rotations[i].toeQ,weights[i])};
+    offsets[i]=geometry(raw[i],legs[i][side],rotations[i]);
+   }
   }
-  plans.push({targets,states,contacts,offsets,rotations,limits,swings});
+  plans.push({targets,states,contacts,offsets,rotations,limits,swings,...(host.capture?{flags}:{} )});
  }
+ if(host.initialCheckpoint)return host.initialCheckpoint({plans,legs,base,raw,speed,settings,terrain,fps,count});
  // The source knee plane becomes ill-conditioned near extension and can
  // oscillate at source-sample boundaries. Filter the pole in pelvis space,
  // transporting each neighbour into the current leg axis before averaging.
@@ -680,7 +695,7 @@ function prepare(run,input){
  for(let side=0;side<2;side++)for(const span of plans[side].swings){
   const a=Math.max(0,span.start-1),b=Math.min(count-1,span.end+1,exitIndex>a?exitIndex:count-1),plan=plans[side];
   const from=planned[a].targets[side],to=b===exitIndex?base[b].points[legs[b][side].foot]:planned[b].targets[side];
-  if(!plan.contacts[a]||!planned[a].planted[side]||to[1]<=from[1]+.005||to[2]<=from[2]+.05)continue;
+  if(!plan.contacts[a]||!planned[a].planted[side]||to[1]<=from[1]+.005||(host.travelAt?ahead(from,to,a)<=.05:to[2]<=from[2]+.05))continue;
   // Keep departure travel even when yaw needs a bounded height envelope.
   // Skipping this entire path left released feet following the NN's remaining
   // stance: they lifted over the riser while staying almost fixed horizontally.
@@ -691,7 +706,8 @@ function prepare(run,input){
    // Smooth shoulders clear the first/last riser without a tall mid-swing dome.
    const h=bump<=.5?bump:.5+.15*(1-Math.exp(-(bump-.5)/.15));
    const p=planned[i].targets[side].slice();
-   p[2]=from[2]+(to[2]-from[2])*e;
+   if(host.travelAt){const f=travelAt(i),wanted=add(from,mul(sub(to,from),e)),d=dot(sub(wanted,p),f);p[0]+=f[0]*d;p[2]+=f[2]*d;}
+   else p[2]=from[2]+(to[2]-from[2])*e;
    if(!turned)p[1]=from[1]+(to[1]-from[1])*e;
    const need=terrain.floorFor(p,plan.offsets[i])+settings.clearance/100*Math.sin(Math.PI*u)-p[1];
    arc=Math.max(arc,need/h);path.push({i,p,h});
@@ -707,8 +723,9 @@ function prepare(run,input){
    // frames. Keep its clearance, but retain the NN-derived forward trajectory
    // instead of manufacturing a lead that must be braked away at the handoff.
    if(!planned[b].planted[side]){
-    const e=smooth((i-a)/(b-a)),startOffset=from[2]-base[a].points[legs[a][side].foot][2],endOffset=to[2]-base[b].points[legs[b][side].foot][2];
-    p[2]=base[i].points[legs[i][side].foot][2]+startOffset*(1-e)+endOffset*e;
+    const e=smooth((i-a)/(b-a));
+    if(host.travelAt){const f=travelAt(i),start=sub(from,base[a].points[legs[a][side].foot]),end=sub(to,base[b].points[legs[b][side].foot]),wanted=add(base[i].points[legs[i][side].foot],add(mul(start,1-e),mul(end,e))),d=dot(sub(wanted,p),f);p[0]+=f[0]*d;p[2]+=f[2]*d;}
+    else{const startOffset=from[2]-base[a].points[legs[a][side].foot][2],endOffset=to[2]-base[b].points[legs[b][side].foot][2];p[2]=base[i].points[legs[i][side].foot][2]+startOffset*(1-e)+endOffset*e;}
    }
    const l=legs[i][side],hip=add(base[i].points[l.hip],[0,planned[i].pelvisOffset,0]);
    planned[i].targets[side]=reachable(p,hip,planned[i].reaches[side],plan.offsets[i],terrain);
@@ -746,8 +763,8 @@ function prepare(run,input){
   const a=Math.max(0,span.start-1),b=Math.min(count-1,span.end+1,exitIndex>a?exitIndex:count-1),plan=plans[side];
   const from=planned[a].targets[side],to=b===exitIndex?base[b].points[legs[b][side].foot]:planned[b].targets[side];
 
-  const descending=terrain.rootHeight(raw[b].points[0][2])<terrain.rootHeight(raw[a].points[0][2])-.005;
-  if((!descending&&to[1]<=from[1]+.005)||to[2]<=from[2]+.05||b-a<5||!weights.slice(a,b+1).some(w=>w>0))continue;
+  const descending=rootHeight(b)<rootHeight(a)-.005;
+  if((!descending&&to[1]<=from[1]+.005)||(host.travelAt?ahead(from,to,a)<=.05:to[2]<=from[2]+.05)||b-a<5||!weights.slice(a,b+1).some(w=>w>0))continue;
   const lo=Math.max(0,a-1),hi=Math.min(count-1,b+1),reference=[],floor=[],fixed=new Map();
   for(let i=lo;i<=hi;i++){
    const p=planned[i].targets[side],u=clamp((i-a)/(b-a),0,1);
@@ -764,7 +781,7 @@ function prepare(run,input){
    const l=legs[i][side],hip=add(base[i].points[l.hip],[0,planned[i].pelvisOffset,0]);
    // On ascent, retain toe-off height while the shoe trails the hip. Descent
    // must shed the stale tread offset throughout the clearance-safe swing.
-   const release=descending?1:plan.contacts[a]?smooth((p[2]-hip[2]+.15)/.30):1;
+   const release=descending?1:plan.contacts[a]?smooth((ahead(hip,p,i)+.15)/.30):1;
    p[1]=descending||plan.contacts[a]?p[1]+Math.min(0,heights[i-lo]-p[1])*release:heights[i-lo];
    planned[i].targets[side]=reachable(p,hip,planned[i].reaches[side],plan.offsets[i],terrain);
   }
@@ -780,14 +797,14 @@ function prepare(run,input){
   const a=Math.max(0,span.start-1),plan=plans[side];
   let b=Math.min(count-1,span.end+1,exitIndex>a?exitIndex:count-1);
   const from=planned[a].targets[side],endpoint=planned[b].targets[side];
-  if(!plan.contacts[a]||!planned[a].planted[side]||planned[b].planted[side]||(!descendingTerrain&&endpoint[1]<=from[1]+.005)||endpoint[2]<=from[2]+.05||b-a<5)continue;
+  if(!plan.contacts[a]||!planned[a].planted[side]||planned[b].planted[side]||(!descendingTerrain&&endpoint[1]<=from[1]+.005)||(host.travelAt?ahead(from,endpoint,a)<=.05:endpoint[2]<=from[2]+.05)||b-a<5)continue;
   const prev=Math.max(0,a-4);
-  const rootSpeed=(base[a].points[0][2]-base[prev].points[0][2])*fps/Math.max(1,a-prev);
+  const rootSpeed=ahead(base[prev].points[0],base[a].points[0],a)*fps/Math.max(1,a-prev);
   const pelvis=legs[a][side].pelvis;
   const origin=i=>add(base[i].points[pelvis],[0,planned[i].pelvisOffset,0]);
   // Author recovery along travel in the root frame. Anatomical pelvis-forward
   // reverses during backward gait and is perpendicular during a strafe.
-  const axis=i=>rotate(settings.rootYawSpeed?R.qexp([0,-facingAngle-commandYaw(settings,i/fps,speed)*Math.PI/180,0]):travelHeading,rotate(base[i].q[pelvis],[0,-1,0]));
+  const axis=i=>host.travelAt?travelAt(i):rotate(settings.rootYawSpeed||host.yawAt?R.qexp([0,-facingAngle-yawAt(i/fps)*Math.PI/180,0]):travelHeading,rotate(base[i].q[pelvis],[0,-1,0]));
   const localAt=i=>dot(sub(planned[i].targets[side],origin(i)),axis(i));
   const sourceLocal=i=>dot(sub(base[i].points[legs[i][side].foot],base[i].points[pelvis]),axis(i));
   const sourceSpeed=(sourceLocal(a)-sourceLocal(prev))*fps/Math.max(1,a-prev);
@@ -836,6 +853,31 @@ function prepare(run,input){
   const incoming=(localAt(a)-localAt(Math.max(0,a-1)))*fps,carryTime=Math.min(.06,seconds*.25);
   const carryAt=u=>descendingTerrain&&u*seconds<carryTime?(incoming-v0)*u*seconds*(1-u*seconds/carryTime)**2:0;
   const forwardAt=u=>start+distance*smooth(u)+seconds*(v0*u*(1-u)**2-v1*u*u*(1-u))+carryAt(u);
+  if(host.travelAt){
+   // The same scalar pelvis-local recovery corridor in the actual horizontal
+   // travel direction. No division by a fixed world Z component is required.
+   const lo=a,hi=Math.min(count-1,b+1),reference=[],bounds=[],upper=[],fixed=new Map();
+   const pointAt=(i,value)=>add(planned[i].targets[side],mul(axis(i),value-localAt(i)));
+   for(let i=lo;i<=hi;i++){
+    const p=planned[i].targets[side],u=clamp((i-a)/(b-a),0,1),wanted=forwardAt(u);
+    upper.push(-localAt(i)-carryAt(u));
+    if(i<=a||i>=b){reference.push(-localAt(i));bounds.push(-localAt(i));fixed.set(i-lo,-localAt(i));continue;}
+    let limit=descendingTerrain?Math.max(localAt(i)+carryAt(u),wanted):wanted;
+    if(terrain.floorFor(pointAt(i,limit),plan.offsets[i])>p[1]-1e-5){
+     let low=localAt(i)+dot(sub(from,p),axis(i)),high=limit;
+     for(let n=0;n<20;n++){const mid=(low+high)/2;if(terrain.floorFor(pointAt(i,mid),plan.offsets[i])<=p[1]-1e-5)low=mid;else high=mid;}
+     limit=low-1e-5;
+    }
+    reference.push(-Math.max(descendingTerrain?localAt(i)+carryAt(u):-Infinity,wanted));bounds.push(-limit);upper[i-lo]=Math.max(upper[i-lo],bounds[i-lo]);
+   }
+   const forward=clearanceCurve(reference,bounds,fixed,(fps*.065)**4,descendingTerrain?upper:null);
+   for(let i=a+1;i<b;i++){
+    if(footWeight(i,side)===0||planned[i].planted[side])continue;
+    const l=legs[i][side],hip=add(base[i].points[l.hip],[0,planned[i].pelvisOffset,0]);
+    planned[i].targets[side]=reachable(pointAt(i,-forward[i-lo]),hip,planned[i].reaches[side],plan.offsets[i],terrain);
+   }
+   continue;
+  }
   const lo=a,hi=Math.min(count-1,b+1),reference=[],bounds=[],upper=[],fixed=new Map();
   for(let i=lo;i<=hi;i++){
    const p=planned[i].targets[side],u=clamp((i-a)/(b-a),0,1),wanted=worldAt(i,forwardAt(u));
@@ -872,6 +914,9 @@ function prepare(run,input){
  // low-pass filter that could drive a foot through terrain.
  for(let side=0;side<2;side++){
   const original=planned.map(p=>p.targets[side].slice());
+  const forwardAxis=host.travelAt?travelAt(0):[0,0,1],lateralAxis=[forwardAxis[2],0,-forwardAxis[0]];
+  const component=(p,axis)=>!host.travelAt||axis===1?p[axis]:dot(p,axis===0?lateralAxis:forwardAxis);
+  const setComponent=(p,axis,value)=>{if(!host.travelAt||axis===1){p[axis]=value;return;}const f=axis===0?lateralAxis:forwardAxis,d=value-component(p,axis);p[0]+=f[0]*d;p[2]+=f[2]*d;};
   for(let a=0;a<count;){
    if(footWeight(a,side)===0||planned[a].planted[side]){a++;continue;}
    let b=a;while(b+1<count&&footWeight(b+1,side)>0&&!planned[b+1].planted[side])b++;
@@ -880,12 +925,12 @@ function prepare(run,input){
     const reference=[],floor=[],ceiling=[],budget=[],fixed=new Map();
     for(let i=lo;i<=hi;i++){
      const l=legs[i][side],p=planned[i].targets[side],hip=add(base[i].points[l.hip],[0,planned[i].pelvisOffset,0]);
-     reference.push(original[i][axis]);
-     if(i<a||i>b){floor.push(-Infinity);ceiling.push(Infinity);fixed.set(i-lo,p[axis]);continue;}
+     reference.push(component(original[i],axis));
+     if(i<a||i>b){floor.push(-Infinity);ceiling.push(Infinity);fixed.set(i-lo,component(p,axis));continue;}
      let radius2=planned[i].reaches[side]**2;
-     for(let j=0;j<3;j++)if(j!==axis)radius2-=(p[j]-hip[j])**2;
+     for(let j=0;j<3;j++)if(j!==axis)radius2-=(component(p,j)-component(hip,j))**2;
      const radius=Math.sqrt(Math.max(0,radius2));
-     let lower=hip[axis]-radius,upper=hip[axis]+radius;
+     let lower=component(hip,axis)-radius,upper=component(hip,axis)+radius;
      if(axis===1){
       lower=Math.max(lower,terrain.floorFor(p,plans[side].offsets[i]));
       if(lower>upper){p[0]=original[i][0];p[2]=original[i][2];const r=Math.sqrt(Math.max(0,planned[i].reaches[side]**2-(p[0]-hip[0])**2-(p[2]-hip[2])**2));lower=Math.max(hip[1]-r,terrain.floorFor(p,plans[side].offsets[i]));upper=hip[1]+r;}
@@ -894,21 +939,21 @@ function prepare(run,input){
       // actual collision/reach requirements take priority over this budget.
       budget[i-lo]=Math.min(upper,Math.max(lower,Math.max(original[i][1],base[i].points[l.foot][1])+settings.clearance/100));
      }else{
-      lower=Math.max(lower,original[i][axis]-.025);upper=Math.min(upper,original[i][axis]+.025);
+      lower=Math.max(lower,component(original[i],axis)-.025);upper=Math.min(upper,component(original[i],axis)+.025);
       // Smoothing a recovered step must not spend extra vertical clearance
       // merely to cross a riser a few samples sooner. Keep the available
       // forward corridor at this height, then fit height continuously.
-      if(run.direction&&run.direction!=='forward'){
+      if(host.travelAt||(run.direction&&run.direction!=='forward')){
        // Lateral smoothing can cross an adjacent tile edge even when forward
        // travel is clear. Keep both horizontal axes inside the existing shoe
        // corridor instead of manufacturing a new vertical obstacle at release.
-       const anchor=clamp(original[i][axis],lower,upper),point=p.slice();point[axis]=anchor;
+       const anchor=clamp(component(original[i],axis),lower,upper),point=p.slice();setComponent(point,axis,anchor);
        const floorBudget=Math.max(original[i][1],terrain.floorFor(point,plans[side].offsets[i]));
-       const clear=value=>{point[axis]=value;return terrain.floorFor(point,plans[side].offsets[i])<=floorBudget+1e-7;};
+       const clear=value=>{setComponent(point,axis,value);return terrain.floorFor(point,plans[side].offsets[i])<=floorBudget+1e-7;};
        const bound=edge=>{if(clear(edge))return edge;let lo=anchor,hi=edge;for(let n=0;n<18;n++){const mid=(lo+hi)/2;if(clear(mid))lo=mid;else hi=mid;}return lo;};
        lower=bound(lower);upper=bound(upper);
       }
-      if(axis===2&&recoveryWeights[side][i]>0){
+      if(!host.travelAt&&axis===2&&recoveryWeights[side][i]>0){
        const clear=z=>terrain.floorFor([p[0],p[1],z],plans[side].offsets[i])<=p[1]+1e-7;
        if(!clear(upper)&&clear(lower)){
         let lo=lower,hi=upper;
@@ -935,7 +980,7 @@ function prepare(run,input){
      }
     }
     const curve=clearanceCurve(reference,floor,fixed,(fps*.06)**4,ceiling);
-    for(let i=a;i<=b;i++)planned[i].targets[side][axis]=clamp(original[i][axis]+(curve[i-lo]-original[i][axis])*footWeight(i,side),floor[i-lo],ceiling[i-lo]);
+    for(let i=a;i<=b;i++){const value=component(original[i],axis);setComponent(planned[i].targets[side],axis,clamp(value+(curve[i-lo]-value)*footWeight(i,side),floor[i-lo],ceiling[i-lo]));}
    }
    a=b+1;
   }
@@ -952,7 +997,7 @@ function prepare(run,input){
   for(let i=1;i<count;i++)if(planned[i].planted.some((pin,side)=>pin&&!planned[i-1].planted[side])){
    if(!knots.length||i-knots.at(-1)>.12*fps)knots.push(i);
   }
-  const end=base.findIndex(p=>p.points[0][2]>=terrain.end);
+  const end=host.rootAtTime?-1:base.findIndex(p=>p.points[0][2]>=terrain.end);
   if(end>=0&&knots.length&&end>knots.at(-1))knots.push(end);
   const reference=new Array(count).fill(0),lower=[],upper=[],fixed=new Map();
   for(let k=1;k<knots.length;k++){
@@ -980,6 +1025,7 @@ function prepare(run,input){
   const curve=clearanceCurve(reference,lower,fixed,(fps*.08)**4,upper);
   for(let i=0;i<count;i++){pelvisTransfers[i]=curve[i];planned[i].pelvisOffset+=curve[i];}
  }
+ if(host.trajectory)host.trajectory({planned,plans,legs,base,raw,weights,terrain,fps,settings,clearanceCurve});
  // Preserve the NN ankle articulation in flight, then hand orientation back
  // to the world-space contact plan. Never apply swing articulation to a retained contact.
  // Evaluate the complete shoe before accepting an orientation: ankle position
@@ -998,7 +1044,7 @@ function prepare(run,input){
     // Its subsequent ankle rotation is normal gait, not unfinished stair push.
     // The full-shoe clearance test below still bounds every free rotation.
     const contact=plan.contacts[i];levelExit=['stairs','down'].includes(settings.terrain)&&
-     Math.abs(contact.point[1]-terrain.rootHeight(terrain.end))<.005;
+     (host.rootAtTime?weights.slice(i).every(w=>w===0):Math.abs(contact.point[1]-terrain.rootHeight(terrain.end))<.005);
     released=levelExit?null:original;
     if(levelExit&&!planned[i+1]?.planted[side]){
      const p=moved(base[i],[0,planned[i].pelvisOffset,0]);
@@ -1093,7 +1139,7 @@ function prepare(run,input){
   metrics.maxPelvis=Math.max(metrics.maxPelvis,Math.abs(pelvisOffset));
   frames.push({pose,raw:base[i],feet,pelvisOffset,pelvisTransfer:pelvisTransfers[i],root:base[i].points[0],influence:w});
  }
- return {frames,terrain,settings,metrics,speed,duration:run.duration,fps,sample:t=>frames[clamp(Math.round(t*fps),0,count-1)]};
+ return {frames,terrain,settings,metrics,speed,duration:run.duration,fps,...(host.capture?{checkpoint:{plans,planned,legs,base,raw}}:{}),sample:t=>frames[clamp(Math.round(t*fps),0,count-1)]};
 }
 const api={defaults,sanitize,commandYaw,rootHeading,decode,travelAt,at,prepare,geometry,stableLeg,solve,yawPose,createPinYaw};
 if(typeof module!=='undefined')module.exports=api;else root.FootIK=api;

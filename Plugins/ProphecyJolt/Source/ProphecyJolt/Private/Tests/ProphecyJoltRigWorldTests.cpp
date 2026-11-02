@@ -1824,4 +1824,191 @@ bool FProphecyFootColliderTrimTest::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltRigFiniteCarryAnchorsTest,
+    "Prophecy.Jolt.RigWorld.FiniteJointCarryAnchors", ProphecyJolt::RigWorldTests::Flags)
+bool FProphecyJoltRigFiniteCarryAnchorsTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::RigWorldTests;
+    for(bool ReverseJoint:{false,true})
+    {
+        auto Snapshot=MakeRig();
+        const FVector COMs[]={FVector(7,-3,11),FVector(-4,5,9)};
+        for(int32 I=0;I<2;++I)Snapshot.Bodies[I].MassFrameToBodyOrigin.SetTranslation(COMs[I]);
+        auto& Joint=Snapshot.Joints[0];
+        const FVector ParentAnchor=Joint.Frame2.GetLocation()-COMs[0],ChildAnchor=Joint.Frame1.GetLocation()-COMs[1];
+        Joint.CurrentProfile.ConeLimit.Swing1Motion=Joint.CurrentProfile.ConeLimit.Swing2Motion=ACM_Free;
+        Joint.CurrentProfile.TwistLimit.TwistMotion=ACM_Free;
+        if(ReverseJoint){Swap(Joint.Body1Index,Joint.Body2Index);Swap(Joint.Bone1,Joint.Bone2);Swap(Joint.Frame1,Joint.Frame2);}
+        FProphecyJoltPreparedRig Prepared;if(!Prepare(*this,Snapshot,Prepared))return false;
+        FScopedWorld Scope;auto* Owner=Scope.Get();
+        if(!TestNotNull(TEXT("Finite carry fixture owner"),Owner)
+            || !Okay(*this,TEXT("Initialize finite carry fixture"),Owner->InitializeSimulation(SmallWorld())))return false;
+        FProphecyJoltRigHandle Rig;TArray<FProphecyJoltBodyHandle> Bodies;TArray<FString> Notes;
+        if(!Okay(*this,TEXT("Create native offset-COM PHAT rig"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes)))return false;
+        auto Targets=MakeTargets(Snapshot,Bodies); // deliberately child first
+        auto& P=Targets[1];auto& C=Targets[0];
+        P.bFiniteJointCarry=C.bFiniteJointCarry=true;
+        P.TargetRotation=FQuat(FVector::RightVector,.2);
+        C.TargetRotation=P.TargetRotation*FQuat(FVector::ForwardVector,-.3);
+        C.TargetPositionCm=FVector(900,-500,800);C.Parent=Bodies[0];C.WorldAlpha=0;
+        C.ParentStart=Snapshot.Bodies[0].BodyOriginToWorld;
+        C.ParentTarget=FTransform(P.TargetRotation,P.TargetPositionCm);
+        constexpr float H=.02f;
+        if(!Okay(*this,TEXT("Map live PHAT anchors and reversed packet"),Owner->PublishRigVelocityTargets(Rig,Targets,H))
+            || !Okay(*this,TEXT("Step native finite carry rig"),Owner->Step(H,1)))return false;
+        FProphecyJoltRigServoState Servo;
+        if(!Okay(*this,TEXT("Read finite carry commands"),Owner->ReadRigServoSamples(Rig,Servo)))return false;
+        const FVector ParentV=(P.TargetPositionCm+P.TargetRotation.RotateVector(COMs[0])
+            -Snapshot.Bodies[0].BodyOriginToWorld.GetLocation()-COMs[0])/H;
+        const FVector ChildV=ParentV+(P.TargetRotation.RotateVector(ParentAnchor)-ParentAnchor
+            -C.TargetRotation.RotateVector(ChildAnchor)+ChildAnchor)/H;
+        TestNearlyEqual(TEXT("Root command uses exact offset COM endpoint"),Servo.Samples[1].LinearAfterCmPerSecond,ParentV,.005);
+        TestNearlyEqual(TEXT("Native PHAT anchors map to parent/child COM despite constraint order"),Servo.Samples[0].LinearAfterCmPerSecond,ChildV,.005);
+        auto Invalid=Targets;Invalid.RemoveAt(1);
+        TestFalse(TEXT("Missing parent command is rejected atomically"),Owner->PublishRigVelocityTargets(Rig,Invalid,H).IsSuccess());
+        Targets[0].bFiniteJointCarry=Targets[1].bFiniteJointCarry=false;
+        Targets[0].WorldAlpha=1;
+        TestTrue(TEXT("Normal world drive is restored by the next inactive packet"),Owner->PublishRigVelocityTargets(Rig,Targets,H).IsSuccess());
+    }
+    return !HasAnyErrors();
+}
+
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyJoltFiniteKinematicParentTest,
+    "Prophecy.Jolt.RigWorld.FiniteKinematicParent", ProphecyJolt::RigWorldTests::Flags)
+bool FProphecyJoltFiniteKinematicParentTest::RunTest(const FString&)
+{
+    using namespace ProphecyJolt::RigWorldTests;
+    for(bool ReverseJoint:{false,true})for(int32 Substeps:{1,2,4,8})
+    {
+        auto Snapshot=MakeRig();Snapshot.Bodies[0].bSimulating=false;
+        Snapshot.Bodies[0].MassFrameToBodyOrigin.SetTranslation(FVector(7,-3,11));
+        Snapshot.Bodies[1].MassFrameToBodyOrigin.SetTranslation(FVector(-4,5,9));
+        auto& Joint=Snapshot.Joints[0];
+        Joint.CurrentProfile.ConeLimit.Swing1Motion=Joint.CurrentProfile.ConeLimit.Swing2Motion=ACM_Free;
+        Joint.CurrentProfile.TwistLimit.TwistMotion=ACM_Free;
+        if(ReverseJoint){Swap(Joint.Body1Index,Joint.Body2Index);Swap(Joint.Bone1,Joint.Bone2);Swap(Joint.Frame1,Joint.Frame2);}
+        FProphecyJoltPreparedRig Prepared;if(!Prepare(*this,Snapshot,Prepared))return false;
+        FScopedWorld Scope;auto* Owner=Scope.Get();
+        if(!Owner||!Okay(*this,TEXT("Initialize mixed finite-carry rig"),Owner->InitializeSimulation(SmallWorld())))return false;
+        FProphecyJoltRigHandle Rig;TArray<FProphecyJoltBodyHandle> Bodies;TArray<FString> Notes;
+        if(!Okay(*this,TEXT("Create kinematic parent and dynamic child"),Owner->CreateRig(Snapshot,Prepared,Rig,Bodies,Notes)))return false;
+        constexpr float Dt=1.f/60;
+        const FTransform Goal(FQuat(FVector(1,2,3).GetSafeNormal(),.12),FVector(3,-2,104));
+        FProphecyJoltBodyState Before,After;Owner->ReadBody(Bodies[1],Before);
+        TestFalse(TEXT("Saved exclusion cannot silently move an actually dynamic body"),
+            Owner->ValidateKinematicBodyMove(Bodies[1],Goal,Dt).IsSuccess());
+        TestFalse(TEXT("Move also rejects the native dynamic mismatch"),Owner->MoveKinematicBody(Bodies[1],Goal,Dt).IsSuccess());
+        Owner->ReadBody(Bodies[1],After);
+        TestTrue(TEXT("Rejected preflight retains physical pose, velocity and motion type"),After.bDynamic
+            && After.PositionCm==Before.PositionCm && After.Rotation==Before.Rotation
+            && After.CenterOfMassVelocityCmPerSecond==Before.CenterOfMassVelocityCmPerSecond);
+        if(!Okay(*this,TEXT("Validate actual kinematic endpoint"),Owner->ValidateKinematicBodyMove(Bodies[0],Goal,Dt)))return false;
+        FProphecyJoltRigVelocityTarget Child;Child.Handle=Bodies[1];Child.Parent=Bodies[0];Child.WorldAlpha=0;
+        Child.bFiniteJointCarry=true;Child.ParentStart=Snapshot.Bodies[0].BodyOriginToWorld;Child.ParentTarget=Goal;
+        Child.TargetPositionCm=FVector(900,-500,800); // A local child must ignore this world position.
+        Child.TargetRotation=Goal.GetRotation();Child.StartRotation=FQuat::Identity;Child.TrajectoryDurationSeconds=Dt;
+        if(!Okay(*this,TEXT("Accept finite child without a dynamic parent command"),Owner->PublishRigVelocityTargets(Rig,MakeArrayView(&Child,1),Dt/Substeps))
+            || !Okay(*this,TEXT("Move kinematic parent without disabling joints"),Owner->MoveKinematicBody(Bodies[0],Goal,Dt)))return false;
+        FProphecyJoltBodyState PublishedParent;
+        if(!Okay(*this,TEXT("Read published kinematic velocity"),Owner->ReadBody(Bodies[0],PublishedParent))
+            || !Okay(*this,TEXT("Step mixed finite-carry rig"),Owner->Step(Dt,Substeps)))return false;
+        FProphecyJoltBodyState Parent;Owner->ReadBody(Bodies[0],Parent);Owner->ReadBody(Bodies[1],After);
+        const FString Variant=FString::Printf(TEXT("FiniteKinematicParent reverse=%d substeps=%d"),int32(ReverseJoint),Substeps);
+        FProphecyJoltRigServoState Servo;
+        if(!Okay(*this,TEXT("Read finite-parent diagnostic sample"),Owner->ReadRigServoSamples(Rig,Servo)))return false;
+        if(Servo.Samples.Num()==1 && Servo.Samples[0].bValid && Servo.LastIntegrationSeconds>0)
+        {
+            // Read-only evidence from the original Step(Dt, Substeps) path. The public
+            // receipt retains only the LAST native substep, not every invocation.
+            const auto& Sample=Servo.Samples[0];const double H=Servo.LastIntegrationSeconds;
+            const auto Advance=[](const FQuat& Q,const FVector& W,double Seconds)
+            {const double Speed=W.Size();return Speed>UE_SMALL_NUMBER?(FQuat(W/Speed,Speed*Seconds)*Q).GetNormalized():Q;};
+            const FVector ParentCOM=Snapshot.Bodies[0].MassFrameToBodyOrigin.GetTranslation();
+            const FVector ChildCOM=Snapshot.Bodies[1].MassFrameToBodyOrigin.GetTranslation();
+            const FVector ParentLocalAnchor=FVector(0,0,20)-ParentCOM,ChildLocalAnchor=FVector(0,0,-20)-ChildCOM;
+            // Kinematic motion is unaffected by the joint. Reconstruct its last
+            // substep start from the measured published velocity and initial pose.
+            const FVector PV=PublishedParent.CenterOfMassVelocityCmPerSecond,PW=PublishedParent.AngularVelocityRadiansPerSecond;
+            const FQuat ParentStart=Advance(PublishedParent.Rotation,PW,Dt-H),ParentEnd=Advance(PublishedParent.Rotation,PW,Dt);
+            const FVector ParentStartCOM=PublishedParent.CenterOfMassPositionCm+PV*(Dt-H);
+            const FVector ParentEndCOM=PublishedParent.CenterOfMassPositionCm+PV*Dt;
+            const FVector ParentRadius=ParentStart.RotateVector(ParentLocalAnchor),ChildRadius=Sample.Rotation.RotateVector(ChildLocalAnchor);
+            const FVector ChildStartCOM=Sample.PositionCm+Sample.Rotation.RotateVector(ChildCOM);
+            const FVector ParentPointV=PV+FVector::CrossProduct(PW,ParentRadius);
+            const FVector Residual=Sample.LinearAfterCmPerSecond+FVector::CrossProduct(Sample.AngularAfterRadiansPerSecond,ChildRadius)-ParentPointV;
+            const FVector FinalResidual=After.CenterOfMassVelocityCmPerSecond+FVector::CrossProduct(After.AngularVelocityRadiansPerSecond,ChildRadius)-ParentPointV;
+            const FQuat FreeEnd=Advance(Sample.Rotation,Sample.AngularAfterRadiansPerSecond,H);
+            const FQuat SolvedEnd=Advance(Sample.Rotation,After.AngularVelocityRadiansPerSecond,H);
+            const FVector FreeCOM=ChildStartCOM+Sample.LinearAfterCmPerSecond*H;
+            const FVector SolvedCOM=ChildStartCOM+After.CenterOfMassVelocityCmPerSecond*H;
+            const FVector ParentEndAnchor=ParentEndCOM+ParentEnd.RotateVector(ParentLocalAnchor);
+            const FVector ExpectedFiniteV=PV+(ParentEnd.RotateVector(ParentLocalAnchor)-ParentRadius
+                -ParentEnd.RotateVector(ChildLocalAnchor)+ChildRadius)/H; // Local child rotation is identity in this case.
+            const FVector DeltaV=After.CenterOfMassVelocityCmPerSecond-Sample.LinearAfterCmPerSecond;
+            const FVector DeltaW=After.AngularVelocityRadiansPerSecond-Sample.AngularAfterRadiansPerSecond;
+            // This fixture has one point joint, isotropic inertia, no contacts,
+            // gravity, damping or gyro. Compare measured momentum change with the
+            // instantaneous Jacobian prediction; this is NOT a native lambda read.
+            const double Mass=Snapshot.Bodies[1].MassKg,Inertia=Snapshot.Bodies[1].PrincipalInertiaKgCmSquared.X;
+            const FVector Parallel=ChildRadius*FVector::DotProduct(Residual,ChildRadius)/ChildRadius.SizeSquared();
+            const FVector PredictedImpulse=-Mass*Parallel-(Residual-Parallel)/(1./Mass+ChildRadius.SizeSquared()/Inertia);
+            const FVector MeasuredImpulse=Mass*DeltaV;
+            TestTrue(TEXT("Finite command matches exact free anchor transport"),
+                (Sample.LinearAfterCmPerSecond-ExpectedFiniteV).Size()<.001);
+            TestTrue(TEXT("Point joint removes instantaneous anchor velocity error"),FinalResidual.Size()<.001);
+            TestTrue(TEXT("Measured point impulse matches the constraint Jacobian"),(MeasuredImpulse-PredictedImpulse).Size()<.001);
+            TestTrue(TEXT("Angular momentum change matches the point impulse"),
+                (Inertia*DeltaW-FVector::CrossProduct(ChildRadius,MeasuredImpulse)).Size()<.01);
+            const double SolvedGap=(SolvedCOM+SolvedEnd.RotateVector(ChildLocalAnchor)-ParentEndAnchor).Size();
+            const double FinalGap=(After.PositionCm+After.Rotation.RotateVector(FVector(0,0,-20))
+                -Parent.PositionCm-Parent.Rotation.RotateVector(FVector(0,0,20))).Size();
+            TestTrue(TEXT("Position solve reduces the finite-step anchor error"),FinalGap<=SolvedGap+.001);
+            if(Substeps==1)
+            {
+                // At this deliberately coarse step, exact finite anchor transport
+                // differs from the instantaneous point-joint Jacobian. Verify the
+                // command and physical impulse separately; endpoint accuracy is
+                // checked below at the lab's resolution and its coarser neighbour.
+                TestTrue(TEXT("Coarse free angular command reaches its target"),FreeEnd.AngularDistance(Goal.GetRotation())<.003);
+                TestTrue(TEXT("Coarse free command preserves the connected anchor"),
+                    (FreeCOM+FreeEnd.RotateVector(ChildLocalAnchor)-ParentEndAnchor).Size()<.05);
+            }
+            AddInfo(FString::Printf(TEXT("%s last_substep=%llu h=%.9g denominator=%.9g parent_endpoint_cm=%.9g parent_endpoint_rad=%.9g command_endpoint_rad=%.9g final_endpoint_rad=%.9g finite_command_v_error_cm_s=%.9g"),
+                *Variant,Servo.InvocationCount,H,double(Servo.DenominatorSeconds),(Parent.CenterOfMassPositionCm-ParentEndCOM).Size(),
+                Parent.Rotation.AngularDistance(ParentEnd),FreeEnd.AngularDistance(Goal.GetRotation()),After.Rotation.AngularDistance(Goal.GetRotation()),
+                (Sample.LinearAfterCmPerSecond-ExpectedFiniteV).Size()));
+            AddInfo(FString::Printf(TEXT("%s last_start_anchor_gap_cm=%.9g free_endpoint_anchor_gap_cm=%.9g solved_velocity_endpoint_anchor_gap_cm=%.9g final_anchor_gap_cm=%.9g position_solve_com_correction_cm=%.9g position_solve_rotation_correction_rad=%.9g"),
+                *Variant,(ChildStartCOM+ChildRadius-ParentStartCOM-ParentRadius).Size(),
+                (FreeCOM+FreeEnd.RotateVector(ChildLocalAnchor)-ParentEndAnchor).Size(),
+                (SolvedCOM+SolvedEnd.RotateVector(ChildLocalAnchor)-ParentEndAnchor).Size(),
+                (After.PositionCm+After.Rotation.RotateVector(FVector(0,0,-20))-Parent.PositionCm-Parent.Rotation.RotateVector(FVector(0,0,20))).Size(),
+                (After.CenterOfMassPositionCm-SolvedCOM).Size(),After.Rotation.AngularDistance(SolvedEnd)));
+            AddInfo(FString::Printf(TEXT("%s instantaneous_anchor_residual_cm_s=%s final_velocity_same_jacobian_residual_cm_s=%s delta_v_cm_s=%s delta_w_rad_s=%s inferred_impulse_kg_cm_s=%s jacobian_impulse_error_kg_cm_s=%.9g angular_impulse_error_kg_cm2_s=%.9g"),
+                *Variant,*Residual.ToString(),*FinalResidual.ToString(),*DeltaV.ToString(),*DeltaW.ToString(),*MeasuredImpulse.ToString(),
+                (MeasuredImpulse-PredictedImpulse).Size(),(Inertia*DeltaW-FVector::CrossProduct(ChildRadius,MeasuredImpulse)).Size()));
+        }
+        else AddWarning(Variant+TEXT(" has no valid last-substep servo sample; solver attribution unavailable."));
+        TestFalse(TEXT("Parent stays kinematic"),Parent.bDynamic);TestTrue(TEXT("Child stays dynamic"),After.bDynamic);
+        TestNearlyEqual(TEXT("Kinematic origin reaches the authored endpoint"),Parent.PositionCm,Goal.GetLocation(),.003);
+        const FVector ParentAnchor=Parent.PositionCm+Parent.Rotation.RotateVector(FVector(0,0,20));
+        const FVector ChildAnchor=After.PositionCm+After.Rotation.RotateVector(FVector(0,0,-20));
+        if(Substeps>=2)
+        {
+            TestTrue(TEXT("Child follows parent rotation"),After.Rotation.AngularDistance(Goal.GetRotation())<.003);
+            TestNearlyEqual(TEXT("Original joint anchors remain connected"),ParentAnchor,ChildAnchor,.05);
+        }
+        if(!Counts(*this,*Owner,2,1))return false;
+        const FTransform Hold(Parent.Rotation,Parent.PositionCm);
+        Child.ParentStart=Child.ParentTarget=Hold;Child.StartRotation=Child.TargetRotation=Parent.Rotation;
+        if(!Okay(*this,TEXT("Publish stationary mixed packet"),Owner->PublishRigVelocityTargets(Rig,MakeArrayView(&Child,1),Dt/Substeps))
+            || !Okay(*this,TEXT("Hold kinematic parent on pause"),Owner->MoveKinematicBody(Bodies[0],Hold,Dt))
+            || !Okay(*this,TEXT("Step held mixed rig"),Owner->Step(Dt,Substeps)))return false;
+        Owner->ReadBody(Bodies[0],Parent);
+        TestTrue(TEXT("Held parent has no stale translation or spin"),Parent.CenterOfMassVelocityCmPerSecond.IsNearlyZero(.003)
+            && Parent.AngularVelocityRadiansPerSecond.IsNearlyZero(.0001));
+    }
+    return !HasAnyErrors();
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

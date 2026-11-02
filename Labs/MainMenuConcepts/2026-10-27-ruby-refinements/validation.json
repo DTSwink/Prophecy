@@ -1,0 +1,172 @@
+{
+  "count": 20,
+  "uniqueImages": 20,
+  "dimensions": "1672x941",
+  "totalBytes": 33481486.0,
+  "referenceExactCopy": true,
+  "visualReview": "All 20 individually reviewed",
+  "galleryScript": "Syntax checked",
+  "liveBrowserTest": false,
+  "images": [
+    {
+      "id": "01",
+      "file": "01-quiet-atelier.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1649434,
+      "sha256": "9834AB45958ACC5FF921C16302FE68002CE6C94A691F1173D0D93E264D3F0F8D"
+    },
+    {
+      "id": "02",
+      "file": "02-architectural-rebate.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1684078,
+      "sha256": "221731A2D7552C3C35B36FB277703292E1FC019D36A3C631ED3DDA522D63B00B"
+    },
+    {
+      "id": "03",
+      "file": "03-jewellers-setting.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1666505,
+      "sha256": "96AA591B0AF8D974B861B5289876A104C6DE2BDAE219058ECAAC06FB1E104821"
+    },
+    {
+      "id": "04",
+      "file": "04-floating-inner-rail.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1677066,
+      "sha256": "705B565FE433D3F51D181FF2A020B0F34CF76163B6A651F1950BA994670117C7"
+    },
+    {
+      "id": "05",
+      "file": "05-stepped-classic.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1670342,
+      "sha256": "DC44BE6BB43FD70D8349DBF0F47E3086D4574E60E656CF2FBE82398DFD19A777"
+    },
+    {
+      "id": "06",
+      "file": "06-roman-inscription.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1681664,
+      "sha256": "07AA8AFC2D7FDD0616F885271E83F91363B86AB9325464CA20F833E79D157C19"
+    },
+    {
+      "id": "07",
+      "file": "07-editorial-ivory.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1674883,
+      "sha256": "837A4912A157FC4808B57FF9C049E5F493F5CB6F4092289632E4B3A2A412AA16"
+    },
+    {
+      "id": "08",
+      "file": "08-humanist-classic.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1670063,
+      "sha256": "C598C280746429F5C4C245CFE70D8014591028B911F013325DD1A0D30D823CFD"
+    },
+    {
+      "id": "09",
+      "file": "09-bookplate-prestige.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1670642,
+      "sha256": "30AEDC6EBC540482811A90382E56EB5E19CE2C5097C9EC493DD1B6B178472AA1"
+    },
+    {
+      "id": "10",
+      "file": "10-ceremonial-spacing.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1681284,
+      "sha256": "760F85D6BB9A101C7A3141B0A98B4293E5AAC99653CCB1D9B4CF369075519B42"
+    },
+    {
+      "id": "11",
+      "file": "11-polished-ruby.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1699150,
+      "sha256": "11B954F9E8038702680797C6A9D02BB78BB795093F86EFE82EE5AAFF55E51B8C"
+    },
+    {
+      "id": "12",
+      "file": "12-smoked-champagne.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1675491,
+      "sha256": "C03381C6CBA26D19B9B8864B9000C49B886B1D8C9173367314457F308D6BB2A0"
+    },
+    {
+      "id": "13",
+      "file": "13-satin-garnet.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1685026,
+      "sha256": "0AECC703ADF1EA19E68D3AF407A4CB3B40BF7F033CFEE2BBE955DF8119862036"
+    },
+    {
+      "id": "14",
+      "file": "14-enamel-and-gilt.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1672852,
+      "sha256": "322A1CAE2BE1DFC2D330AB2FA2D2038CC2777DF8A94C5E5AF3AAA55D309CE8CA"
+    },
+    {
+      "id": "15",
+      "file": "15-crystal-bevel.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1678156,
+      "sha256": "9D9943EBDB0EC68C714B6F493F3033C07421672C9209241D6E10318716542C80"
+    },
+    {
+      "id": "16",
+      "file": "16-deco-fan.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1677031,
+      "sha256": "2A9A645A57749A7B3BCC15C474D10B0D37022E5A247F22D2A4F61B2B1A14C682"
+    },
+    {
+      "id": "17",
+      "file": "17-engraved-laurel.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1655066,
+      "sha256": "E94C18735987F7C5894187A3EC7025D41E6F7455378E39D4CDDBB2F2CBA902D8"
+    },
+    {
+      "id": "18",
+      "file": "18-long-lozenge.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1652408,
+      "sha256": "3D6204F9A328EFF4C4B3C35D3521F3CA58E7449B94A0A8C641C248E7DFC0A66B"
+    },
+    {
+      "id": "19",
+      "file": "19-corner-compass.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1674465,
+      "sha256": "E5B0248C3BD7BA42E2854C8A4B14F202BA4C87EF88A8786DDC5EC47AEE1F5D74"
+    },
+    {
+      "id": "20",
+      "file": "20-atelier-synthesis.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1685880,
+      "sha256": "90AD5189C9D50066C24D1D629DF4ED059D3ECBF8151DB529FE70303A62C6A827"
+    }
+  ]
+}

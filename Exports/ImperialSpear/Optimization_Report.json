@@ -1,0 +1,169 @@
+{
+  "status": "VERIFIED_SOURCE_AND_MAIN_FBX",
+  "date": "2026-10-28",
+  "before_triangles": 59460,
+  "after_triangles": 43494,
+  "triangles_removed": 15966,
+  "reduction_percent": 26.851664984863778,
+  "vertices": 22559,
+  "max_sampled_surface_deviation_mm": 0.03902876051142812,
+  "components": [
+    {
+      "component": "Tassel \u2022 pierced oval dark lacquer bead",
+      "before": 1088,
+      "after": 978,
+      "max_sampled_deviation_mm": 0.025865827410598285
+    },
+    {
+      "component": "Socket \u2022 continuous cast inverted S.001",
+      "before": 1606,
+      "after": 1204,
+      "max_sampled_deviation_mm": 0.016596382920397446
+    },
+    {
+      "component": "Socket \u2022 continuous cast inverted S",
+      "before": 1606,
+      "after": 1204,
+      "max_sampled_deviation_mm": 0.016541061995667405
+    },
+    {
+      "component": "Tassel \u2022 pierced small dark lacquer bead",
+      "before": 1088,
+      "after": 978,
+      "max_sampled_deviation_mm": 0.02582948400231544
+    },
+    {
+      "component": "07 \u2022 reference cast housing with pierced eye",
+      "before": 7312,
+      "after": 3290,
+      "max_sampled_deviation_mm": 0.03902876051142812
+    },
+    {
+      "component": "Blade \u2022 flame and compact unified casting",
+      "before": 3692,
+      "after": 1660,
+      "max_sampled_deviation_mm": 0.025876230210997164
+    },
+    {
+      "component": "Grip \u2022 chased straight keeper lower",
+      "before": 1148,
+      "after": 1032,
+      "max_sampled_deviation_mm": 0.00013560980960392044
+    },
+    {
+      "component": "Grip \u2022 chased straight keeper upper",
+      "before": 1148,
+      "after": 1032,
+      "max_sampled_deviation_mm": 0.00012129405035921081
+    },
+    {
+      "component": "02 \u2022 carved lotus pommel body",
+      "before": 16640,
+      "after": 9152,
+      "max_sampled_deviation_mm": 0.01981095556402579
+    },
+    {
+      "component": "Pommel \u2022 six carved lotus petals",
+      "before": 7776,
+      "after": 6608,
+      "max_sampled_deviation_mm": 0.01299269115406787
+    }
+  ],
+  "render_comparison": {
+    "head": {
+      "mean_absolute_channel_error_255": 0.09536366458461969,
+      "p95_channel_error_255": 1.0,
+      "pixels_over_16_percent": 0.031725347187872045
+    },
+    "pommel": {
+      "mean_absolute_channel_error_255": 0.4150363567632474,
+      "p95_channel_error_255": 2.0,
+      "pixels_over_16_percent": 0.1747793022169843
+    }
+  },
+  "fbx_readback": {
+    "status": "PASS",
+    "triangles": 43494,
+    "hulls": 17,
+    "sockets": 4,
+    "surface": {
+      "source_to_fbx": {
+        "corners_checked": 130482,
+        "maximum_position_error_m": 1.3969838619232178e-08,
+        "maximum_uv0_error": 0.0,
+        "minimum_normal_dot": 0.9999998313872736,
+        "maximum_linear_color_error": 0.0,
+        "kdtree_fallbacks": 150,
+        "material_assignment_checked_per_corner": true,
+        "linear_vertex_color_checked_per_corner": true
+      },
+      "fbx_to_source": {
+        "corners_checked": 130482,
+        "maximum_position_error_m": 1.3969838619232178e-08,
+        "maximum_uv0_error": 0.0,
+        "minimum_normal_dot": 0.9999998313872736,
+        "maximum_linear_color_error": 0.0,
+        "kdtree_fallbacks": 150,
+        "material_assignment_checked_per_corner": true,
+        "linear_vertex_color_checked_per_corner": true
+      },
+      "position_tolerance_m": 1e-05,
+      "uv0_tolerance": 1e-05,
+      "required_minimum_normal_dot": 0.9999,
+      "maximum_uv0_error": 0.0,
+      "linear_color_tolerance": 3.1e-05,
+      "maximum_linear_color_error": 0.0,
+      "minimum_normal_dot": 0.9999998313872736
+    }
+  },
+  "fbx_sdk_readback": {
+    "candidate": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\Optimization20261028\\SM_ImperialSpear.fbx",
+    "sha256": "e1dbb2b1414c32d180d75d5c3214f0c667abe695647f250c1bf0962449ef6814",
+    "vertices": 22559,
+    "triangles": 43494,
+    "readback_maximum_error": {
+      "positions": 0.0,
+      "normals": 0.0,
+      "uv0": 0.0,
+      "uv1": 0.0,
+      "linear_colors": 0.0
+    },
+    "collision_hulls": 17,
+    "sockets": 4,
+    "collision_and_socket_data_exactly_preserved": true,
+    "material_name": "M_ImperialSpear_PBR",
+    "uv_layers": [
+      "UV0_SurfaceAtlas",
+      "UV1_Lightmap"
+    ],
+    "tangents_generated_from_uv0": true,
+    "grip_reference_z": 1.0586251318454742
+  },
+  "collision_hulls": 17,
+  "sockets": 4,
+  "collision_and_sockets_unchanged": true,
+  "source_manual_transforms_preserved": true,
+  "original_working_blend_untouched": true,
+  "texture_hashes": {
+    "T_ImperialSpear_BaseColor.png": "b2c73dd6ffa5937a04d749aabf165313f21957c919d8bb173893a60c41c9dd97",
+    "T_ImperialSpear_NormalDX.png": "70e8aacbc8ff464017448c19a85fb11c88c462966c4f583985043d1230930f79",
+    "T_ImperialSpear_NormalGL.png": "0b36392a4865b6bb07b09b56c4470b8398f6bb595144bba90a36234ac6e3d76c",
+    "T_ImperialSpear_ORM.png": "9bf9381c1c6be06f45bec1cbdd7cb4fe4f6f2a7c06a9d834fd67325ba5fc97d0"
+  },
+  "files": {
+    "ImperialSpear_Optimized.blend": "fd2692ba674afcb677c09731042d4e26295ddf1b099ab85aab85e39afabe5dbc",
+    "SM_ImperialSpear.fbx": "e1dbb2b1414c32d180d75d5c3214f0c667abe695647f250c1bf0962449ef6814"
+  },
+  "unreal_import_tested": false,
+  "lab_cache_refreshed": false,
+  "historical_not_refreshed": [
+    "ImperialSpear_Source.blend",
+    "ImperialSpear_Game.blend",
+    "SM_ImperialSpear.glb",
+    "SM_ImperialSpear_LOD1.fbx",
+    "SM_ImperialSpear_LOD2.fbx",
+    "Asset_Report.json",
+    "Export_Verification.json"
+  ],
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\Optimization20261028"
+}

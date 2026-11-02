@@ -1,0 +1,358 @@
+{
+  "schema": "bodyflip-native-port-verification-v1",
+  "date": "2026-11-02",
+  "runtime": "f55a6813a5365e1c61e9e00d3d5f8155d255da6bd19e853c6b35c9a1103654be",
+  "modules": 44,
+  "changedModules": [
+    "physical-flight.js",
+    "core.js",
+    "physical-aim.js",
+    "attack-aim.js",
+    "jump-attack.js"
+  ],
+  "changedAuthoredClips": [
+    "pike"
+  ],
+  "normalBuildSucceeded": true,
+  "appParity": {
+    "cases": 18,
+    "frames": 513,
+    "maximumPositionMetres": 7.530201749163165e-08,
+    "maximumRotationRadians": 2.904771073105625e-07
+  },
+  "pinnedV8": {
+    "cases": 21,
+    "frames": 607,
+    "numbers": 137251,
+    "maximumDifference": 0,
+    "caseNames": [
+      "saved-pike",
+      "pike-steering-off",
+      "pike-front",
+      "pike-back",
+      "pike-fast-spin",
+      "slashL",
+      "slashLU",
+      "slashRU",
+      "sweepKick",
+      "KickL",
+      "big-throw",
+      "small-throw",
+      "slashL-twist",
+      "sweepKick-twist",
+      "big-throw-twist",
+      "small-throw-twist",
+      "poses-and-keep",
+      "authored-world-ray",
+      "saved-pike-native-rig",
+      "pike-front-native-rig",
+      "pike-back-native-rig"
+    ]
+  },
+  "actualUnrealVM": {
+    "frames": 513,
+    "numbers": 117179,
+    "maximumDifference": 0
+  },
+  "nativeInitialTests": [
+    {
+      "test": "Prophecy.Bodyflip.Controls.BlueprintOptions",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.Controls.CarrierHeading",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.Controls.FailedGenerationRetainsError",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.Controls.SavedLabTuning",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.Controls.WorldThrowDirection",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.Physics.SubstepResolution",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.SavedSetup.Kinematic",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.SavedSetup.Physical",
+      "state": "Fail",
+      "errors": [
+        "Expected 'Jolt maximum body rotation tracking error below45deg' to be true."
+      ]
+    },
+    {
+      "test": "Prophecy.Bodyflip.AgentKinematicAndSim",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.AirBigThrow",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.AirSmallThrow",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.AsyncTrimExtension",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.ExistingBlueprintCompatibility",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.PhysicalBigThrow",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.PhysicalHandBoth",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Bodyflip.PhysicalHandLeft",
+      "state": "Fail",
+      "errors": [
+        "Expected 'Physical leg segment length error below3cm' to be true."
+      ]
+    },
+    {
+      "test": "Prophecy.Bodyflip.PhysicalSmallThrow",
+      "state": "Success",
+      "errors": []
+    },
+    {
+      "test": "Prophecy.Jolt.Bodyflip.FractionalRelease",
+      "state": "Success",
+      "errors": []
+    }
+  ],
+  "airPhysical": {
+    "airStatus": "completed",
+    "airMetrics": {
+      "rootMaxCm": 2.220446049250313e-16,
+      "targetMaxCm": 7.160723346098895e-15,
+      "targetRotationMaxRad": 4.2146848510894035e-08,
+      "physicalMaxCm": 6.760397917624572,
+      "physicalRotationMaxRad": 0.22614670208172497,
+      "physicalSamples": 4554,
+      "segmentLengthMaxCm": 0.10936071116521617,
+      "physicalRmsCm": 0.465912659537154,
+      "physicalRotationRmsRad": 0.008592722943242708,
+      "sawRise": false,
+      "sawSpin": true,
+      "pausedAndResumed": true
+    },
+    "floorMetrics": {
+      "rootMaxCm": 2.220446049250313e-16,
+      "targetMaxCm": 7.160723346098895e-15,
+      "targetRotationMaxRad": 4.2146848510894035e-08,
+      "physicalMaxCm": 11.516125383153874,
+      "physicalRotationMaxRad": 1.5568528141004085,
+      "physicalSamples": 4554,
+      "segmentLengthMaxCm": 0.5800615715623607,
+      "physicalRmsCm": 0.553726278404077,
+      "physicalRotationRmsRad": 0.05253167008623749,
+      "sawRise": false,
+      "sawSpin": true,
+      "pausedAndResumed": true
+    },
+    "canonicalDifferentFrames": [],
+    "airFloorContacts": 0,
+    "floorFloorContacts": 1757
+  },
+  "editor": {
+    "success": true,
+    "reason": "Existing Blueprint compiled; actual Play initialized and NN targets advanced",
+    "scope": "Cold reflection and NN Play startup; physical tracking is tested separately",
+    "assets_unchanged": true,
+    "before": {
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "8ae4d2d5899e15d0f436e398ac3fd709f50505ab5e4e1ce9497306918dbd5eec",
+      "Content/testNN.umap": "43367266b1543325c567e6762ac32ab01c8ac34e5068a4732eb7f78162b918c6"
+    },
+    "after": {
+      "Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": "8ae4d2d5899e15d0f436e398ac3fd709f50505ab5e4e1ce9497306918dbd5eec",
+      "Content/testNN.umap": "43367266b1543325c567e6762ac32ab01c8ac34e5068a4732eb7f78162b918c6"
+    },
+    "rows": [
+      {
+        "absolute_tick": 1,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 2,
+        "bones": 25,
+        "alpha": 0.0,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 3,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 4,
+        "bones": 25,
+        "alpha": 0.0,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 5,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      },
+      {
+        "absolute_tick": 61,
+        "bones": 25,
+        "alpha": 0.5,
+        "actor": "/Game/UEDPIE_0_testNN.testNN:PersistentLevel.BP_ProphecyManualPoseAgent_C_0"
+      }
+    ],
+    "saved_setup_callable": true,
+    "elapsed_seconds": 14.125
+  },
+  "packageAudit": {
+    "passed": true,
+    "count": 100,
+    "checks": {
+      "Labs/BodyflipLab/flight.js": true,
+      "Labs/BodyflipLab/preparation.js": true,
+      "Labs/BodyflipLab/physical-flight.js": true,
+      "Labs/BodyflipLab/recovery.js": true,
+      "Labs/BodyflipLab/mass.js": true,
+      "Labs/BodyflipLab/torso.js": true,
+      "Labs/BodyflipLab/rig-profile.js": true,
+      "Labs/BodyflipLab/momentum.js": true,
+      "Labs/BodyflipLab/target-rig.js": true,
+      "Labs/BodyflipLab/joint-rig.js": true,
+      "Labs/BodyflipLab/wrist.js": true,
+      "Labs/BodyflipLab/support.js": true,
+      "Labs/BodyflipLab/core.js": true,
+      "Labs/BodyflipLab/body-contact.js": true,
+      "Labs/BodyflipLab/physical-aim.js": true,
+      "Labs/BodyflipLab/attack-aim.js": true,
+      "Labs/BodyflipLab/attack-inertia.js": true,
+      "Labs/BodyflipLab/leg-response.js": true,
+      "Labs/BodyflipLab/spin-contact.js": true,
+      "Labs/BodyflipLab/hand-support.js": true,
+      "Labs/BodyflipLab/hand-inertia.js": true,
+      "Labs/BodyflipLab/bounce.js": true,
+      "Labs/BodyflipLab/capsule.js": true,
+      "Labs/BodyflipLab/foot-ik.js": true,
+      "Labs/FootIKLab/surface.js": true,
+      "Labs/FootIKLab/recovery.js": true,
+      "Labs/FootIKLab/support.js": true,
+      "Labs/FootIKLab/footik.js": true,
+      "Labs/FootIKLab/terrain.js": true,
+      "Labs/FootIKLab/slide-joints.js": true,
+      "Labs/FootIKLab/slide-entry.js": true,
+      "Labs/FootIKLab/slide-arms.js": true,
+      "Labs/BodyflipLab/jump-motion.js": true,
+      "Labs/BodyflipLab/data/poses.json": true,
+      "Labs/BodyflipLab/spin.js": true,
+      "Labs/BodyflipLab/spin-response.js": true,
+      "Labs/BodyflipLab/jump-attack.js": true,
+      "Labs/BodyflipLab/kick-attack.js": true,
+      "Labs/BodyflipLab/airborne-motion.js": true,
+      "Labs/BodyflipLab/attack-entry.js": true,
+      "Labs/BodyflipLab/throw-attack.js": true,
+      "Labs/BodyflipLab/throw-source.js": true,
+      "Labs/BodyflipLab/space-gym.js": true,
+      "Labs/BodyflipLab/idle.js": true,
+      "Labs/BodyflipLab/data/manifest.json": true,
+      "Labs/BodyflipLab/data/idle.json": true,
+      "Labs/BodyflipLab/data/idle.bin": true,
+      "Labs/BodyflipLab/data/jumps.json": true,
+      "Labs/BodyflipLab/data/jumps-standing.json": true,
+      "Labs/BodyflipLab/data/vanilla.json": true,
+      "Labs/BodyflipLab/data/throws.json": true,
+      "Labs/BodyflipLab/data/vanilla/headbutt.bin": true,
+      "Labs/BodyflipLab/data/vanilla/hookL.bin": true,
+      "Labs/BodyflipLab/data/vanilla/hookR.bin": true,
+      "Labs/BodyflipLab/data/vanilla/jabL.bin": true,
+      "Labs/BodyflipLab/data/vanilla/jabR.bin": true,
+      "Labs/BodyflipLab/data/vanilla/KickL.bin": true,
+      "Labs/BodyflipLab/data/vanilla/KickR.bin": true,
+      "Labs/BodyflipLab/data/vanilla/overL.bin": true,
+      "Labs/BodyflipLab/data/vanilla/overR.bin": true,
+      "Labs/BodyflipLab/data/vanilla/pike.bin": true,
+      "Labs/BodyflipLab/data/vanilla/slashL.bin": true,
+      "Labs/BodyflipLab/data/vanilla/slashLD.bin": true,
+      "Labs/BodyflipLab/data/vanilla/slashLU.bin": true,
+      "Labs/BodyflipLab/data/vanilla/slashR.bin": true,
+      "Labs/BodyflipLab/data/vanilla/slashRD.bin": true,
+      "Labs/BodyflipLab/data/vanilla/slashRU.bin": true,
+      "Labs/BodyflipLab/data/vanilla/sweepKick.bin": true,
+      "Content/BodyflipLab/Runtime.js": true,
+      "Content/BodyflipLab/Assets.json": true,
+      "Content/BodyflipLab/Projectiles.json": true,
+      "Content/BodyflipLab/AttackIndex.json": true,
+      "Content/BodyflipLab/LabSettings.json": true,
+      "Content/BodyflipLab/Attacks/headbutt.json": true,
+      "Content/BodyflipLab/Attacks/hookL.json": true,
+      "Content/BodyflipLab/Attacks/hookR.json": true,
+      "Content/BodyflipLab/Attacks/jabL.json": true,
+      "Content/BodyflipLab/Attacks/jabR.json": true,
+      "Content/BodyflipLab/Attacks/KickL.json": true,
+      "Content/BodyflipLab/Attacks/KickR.json": true,
+      "Content/BodyflipLab/Attacks/overL.json": true,
+      "Content/BodyflipLab/Attacks/overR.json": true,
+      "Content/BodyflipLab/Attacks/pike.json": true,
+      "Content/BodyflipLab/Attacks/slashL.json": true,
+      "Content/BodyflipLab/Attacks/slashLD.json": true,
+      "Content/BodyflipLab/Attacks/slashLU.json": true,
+      "Content/BodyflipLab/Attacks/slashR.json": true,
+      "Content/BodyflipLab/Attacks/slashRD.json": true,
+      "Content/BodyflipLab/Attacks/slashRU.json": true,
+      "Content/BodyflipLab/Attacks/sweepKick.json": true,
+      "Adapter source": true,
+      "Runtime polyfills": true,
+      "Pinned trigonometry source": true,
+      "FinalNoAim manifest": true,
+      "FinalNoAim baked clips": true,
+      "Captured settings": true,
+      "Live lab settings untouched": true,
+      "Untouched Content/_mygame/locomotion/BP_ProphecyManualPoseAgent.uasset": true,
+      "Untouched Content/testNN.umap": true,
+      "Untouched Content/Characters/UEFN_Mannequin/Meshes/SKM_UEFN_Mannequin.uasset": true
+    },
+    "runtime": "f55a6813a5365e1c61e9e00d3d5f8155d255da6bd19e853c6b35c9a1103654be",
+    "runtimeBytes": 1011860,
+    "modules": 44
+  },
+  "limits": [
+    "The floor-level Space Gym saved scene has an 89.2-degree right-foot tracking error during floor contact. Identical canonical motion passes with the floor 120 cm lower.",
+    "PhysicalHandLeft failed the unchanged 3 cm leg-length gate at 4.125 cm in the combined run. The separate retry was interrupted by the overall 900-second host limit after AirPhysical and CurrentLabParity had already completed successfully. This floor-contact suite is not claimed green.",
+    "The first extra native-rig/front V8 probe exceeded 180 seconds under concurrent load. Isolated front and rear retries passed with a 600-second timeout; numerical tolerances were unchanged.",
+    "The accepted lab Pike steering is not an exact straight-line constraint; unsupported fits keep standard aim and publish pikeSteeringFallback."
+  ],
+  "noAssetSaves": true,
+  "liveLabSettingsUnchanged": true
+}

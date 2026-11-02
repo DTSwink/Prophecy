@@ -166,13 +166,41 @@
         "armed": 9.0,
         "hit": 16.0
       },
-      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\controller_dof_candidate_gt32_v1\\pike.npz",
-      "sha256": "5362a1ee1a09d0f69ed461ab3672227ecea78e5b27c37d0d54283eed388f722a",
       "hitTarget": [
-        -0.1030610129237175,
-        0.937729001045227,
-        1.3656100034713745
-      ]
+        -0.21266733012026637,
+        0.9288209481027082,
+        1.442188548841386
+      ],
+      "hitTargetSource": {
+        "kind": "retained-sword-contact",
+        "bone": "hand_r",
+        "local": [
+          -0.19471399784439639,
+          0.0382711376982489,
+          0.6348494237645422
+        ],
+        "referenceClipSHA256": "5362a1ee1a09d0f69ed461ab3672227ecea78e5b27c37d0d54283eed388f722a",
+        "referenceTarget": [
+          -0.1030610129237175,
+          0.937729001045227,
+          1.3656100034713745
+        ]
+      },
+      "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\ue5\\slashes\\pike_final.fbx",
+      "sourceSHA256": "668f646742642466f6fa959c4de17b995ba594a439e9ac2d81c8b66c22bf7678",
+      "sourceFrames": [
+        0,
+        17
+      ],
+      "sourceAxis": {
+        "up_axis": 2,
+        "up_sign": 1,
+        "front_axis": 2,
+        "front_sign": 1,
+        "coord_axis": 0
+      },
+      "sha256": "dd0fedf8bc30fd4385276b7c61de8c352d556398c9a74121906719247af142e6",
+      "sourceOverride": true
     },
     {
       "name": "slashL",

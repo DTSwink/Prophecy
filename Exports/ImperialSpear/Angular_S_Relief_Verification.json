@@ -1,0 +1,56 @@
+{
+  "modified_objects": [
+    "Socket \u2022 continuous cast inverted S.001",
+    "Socket \u2022 continuous cast inverted S"
+  ],
+  "protected_components_identical": 84,
+  "protected_uv_layers_identical": true,
+  "S_uv_interpolated_from_original": true,
+  "materials_and_transforms_identical": true,
+  "validation": {
+    "Socket \u2022 continuous cast inverted S.001": {
+      "vertices": 805,
+      "triangles": 1606,
+      "manifold": true,
+      "positive_volume_m3": 1.8244266794376835e-06,
+      "minimum_triangle_area_m2": 7.326445418992096e-09,
+      "minimum_triangle_corner_normal_dot": 0.5582235317889079,
+      "minimum_visible_triangle_outward_y": 0.23707039127034688,
+      "folded_visible_triangles": 0,
+      "degenerate_triangles": 0,
+      "footprint_bounds_unchanged": true,
+      "footprint_overlap_cleaned_area_mm2": 0.0014997661075284024,
+      "footprint_boundary_hausdorff_mm": 0.11824660541178712,
+      "source_uv_interpolation_max_projection_distance_m": 0.0,
+      "local_harder_normal_corners": 16,
+      "crest_fraction_of_width": 0.32,
+      "toe_width_mm": 0.1,
+      "topology_change": "Constrained triangulation removes three inherited folded quads per S; projected exterior follows the original footprint.",
+      "source_vertices": 909,
+      "source_triangles": 1814,
+      "back_embedded_depth_mm": 0.25
+    },
+    "Socket \u2022 continuous cast inverted S": {
+      "vertices": 805,
+      "triangles": 1606,
+      "manifold": true,
+      "positive_volume_m3": 1.82435306600553e-06,
+      "minimum_triangle_area_m2": 7.326445418992096e-09,
+      "minimum_triangle_corner_normal_dot": 0.5582235317889079,
+      "minimum_visible_triangle_outward_y": 0.23707039127034688,
+      "folded_visible_triangles": 0,
+      "degenerate_triangles": 0,
+      "footprint_bounds_unchanged": true,
+      "footprint_overlap_cleaned_area_mm2": 0.0014997661075284024,
+      "footprint_boundary_hausdorff_mm": 0.11824660541178712,
+      "source_uv_interpolation_max_projection_distance_m": 0.0,
+      "local_harder_normal_corners": 16,
+      "crest_fraction_of_width": 0.32,
+      "toe_width_mm": 0.1,
+      "topology_change": "Constrained triangulation removes three inherited folded quads per S; projected exterior follows the original footprint.",
+      "source_vertices": 909,
+      "source_triangles": 1814,
+      "back_embedded_depth_mm": 0.25
+    }
+  }
+}

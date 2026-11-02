@@ -54,7 +54,8 @@ void Prepare(JPH::PhysicsSystem& Physics, TConstArrayView<FVelocityServo::FTarge
     if (!Drives) return;
     for (auto& Pair : *Drives) Pair.Value.Published = false;
     for (const auto& Target : Targets)
-        if (auto* Drive = Drives->Find(Target.Body.GetIndexAndSequenceNumber())) Drive->Published = true;
+        if (!Target.bFiniteJointCarry)
+            if (auto* Drive = Drives->Find(Target.Body.GetIndexAndSequenceNumber())) Drive->Published = true;
     for (auto& Pair : *Drives)
     {
         if (Pair.Value.Published) continue;

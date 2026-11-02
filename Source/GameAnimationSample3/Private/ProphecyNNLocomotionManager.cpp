@@ -1,9 +1,16 @@
 #include "ProphecyNNLocomotionManager.h"
+#include "Policies/CondensedJsonPrintPolicy.h"
 #include "ProphecyBreathing.h"
 #include "ProphecyBreathingLibrary.h"
 #include "ProphecySwordHolsterPose.h"
 #include "ProphecyReachRuntime.h"
 #include "ProphecyThrowRuntime.h"
+#include "ProphecyBodyflipRuntime.h"
+#include "ProphecyFootIKOwner.h"
+#include "ProphecyFootIKLive.h"
+#include "ProphecyFootIKGame.h"
+#include "ProphecyFootIKSurfaceOwner.h"
+#include "ProphecyFootIKNavigation.h"
 #include "ProphecyThrowMath.h"
 #include "Misc/ScopeExit.h"
 #include "ProphecySwordHolster.h"
@@ -147,7 +154,7 @@ namespace
 {
 	DEFINE_LOG_CATEGORY_STATIC(LogProphecyNNLocomotion, Log, All);
 
-	constexpr int32 BatchSize = 100;
+	constexpr int32 LocomotionBatchSize = 100;
 
 	struct FResolvedMoverTarget
 	{
@@ -788,7 +795,7 @@ namespace
 		TSharedPtr<UE::NNE::IModelInstanceGPU> GpuInstance;
 	public:
 		int32 InputWidth = InputDim;
-		int32 InputBatchSize = BatchSize;
+		int32 InputBatchSize = LocomotionBatchSize;
 	};
 
 	struct FFootAxes
@@ -986,6 +993,7 @@ struct AProphecyNNLocomotionManager::FImpl
 		double WallStartSeconds = 0.0;
 		double BuildSeconds = 0.0;
 		double InferenceSeconds = 0.0;
+		uint64 ModelInferenceCalls = 0;
 		double OutputSeconds = 0.0;
 		double StoreSeconds = 0.0;
 		int64 Frames = 0;
@@ -1947,12 +1955,12 @@ void AProphecyNNLocomotionManager::BeginPlay()
 			const int32 PlayerIndex = AgentActors.IndexOfByKey(PlayerAgent);
 			if (PlayerIndex != INDEX_NONE) AgentActors.Swap(0, PlayerIndex);
 		}
-		if (AgentActors.Num() > BatchSize)
+		if (AgentActors.Num() > LocomotionBatchSize)
 		{
 			UE_LOG(LogProphecyNNLocomotion, Error,
 				TEXT("Only %d placed agents fit in the NN batch; %d cannot be registered."),
-				BatchSize, AgentActors.Num() - BatchSize);
-			AgentActors.SetNum(BatchSize);
+				LocomotionBatchSize, AgentActors.Num() - LocomotionBatchSize);
+			AgentActors.SetNum(LocomotionBatchSize);
 		}
 	}
 	Impl->bSimpleUsesPlacedAgent = !AgentActors.IsEmpty();
@@ -2020,10 +2028,10 @@ void AProphecyNNLocomotionManager::BeginPlay()
 	{
 		IdleWhenNotForeground->Set(0, ECVF_SetByCode);
 	}
-	CrowdSize = FMath::Clamp(CrowdSize, 1, BatchSize);
+	CrowdSize = FMath::Clamp(CrowdSize, 1, LocomotionBatchSize);
 	NNUpdateHz = FMath::Max(1.0f, NNUpdateHz);
 	FParse::Value(FCommandLine::Get(), TEXT("ProphecyNNLocomotionCrowd="), CrowdSize);
-	CrowdSize = FMath::Clamp(FMath::Max(CrowdSize, AgentActors.Num()), 1, BatchSize);
+	CrowdSize = FMath::Clamp(FMath::Max(CrowdSize, AgentActors.Num()), 1, LocomotionBatchSize);
 	FParse::Value(FCommandLine::Get(), TEXT("ProphecyNNLocomotionRuntime="), PreferredRuntime);
 	FParse::Value(FCommandLine::Get(), TEXT("ProphecyNNAgentSpeedCmPerSecond="), AgentSpeedCmPerSecond);
 	if (Impl->bAbsoluteMotionAudit)
@@ -2210,6 +2218,8 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 	}
 	for (AProphecyAgent* AgentActor : AgentActors)
 	{
+		ProphecyFootIK::Remove(AgentActor);
+		ProphecyFootIKLive::Remove(AgentActor);
 		ProphecyBreathing::Remove(AgentActor);
 		ProphecySwordAttackCollision::End(AgentActor);
 		ProphecyDefenseControls::Remove(AgentActor);
@@ -2257,6 +2267,53 @@ void AProphecyNNLocomotionManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 	Super::EndPlay(EndPlayReason);
 }
 
+void AProphecyNNLocomotionManager::AdvanceFootIKSurfaceControllers()
+{
+    if(!ProphecyFootIKSurface::AnyActive())return;
+    for(int32 I=0;I<AgentActors.Num();++I)
+    {
+        AProphecyAgent* Actor=AgentActors[I];if(!ProphecyFootIKSurface::Active(Actor))continue;
+        bool Parry=false,Dodge=false;GetAgentAttackDefenseState(Actor->GetAgentHandle(),Parry,Dodge);
+        FName Attack;bool Half=false,Armed=false,Hit=false;int32 Frame=0;
+        const bool Attacking=GetAgentNNAttackState(Actor->GetAgentHandle(),Attack,Half,Armed,Hit,Frame);
+        if(!Actor->bNNInferenceEnabled||ProphecyBodyflip::Active(Actor)||ProphecyGetUp::IsActive(Actor)||ProphecyThrow::Active(Actor)||Attacking||Parry||Dodge)
+        {ProphecyFootIKGame::Suspend(Actor);continue;}
+        auto& A=Impl->Agents[I];auto Intent=A.MoverIntent;
+        if(Actor->bUseBlueprintLocomotionInput)
+        {
+            const auto& Input=Actor->LocomotionInput;
+            const FVector Move=Input.WorldMoveInput.ContainsNaN()?FVector::ZeroVector:FVector(Input.WorldMoveInput.X,Input.WorldMoveInput.Y,0);
+            const FVector Face=Input.FacingWorldDirection.ContainsNaN()?FVector::ZeroVector:FVector(Input.FacingWorldDirection.X,Input.FacingWorldDirection.Y,0);
+            Intent.mode=Input.bRun?prophecy::sim::LocomotionMode::Run:prophecy::sim::LocomotionMode::Walk;
+            Intent.speed_amplitude=FMath::Min(Move.Size(),1.);
+            Intent.speed_direction_radians=Move.IsNearlyZero()?0.:prophecy::sim::SignedAngleDelta(A.MoverState.yaw_radians,FMath::Atan2(Move.X,Move.Y));
+            if(!Face.IsNearlyZero())Intent.orientation_yaw_radians=A.MoverState.yaw_radians+prophecy::sim::SignedAngleDelta(A.MoverState.yaw_radians,FMath::Atan2(Face.X,Face.Y));
+            Intent.speed_scale=FMath::IsFinite(Input.SpeedScale)?FMath::Clamp(double(Input.SpeedScale),0.,1.):0;
+            Intent.turn_scale=FMath::IsFinite(Input.TurnScale)?FMath::Clamp(double(Input.TurnScale),0.,1.):0;
+        }
+        else if(Impl->bSimpleLocomotionTest&&!Impl->bAbsoluteMotionAudit)Intent.speed_amplitude=0;
+        else
+        {UpdateRouteIntent(A,AgentSpeedCmPerSecond/MetersToCentimeters,ArrivalRadiusCm/MetersToCentimeters);Intent=A.MoverIntent;}
+        A.MoverIntent=Intent;
+        // Resolve the existing controller's command on a copy. Canonical C owns
+        // the only root integration and returns the actual motion to the NN.
+        auto Copy=A.MoverState;prophecy::sim::LocomotionTarget Target;
+        prophecy::sim::StepLocomotion(Copy,Intent,1./60.,&Target,RootYawImpulseAgents.Contains(Actor));
+        auto& Resolved=ResolvedMoverTargets.FindChecked(this)[I];Resolved.Target=Target;Resolved.bRun=Intent.mode==prophecy::sim::LocomotionMode::Run;Resolved.bValid=true;
+        const auto Future=prophecy::sim::PredictFutureRoots(A.MoverState,Intent,1./30.,RootYawImpulseAgents.Contains(Actor));
+        TArray<FTransform,TInlineAllocator<10>> Heading;
+        Heading.Emplace(FRotator(0,-FMath::RadiansToDegrees(A.PrevRootYaw),0),TrainingToUnreal(A.PrevRootPos));
+        Heading.Emplace(FRotator(0,-FMath::RadiansToDegrees(A.CurRootYaw),0),TrainingToUnreal(A.CurRootPos));
+        for(const auto& Root:Future)Heading.Emplace(FRotator(0,-FMath::RadiansToDegrees(Root.yaw_radians),0),Actor->GetRootLowPoint());
+        FString Error;const FVector Desired(Target.velocity.x*100.,Target.velocity.z*100.,0);
+        if(!ProphecyFootIKGame::RefreshSurface(Actor,Desired,Error)||!ProphecyFootIKSurface::Tick(Actor,Desired,Heading,Impl->GameTick,Error))
+        {
+            UE_LOG(LogTemp,Warning,TEXT("Foot IK surface: %s"),*Error);
+            ProphecyFootIKGame::Suspend(Actor);
+        }
+    }
+}
+
 void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 {
 	ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::ManagerTick);
@@ -2288,9 +2345,12 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	// One authored tick per unpaused game tick, independent of FPS/dilation.
 	const float TickBudget = ProphecyBlendClock::TickBudget(!GetWorld() || GetWorld()->IsPaused(), DeltaSeconds);
 	if(TickBudget>0) ++Impl->GameTick;
+	if(TickBudget>0&&ProphecyFootIKLive::AnyEnabled())
+		for(const auto& Actor:AgentActors)ProphecyFootIKGame::BeforeActions(*this,Actor);
+	if(TickBudget>0) AdvanceFootIKSurfaceControllers();
 	if (ProphecyAgentTime::HasClocks(this) && !IsSimBridgeActive())
 	{
-		ProphecyAgentTime::Advance(this,TickBudget,StepSeconds,BatchSize,MaxCatchUpStepsPerTick,
+		ProphecyAgentTime::Advance(this,TickBudget,StepSeconds,LocomotionBatchSize,MaxCatchUpStepsPerTick,
 			Impl->AccumulatedStepSeconds,GetWorld()?double(GetWorld()->GetTimeSeconds()):0.,
 			[&](ProphecyAgentTime::FStep& Event)
 		{
@@ -2341,9 +2401,29 @@ void AProphecyNNLocomotionManager::Tick(float DeltaSeconds)
 	// Keep the policy clock intact while publishing each active authored frame.
 	if(TickBudget>0&&ProphecyThrow::AnyActive())for(int32 I=0;I<AgentActors.Num();++I)if(ProphecyThrow::Active(AgentActors[I]))
 		PublishAgentPose(I,Impl->Agents[I].PublishedPoseTimeSeconds);
+	if(TickBudget>0&&ProphecyBodyflip::AnyActive())for(int32 I=0;I<AgentActors.Num();++I)if(ProphecyBodyflip::Active(AgentActors[I]))
+		PublishAgentPose(I,Impl->Agents[I].PublishedPoseTimeSeconds);
+	if(TickBudget>0&&ProphecyFootIK::AnyActive())for(int32 I=0;I<AgentActors.Num();++I)if(ProphecyFootIK::Active(AgentActors[I]))
+		PublishAgentPose(I,Impl->Agents[I].PublishedPoseTimeSeconds);
 	UpdateVisualRoots();
     if(ProphecyWalkPinning::AnyTickPinning()) UpdateWalkTickPinning(TickBudget);
 	ProphecyRootPelvisBounds::Apply(*this);
+	if(TickBudget>0&&ProphecyFootIKLive::AnyEnabled())
+		for(int32 I=0;I<AgentActors.Num();++I)if(ProphecyFootIKLive::Enabled(AgentActors[I]))
+		{
+			const bool HadSurface=ProphecyFootIKSurface::Active(AgentActors[I]);
+			ProphecyFootIKGame::Update(*this,AgentActors[I],PoseStoreAgentBase+I,Impl->GameTick);
+			if(!HadSurface&&ProphecyFootIKSurface::Active(AgentActors[I]))
+			{
+				// Cold preparation commits its first solved sample here, after
+				// ordinary publication. Publish that same accepted sample before
+				// readers see Ready; do not advance either policy or solver again.
+				PublishAgentPose(I,Impl->Agents[I].PublishedPoseTimeSeconds);
+				FVector Root;float Yaw=0;
+				if(ProphecyFootIKSurface::Root(AgentActors[I],Root,Yaw))
+					AgentActors[I]->SetActorLocationAndRotation(Root+FVector::UpVector*AgentActors[I]->GetAgentCapsule()->GetScaledCapsuleHalfHeight(),FRotator(0,Yaw,0),false,nullptr,ETeleportType::None);
+			}
+		}
 	const APlayerController* CameraController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
 	AProphecyAgent* CameraPawn = CameraController ? Cast<AProphecyAgent>(CameraController->GetPawn()) : nullptr;
 	const FProphecyAgentHandle CameraHandle = CameraPawn ? CameraPawn->GetAgentHandle() : FProphecyAgentHandle{};
@@ -2474,7 +2554,7 @@ bool AProphecyNNLocomotionManager::LoadRuntimeContract()
 	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(JsonText), Root) || !Root.IsValid()) return false;
 
 	double Number = 0.0;
-	if (!Root->TryGetNumberField(TEXT("batch_size"), Number) || int32(Number) != BatchSize ||
+	if (!Root->TryGetNumberField(TEXT("batch_size"), Number) || int32(Number) != LocomotionBatchSize ||
 		!Root->TryGetNumberField(TEXT("input_dim"), Number) || int32(Number) != InputDim ||
 		!Root->TryGetNumberField(TEXT("model_output_dim"), Number) || int32(Number) != PolicyOutputDim ||
 		!Root->TryGetNumberField(TEXT("state_dim"), Number) || int32(Number) != StateDim)
@@ -2568,7 +2648,7 @@ bool AProphecyNNLocomotionManager::LoadWalkRuntimeContract()
 	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(JsonText), Root) || !Root.IsValid()) return false;
 
 	double Number = 0.0;
-	if (!Root->TryGetNumberField(TEXT("batch_size"), Number) || int32(Number) != BatchSize ||
+	if (!Root->TryGetNumberField(TEXT("batch_size"), Number) || int32(Number) != LocomotionBatchSize ||
 		!Root->TryGetNumberField(TEXT("input_dim"), Number) || int32(Number) != InputDim ||
 		!Root->TryGetNumberField(TEXT("model_output_dim"), Number) || int32(Number) != PolicyOutputDim ||
 		!Root->TryGetNumberField(TEXT("state_dim"), Number) || int32(Number) != StateDim)
@@ -2655,7 +2735,7 @@ bool AProphecyNNLocomotionManager::LoadUpperRuntimeContract()
 	}
 
 	double Number = 0.0;
-	if (!Root->TryGetNumberField(TEXT("batch_size"), Number) || int32(Number) != BatchSize ||
+	if (!Root->TryGetNumberField(TEXT("batch_size"), Number) || int32(Number) != LocomotionBatchSize ||
 		!Root->TryGetNumberField(TEXT("input_dim"), Number) || int32(Number) != UpperInputDim ||
 		!Root->TryGetNumberField(TEXT("output_dim"), Number) || int32(Number) != UpperStateDim)
 	{
@@ -2908,9 +2988,9 @@ bool AProphecyNNLocomotionManager::ValidateUpperNNE()
 	}
 	TArray<float> Input;
 	TArray<float> Output;
-	Input.SetNumUninitialized(BatchSize * UpperInputDim);
-	Output.SetNumZeroed(BatchSize * UpperStateDim);
-	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
+	Input.SetNumUninitialized(LocomotionBatchSize * UpperInputDim);
+	Output.SetNumZeroed(LocomotionBatchSize * UpperStateDim);
+	for (int32 AgentIndex = 0; AgentIndex < LocomotionBatchSize; ++AgentIndex)
 	{
 		float* Row = Input.GetData() + AgentIndex * UpperInputDim;
 		for (int32 InputIndex = 0; InputIndex < UpperInputDim; ++InputIndex)
@@ -2981,55 +3061,55 @@ void AProphecyNNLocomotionManager::ResolveRouteEndpoints()
 
 void AProphecyNNLocomotionManager::InitializeAgents()
 {
-	ResolvedMoverTargets.FindOrAdd(this).Init(FResolvedMoverTarget{}, BatchSize);
-	Impl->Agents.SetNum(BatchSize);
-	Impl->PrevStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->CurStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->PreviousPublishedStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->PublishedStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->NextStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->PhysicalStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->PreviousPhysicalStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->UpperPreviousStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperCurrentStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperCurrentBaseBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperNextBaseBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperPreviousPublishedStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperPublishedStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperPhysicalStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->UpperPreviousPhysicalStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->PreviousPelvisHeadingBuffer.SetNumUninitialized(BatchSize * 9);
-	Impl->CurrentPelvisHeadingBuffer.SetNumUninitialized(BatchSize * 9);
-	Impl->LocalTransformBuffer.SetNumUninitialized(BatchSize * FullBodyBoneCount);
-	Impl->PreviousComponentTransformBuffer.SetNumUninitialized(BatchSize * FullBodyBoneCount);
-	Impl->ComponentTransformBuffer.SetNumUninitialized(BatchSize * FullBodyBoneCount);
-	Impl->PhysicalTransformBuffer.SetNumUninitialized(BatchSize * FullBodyBoneCount);
+	ResolvedMoverTargets.FindOrAdd(this).Init(FResolvedMoverTarget{}, LocomotionBatchSize);
+	Impl->Agents.SetNum(LocomotionBatchSize);
+	Impl->PrevStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->CurStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->PreviousPublishedStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->PublishedStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->NextStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->PhysicalStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->PreviousPhysicalStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->UpperPreviousStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperCurrentStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperCurrentBaseBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperNextBaseBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperPreviousPublishedStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperPublishedStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperPhysicalStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperPreviousPhysicalStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->PreviousPelvisHeadingBuffer.SetNumUninitialized(LocomotionBatchSize * 9);
+	Impl->CurrentPelvisHeadingBuffer.SetNumUninitialized(LocomotionBatchSize * 9);
+	Impl->LocalTransformBuffer.SetNumUninitialized(LocomotionBatchSize * FullBodyBoneCount);
+	Impl->PreviousComponentTransformBuffer.SetNumUninitialized(LocomotionBatchSize * FullBodyBoneCount);
+	Impl->ComponentTransformBuffer.SetNumUninitialized(LocomotionBatchSize * FullBodyBoneCount);
+	Impl->PhysicalTransformBuffer.SetNumUninitialized(LocomotionBatchSize * FullBodyBoneCount);
 	if (PhysicalFeedbackExecutionMode != 0)
 	{
-		Impl->PhysicalFeedbackWorkItems.SetNum(BatchSize);
-		Impl->PhysicalFeedbackIndices.Reserve(BatchSize);
+		Impl->PhysicalFeedbackWorkItems.SetNum(LocomotionBatchSize);
+		Impl->PhysicalFeedbackIndices.Reserve(LocomotionBatchSize);
 	}
-	Impl->AnimationTransformBuffer.SetNumUninitialized(BatchSize * FullBodyBoneCount);
-	Impl->AnimationLowerStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->AnimationUpperStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->AnimationFrozenBaseLowerStateBuffer.SetNumUninitialized(BatchSize * StateDim);
-	Impl->AnimationFrozenBaseUpperStateBuffer.SetNumUninitialized(BatchSize * UpperStateDim);
-	Impl->InputBuffer.SetNumZeroed(BatchSize * InputDim);
-	Impl->OutputBuffer.SetNumZeroed(BatchSize * PolicyOutputDim);
-	Impl->WalkOutputBuffer.SetNumZeroed(BatchSize * PolicyOutputDim);
-	Impl->UpperInputBuffer.SetNumZeroed(BatchSize * UpperInputDim);
-	Impl->UpperOutputBuffer.SetNumZeroed(BatchSize * UpperStateDim);
-	Impl->UpperInferenceAgents.Reserve(BatchSize);
-	Impl->UpperInferenceRequested.Reserve(BatchSize);
-	Impl->UpperPackedInput.Reserve(BatchSize*UpperInputDim);
-	Impl->UpperPackedOutput.Reserve(BatchSize*UpperStateDim);
+	Impl->AnimationTransformBuffer.SetNumUninitialized(LocomotionBatchSize * FullBodyBoneCount);
+	Impl->AnimationLowerStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->AnimationUpperStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->AnimationFrozenBaseLowerStateBuffer.SetNumUninitialized(LocomotionBatchSize * StateDim);
+	Impl->AnimationFrozenBaseUpperStateBuffer.SetNumUninitialized(LocomotionBatchSize * UpperStateDim);
+	Impl->InputBuffer.SetNumZeroed(LocomotionBatchSize * InputDim);
+	Impl->OutputBuffer.SetNumZeroed(LocomotionBatchSize * PolicyOutputDim);
+	Impl->WalkOutputBuffer.SetNumZeroed(LocomotionBatchSize * PolicyOutputDim);
+	Impl->UpperInputBuffer.SetNumZeroed(LocomotionBatchSize * UpperInputDim);
+	Impl->UpperOutputBuffer.SetNumZeroed(LocomotionBatchSize * UpperStateDim);
+	Impl->UpperInferenceAgents.Reserve(LocomotionBatchSize);
+	Impl->UpperInferenceRequested.Reserve(LocomotionBatchSize);
+	Impl->UpperPackedInput.Reserve(LocomotionBatchSize*UpperInputDim);
+	Impl->UpperPackedOutput.Reserve(LocomotionBatchSize*UpperStateDim);
 	const float StepSeconds = 1.0f / NNUpdateHz;
 	const int32 LaneCount = Impl->bSimpleLocomotionTest ? 1 : 10;
-	const int32 Rows = FMath::DivideAndRoundUp(BatchSize, LaneCount);
+	const int32 Rows = FMath::DivideAndRoundUp(LocomotionBatchSize, LaneCount);
 	const FVector3f RouteDirection = SafeNormal(Impl->EndpointB - Impl->EndpointA, FVector3f(0.0f, 0.0f, 1.0f));
 	const FVector3f RouteSide = SafeNormal(FVector3f(RouteDirection.Z, 0.0f, -RouteDirection.X), FVector3f(1.0f, 0.0f, 0.0f));
 
-	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
+	for (int32 AgentIndex = 0; AgentIndex < LocomotionBatchSize; ++AgentIndex)
 	{
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 		const AProphecyAgent* PlacedAgent = AgentActors.IsValidIndex(AgentIndex)
@@ -3381,7 +3461,7 @@ void AProphecyNNLocomotionManager::ResamplePhysicalAgents()
 		// this agent takes several local NN steps before the shared world steps.
 		if (Clock && (!Clock->Step->Due[AgentIndex] || !Clock->Step->SamplePhysics[AgentIndex])) continue;
 		AProphecyAgent* AgentActor = AgentActors[AgentIndex];
-		if (AgentActor && (!AgentActor->bNNInferenceEnabled || ProphecyGetUp::IsActive(AgentActor)))
+		if (AgentActor && (!AgentActor->bNNInferenceEnabled || ProphecyGetUp::IsActive(AgentActor) || (ProphecyFootIK::Active(AgentActor) || ProphecyBodyflip::Active(AgentActor))))
 		{
 			continue;
 		}
@@ -3491,12 +3571,12 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 	const float Speed = AgentSpeedCmPerSecond / MetersToCentimeters;
 	const float Arrival = ArrivalRadiusCm / MetersToCentimeters;
 	const bool bBridgeDriving = IsSimBridgeActive() && Impl->bReceivedBridgeFrame;
-	for (int32 AgentIndex = 0; AgentIndex < BatchSize; ++AgentIndex)
+	for (int32 AgentIndex = 0; AgentIndex < LocomotionBatchSize; ++AgentIndex)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
-			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex])))
+			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]) || (ProphecyFootIK::Active(AgentActors[AgentIndex]) || ProphecyBodyflip::Active(AgentActors[AgentIndex]))))
 		{
 			continue;
 		}
@@ -3704,6 +3784,10 @@ void AProphecyNNLocomotionManager::BuildInputBatch(float StepSeconds)
 			InputActor ? InputActor->LocomotionWalkCheckpointSpeedThreshold : -1.f);
 		if (ProphecyAutoRun::Above(RootSpeedSquared, ProphecyAutoRun::Threshold(InputActor)))
 			Agent.bUseWalkPolicy = false;
+		// The Foot IK lab uses Run181751 at both walking and running speed.
+		// Keep its actual history and private forecast on the same policy;
+		// mover speed and the existing enter/exit blend remain authoritative.
+		if (ProphecyFootIKLive::Enabled(InputActor)) Agent.bUseWalkPolicy = false;
 		if (Agent.Slash.bActive && !Agent.Slash.bHalf && !ProphecyAttackFootLocomotion::Mask(InputActor))
 		{
 			Agent.PolicyBlend.Reset(Agent.bUseWalkPolicy);
@@ -3784,7 +3868,7 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 		if (Impl->Agents[AgentIndex].DefensePose && Impl->Agents[AgentIndex].DefensePose->bDodge) continue;
 		if (AttackOwnsLocomotionOutput(Impl->Agents[AgentIndex],true,AgentActors[AgentIndex])) continue;
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
-			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex])))
+			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]) || (ProphecyFootIK::Active(AgentActors[AgentIndex]) || ProphecyBodyflip::Active(AgentActors[AgentIndex]))))
 		{
 			continue;
 		}
@@ -3800,12 +3884,14 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 		SetActorTickEnabled(false);
 		return false;
 	}
+	if (bNeedRun) ++Impl->Stats.ModelInferenceCalls;
 	if (bNeedWalk && !Impl->WalkModel.Run(Impl->InputBuffer, Impl->WalkOutputBuffer))
 	{
 		UE_LOG(LogProphecyNNLocomotion, Error, TEXT("Walk NNE policy RunSync failed."));
 		SetActorTickEnabled(false);
 		return false;
 	}
+	if (bNeedWalk) ++Impl->Stats.ModelInferenceCalls;
 	if (bNeedWalk)
 	{
 		for (int32 AgentIndex = 0; AgentIndex < CrowdSize; ++AgentIndex)
@@ -3825,6 +3911,7 @@ bool AProphecyNNLocomotionManager::RunModelBatch()
 
 void AProphecyNNLocomotionManager::AdvanceAgentMover(int32 AgentIndex, float StepSeconds)
 {
+    if(AgentActors.IsValidIndex(AgentIndex)&&(ProphecyFootIK::Active(AgentActors[AgentIndex]) || ProphecyBodyflip::Active(AgentActors[AgentIndex])))return;
     auto& Agent=Impl->Agents[AgentIndex];
     auto& MoverTargets=ResolvedMoverTargets.FindChecked(this);
     float* NextState=Agent.DefensePose && Agent.DefensePose->bDodge ? nullptr : StateSlice(Impl->NextStateBuffer,AgentIndex);
@@ -3917,7 +4004,7 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (!AgentActors.IsValidIndex(AgentIndex) || !IsValid(AgentActors[AgentIndex]) ||
-			!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]))
+			!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]) || (ProphecyFootIK::Active(AgentActors[AgentIndex]) || ProphecyBodyflip::Active(AgentActors[AgentIndex])))
 		{
 			continue;
 		}
@@ -4362,7 +4449,16 @@ void AProphecyNNLocomotionManager::ApplyOutputBatch(float StepSeconds)
 	{
 		// Global buffer swaps would advance histories of every skipped lane.
 		for (int32 I=0;I<CrowdSize;++I) if (Clock->Step->Due[I] &&
-			(!AgentActors.IsValidIndex(I) || !AgentActors[I] || (AgentActors[I]->bNNInferenceEnabled && !ProphecyGetUp::FreezeInference(AgentActors[I]))))
+			(!AgentActors.IsValidIndex(I) || !AgentActors[I] || (AgentActors[I]->bNNInferenceEnabled && !ProphecyGetUp::FreezeInference(AgentActors[I]) && !ProphecyFootIK::Active(AgentActors[I]) && !ProphecyBodyflip::Active(AgentActors[I]))))
+		{
+			FMemory::Memcpy(StateSlice(Impl->PrevStateBuffer,I),StateSlice(Impl->CurStateBuffer,I),StateDim*sizeof(float));
+			FMemory::Memcpy(StateSlice(Impl->CurStateBuffer,I),StateSlice(Impl->NextStateBuffer,I),StateDim*sizeof(float));
+		}
+	}
+	else if(ProphecyFootIK::AnyActive() || ProphecyBodyflip::AnyActive())
+	{
+		for(int32 I=0;I<CrowdSize;++I)if(!AgentActors.IsValidIndex(I) || !AgentActors[I] ||
+			(AgentActors[I]->bNNInferenceEnabled && !ProphecyGetUp::FreezeInference(AgentActors[I]) && !ProphecyFootIK::Active(AgentActors[I]) && !ProphecyBodyflip::Active(AgentActors[I])))
 		{
 			FMemory::Memcpy(StateSlice(Impl->PrevStateBuffer,I),StateSlice(Impl->CurStateBuffer,I),StateDim*sizeof(float));
 			FMemory::Memcpy(StateSlice(Impl->CurStateBuffer,I),StateSlice(Impl->NextStateBuffer,I),StateDim*sizeof(float));
@@ -4388,13 +4484,13 @@ void AProphecyNNLocomotionManager::BuildUpperInputBatch(int32 OnlyAgent)
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::UpperInput);
 	const auto* Clock=ProphecyAgentTime::Context(this);
 	Impl->UpperInferenceAgents.Reset();
-	Impl->UpperInferenceRequested.Init(0,BatchSize);
+	Impl->UpperInferenceRequested.Init(0,LocomotionBatchSize);
 	for (int32 AgentIndex = OnlyAgent==INDEX_NONE?0:OnlyAgent; AgentIndex < (OnlyAgent==INDEX_NONE?CrowdSize:OnlyAgent+1); ++AgentIndex)
 	{
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
-			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex])))
+			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]) || (ProphecyFootIK::Active(AgentActors[AgentIndex]) || ProphecyBodyflip::Active(AgentActors[AgentIndex]))))
 		{
 			continue;
 		}
@@ -4475,7 +4571,7 @@ bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 	if(Count==0)return true;
 	// Only eligible agents enter the single normal NN batch. Held returns, active
 	// authors and unused capacity cost no inference; buffers retain their storage.
-	const bool Dense=Count==BatchSize;
+	const bool Dense=Count==LocomotionBatchSize;
 	if(!Dense)
 	{
 		Impl->UpperPackedInput.SetNumUninitialized(Count*UpperInputDim,EAllowShrinking::No);
@@ -4490,6 +4586,7 @@ bool AProphecyNNLocomotionManager::RunUpperModelBatch()
 		SetActorTickEnabled(false);
 		return false;
 	}
+	++Impl->Stats.ModelInferenceCalls;
 	if(!Dense)for(int32 Row=0;Row<Count;++Row)FMemory::Memcpy(
 		Impl->UpperOutputBuffer.GetData()+Impl->UpperInferenceAgents[Row]*UpperStateDim,
 		Impl->UpperPackedOutput.GetData()+Row*UpperStateDim,UpperStateDim*sizeof(float));
@@ -4505,7 +4602,7 @@ void AProphecyNNLocomotionManager::ApplyUpperOutputBatch(int32 OnlyAgent)
 		if (Clock && !Clock->Step->Due[AgentIndex]) continue;
 		if (Impl->Agents[AgentIndex].DefensePose) continue;
 		if (AgentActors.IsValidIndex(AgentIndex) && AgentActors[AgentIndex] &&
-			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex])))
+			(!AgentActors[AgentIndex]->bNNInferenceEnabled || ProphecyGetUp::FreezeInference(AgentActors[AgentIndex]) || (ProphecyFootIK::Active(AgentActors[AgentIndex]) || ProphecyBodyflip::Active(AgentActors[AgentIndex]))))
 		{
 			continue;
 		}
@@ -5011,12 +5108,30 @@ namespace
 
 #include "ProphecyHandInertiaRuntime.inl"
 #include "ProphecyGetUpRuntime.inl"
+#include "ProphecyRobotHandoff.inl"
+#include "ProphecyBodyflipPresentation.inl"
+
+bool AProphecyNNLocomotionManager::CommitBodyflipPose(FProphecyAgentHandle Handle)
+{
+    auto* Actor=ResolveAgent(Handle);
+    if(!Impl || !Impl->bInitialized || !Actor || !ProphecyBodyflip::Active(Actor))return false;
+    FVector Root;float Yaw=0;
+    if(!ProphecyBodyflip::Root(Actor,Root,Yaw))return false;
+    ProphecyFootIKGame::Suspend(Actor);
+    Actor->SetActorLocationAndRotation(Root+FVector::UpVector*Actor->GetAgentCapsule()->GetScaledCapsuleHalfHeight(),
+        FRotator(0,Yaw,0),false,nullptr,ETeleportType::None);
+    return PublishBodyflipPose(*Impl,Handle.Index,Actor,PoseStoreAgentBase+Handle.Index,
+        Impl->Agents[Handle.Index].PublishedPoseTimeSeconds);
+}
+#include "ProphecyFootIKPresentation.inl"
 
 void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double SourceTimeSeconds)
 {
 	if (!Impl || !Impl->Agents.IsValidIndex(AgentIndex) || !AgentActors.IsValidIndex(AgentIndex)
 		|| !IsValid(AgentActors[AgentIndex])) return;
 	ProphecyJolt::CharacterProfiling::FScope Timing(ProphecyJolt::CharacterProfiling::EPhase::ManagerPosePublish);
+	if(PublishBodyflipPose(*Impl,AgentIndex,AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex,SourceTimeSeconds))return;
+	if(PublishFootIKPose(*Impl,AgentIndex,AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex,SourceTimeSeconds))return;
 	const bool bHasPreviousPose=Impl->Agents[AgentIndex].PublishedPoseTimeSeconds>0.;
 	const bool bNewPoseTime=SourceTimeSeconds>Impl->Agents[AgentIndex].PublishedPoseTimeSeconds;
 	const double PreviousPoseTime=Impl->Agents[AgentIndex].PublishedPoseTimeSeconds;
@@ -5216,7 +5331,12 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		}
 	}
 
-	auto BuildComponentWorldTransform = [&](const FVector3f& Root, float Yaw)
+	const FVector PreviousVirtualCarrierRoot=TrainingToUnreal(Agent.PreviousPublishedRoot);
+	const FVector CurrentVirtualCarrierRoot=TrainingToUnreal(Agent.PublishedRoot);
+	FVector PreviousCarrierRoot=PreviousVirtualCarrierRoot,CurrentCarrierRoot=CurrentVirtualCarrierRoot;
+	ProphecyFootIKNavigation::PublicationCarriers(AgentActors[AgentIndex],SourceTimeSeconds,
+		PreviousVirtualCarrierRoot,CurrentVirtualCarrierRoot,PreviousCarrierRoot,CurrentCarrierRoot);
+	auto BuildComponentWorldTransform = [&](const FVector& RootWorld, float Yaw)
 	{
 		FTransform Result = FTransform::Identity;
 		if (AgentActors.IsValidIndex(AgentIndex) && IsValid(AgentActors[AgentIndex]))
@@ -5226,7 +5346,7 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 			const USkeletalMeshComponent* Mesh = AgentActor->GetAgentMesh();
 			if (Capsule && Mesh)
 			{
-				const FVector CapsuleCenter = TrainingToUnreal(Root) +
+				const FVector CapsuleCenter = RootWorld +
 					FVector::UpVector * Capsule->GetScaledCapsuleHalfHeight();
 				const FTransform CapsuleWorld(
 					FRotator(0.0f, -FMath::RadiansToDegrees(Yaw), 0.0f),
@@ -5245,9 +5365,9 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		return Result;
 	};
 	const FTransform PreviousComponentWorldTransform = BuildComponentWorldTransform(
-		Agent.PreviousPublishedRoot, Agent.PreviousPublishedYaw);
+		PreviousCarrierRoot, Agent.PreviousPublishedYaw);
 	const FTransform ComponentWorldTransform = BuildComponentWorldTransform(
-		Agent.PublishedRoot, Agent.PublishedYaw);
+		CurrentCarrierRoot, Agent.PublishedYaw);
 	const AProphecyAgent* ClampActor = AgentActors[AgentIndex];
 	const bool bFullAttack = Agent.Slash.bActive && Agent.Slash.bHasPose && !Agent.Slash.bHalf;
 	const bool bCalfOverride = bFullAttack && ClampActor->bOverrideAttackCalfClamp;
@@ -5277,12 +5397,14 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	if(bNewFKSample || bLengthReturn || bNewDodgeSample)CommitFKReturnUpperPose(*Impl,AgentIndex,ComponentTransforms);
 	const bool bGetUpPose=ApplyGetUpPresentation(*Impl,AgentIndex,AgentActors[AgentIndex],
 		PreviousComponentTransforms,ComponentTransforms,LocalTransforms,PreviousComponentWorldTransform,ComponentWorldTransform);
+    const bool bRobotReturn=ApplyRobotReturn(*Impl,AgentIndex,Controls,
+        PreviousComponentTransforms,ComponentTransforms,LocalTransforms);
 	ProphecySwordHolsterPose::FStatus HolsterStatus;
 	const bool bHolsterPose=ProphecySwordHolsterPose::Status(AgentActors[AgentIndex],HolsterStatus)&&!HolsterStatus.Finished;
 	const bool bNoMovement=Controls->bUseBlueprintLocomotionInput
 		? Controls->LocomotionInput.WorldMoveInput.IsZero() : Agent.MoverIntent.speed_amplitude==0.;
 	const bool bOrdinaryLocomotion=bNoMovement && Controls->bNNInferenceEnabled && !Agent.Slash.bActive && !bDefensePose && !bManualArmed
-		&& !bFKReturn && !ProphecyUpperBodyInertia::HasDodgeReturn(Controls) && !ProphecyGetUp::IsActive(Controls)
+		&& !bFKReturn && !bRobotReturn && !ProphecyUpperBodyInertia::HasDodgeReturn(Controls) && !ProphecyGetUp::IsActive(Controls)
 		&& !ProphecyReach::Active(Controls) && !ProphecyThrow::Active(Controls) && !Agent.AnimationLayer.IsActive();
 	const auto BreathingMode=ProphecyBreathing::Apply(Controls,Impl->GameTick,bOrdinaryLocomotion,
 		Impl->PublishedBoneNames,Impl->Parents,ComponentTransforms,LocalTransforms);
@@ -5290,6 +5412,8 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 	const bool bThrowPose=ProphecyThrow::Apply(AgentActors[AgentIndex],Impl->PublishedBoneNames,Impl->Parents,
 		PreviousComponentTransforms,ComponentTransforms,LocalTransforms,ComponentWorldTransform,SourceTimeSeconds);
 	if(bThrowPose)CommitBreathingPose(*Impl,AgentIndex,ComponentTransforms,EProphecyBreathingMode::UpperAndPelvis);
+	ProphecyFootIKGame::RestoreExitPredecessor(AgentActors[AgentIndex],SourceTimeSeconds,
+		Impl->PublishedBoneNames,PreviousComponentTransforms,PreviousComponentWorldTransform);
 	FProphecyNNPoseStore::SetAgentLocalPose(
 		PoseStoreAgentBase + AgentIndex,
 		Impl->PublishedBoneNames,
@@ -5299,13 +5423,13 @@ void AProphecyNNLocomotionManager::PublishAgentPose(int32 AgentIndex, double Sou
 		PreviousComponentWorldTransform,
 		ComponentWorldTransform,
 		SourceTimeSeconds,
-		bThrowPose || bHolsterPose || bGetUpPose || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose),
+		bThrowPose || bHolsterPose || bGetUpPose || bRobotReturn || bDefensePose || (Agent.Slash.bActive && Agent.Slash.bHasPose),
 		!bThrowPose && !bGetUpPose && (bDefensePose ? (DefenseClamps && DefenseClamps->Calf.bOverride && DefenseClamps->Calf.bEnabled) : (bCalfOverride ? ClampActor->bAttackCalfClamp : (bFullAttack ? bClampCalf && CalfClampLengthMultiplier > 0.f : C.bClampCalf && C.CalfClampLengthMultiplier > 0.f))),
 		FMath::Max(0.f,Effective.CalfLeeway*100.f),
 		bFullAttack ? Agent.Slash.CalfClampLengths : FVector2D(
 			Impl->LocalOffsets[Impl->Limbs[0].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier),
 			Impl->LocalOffsets[Impl->Limbs[1].End].Size() * 100.f * (bDefensePose?1.f:C.CalfClampLengthMultiplier)),
-		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms && !bThrowPose && !bFKReturn && !bGetUpPose && !bHolsterPose);
+		FixedArms,Agent.Slash.bActive && Agent.Slash.bHalf,C.bFixedArms && !bThrowPose && !bFKReturn && !bGetUpPose && !bHolsterPose && !bRobotReturn);
 	if(bThrowPose)ProphecyNNPresentation::Publish(PoseStoreAgentBase+AgentIndex,SourceTimeSeconds,1.f);
     if(auto* T=ProphecyWalkPinning::FindTickPinning(Controls))
     {
@@ -5329,21 +5453,48 @@ void AProphecyNNLocomotionManager::UpdateVisualRoots()
 	for (int32 AgentIndex = 0; AgentIndex < AgentActors.Num(); ++AgentIndex)
 	{
 		if (!AgentActors[AgentIndex]) continue;
+        FVector BodyflipRoot;float BodyflipYaw=0;
+        if(ProphecyBodyflip::Root(AgentActors[AgentIndex],BodyflipRoot,BodyflipYaw))
+        {
+            AProphecyAgent* Actor=AgentActors[AgentIndex];
+            Actor->SetActorLocationAndRotation(BodyflipRoot+FVector::UpVector*Actor->GetAgentCapsule()->GetScaledCapsuleHalfHeight(),
+                FRotator(0,BodyflipYaw,0),false,nullptr,ETeleportType::None);
+            ProphecyNNPresentation::Publish(PoseStoreAgentBase+AgentIndex,Impl->Agents[AgentIndex].PublishedPoseTimeSeconds,1.f);
+            continue;
+        }
         ON_SCOPE_EXIT { ProphecySwordHolsterPose::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex);ProphecyReach::Update(AgentActors[AgentIndex],PoseStoreAgentBase+AgentIndex); };
-		const float Alpha = ProphecyAgentTime::Alpha(this,AgentIndex,Impl->VisualPoseAlpha);
+		FVector FootRoot;float FootYaw=0;
+		if(ProphecyFootIK::Root(AgentActors[AgentIndex],FootRoot,FootYaw))
+		{
+			auto* Actor=AgentActors[AgentIndex].Get();
+			Actor->SetActorLocationAndRotation(FootRoot+FVector::UpVector*Actor->GetAgentCapsule()->GetScaledCapsuleHalfHeight(),FRotator(0,FootYaw,0),false,nullptr,ETeleportType::None);
+			ProphecyNNPresentation::Publish(PoseStoreAgentBase+AgentIndex,Impl->Agents[AgentIndex].PublishedPoseTimeSeconds,1.f);
+			continue;
+		}
+		const float Alpha = RobotReturnPresentationAlpha(AgentActors[AgentIndex],ProphecyAgentTime::Alpha(this,AgentIndex,Impl->VisualPoseAlpha));
 		FImpl::FAgent& Agent = Impl->Agents[AgentIndex];
 		ProphecyNNPresentation::Publish(PoseStoreAgentBase + AgentIndex, Agent.PublishedPoseTimeSeconds,
 			ProphecyThrow::Active(AgentActors[AgentIndex])?1.f:Alpha);
 		const FVector3f Root = FMath::Lerp(Agent.PreviousPublishedRoot, Agent.PublishedRoot, Alpha);
 		const float Yaw = Agent.PreviousPublishedYaw + WrapAngle(Agent.PublishedYaw - Agent.PreviousPublishedYaw) * Alpha;
-		const FVector3f PreviousAppliedRoot = UnrealToTraining(AgentActors[AgentIndex]->GetRootLowPoint());
+		ProphecyFootIKNavigation::FMove Navigation;
+		const bool bNavigation=ProphecyFootIKNavigation::PrepareMove(AgentActors[AgentIndex],TrainingToUnreal(Root),Navigation);
+		const FVector3f PreviousAppliedRoot = UnrealToTraining(bNavigation?Navigation.PreviousVirtualRoot:AgentActors[AgentIndex]->GetRootLowPoint());
 		const float PreviousAppliedYaw = -FMath::DegreesToRadians(float(AgentActors[AgentIndex]->GetActorRotation().Yaw));
 		FVector AppliedLowPoint;
 		FVector BlockingNormal;
 		bool bWorldStaticBlocked = false;
-		if (AgentActors[AgentIndex]->SetManagedRootLowPoint(
-			TrainingToUnreal(Root), -FMath::RadiansToDegrees(Yaw), AppliedLowPoint,
-			BlockingNormal, bWorldStaticBlocked))
+		bool bHit=AgentActors[AgentIndex]->SetManagedRootLowPoint(
+			bNavigation?Navigation.ActualRoot:TrainingToUnreal(Root), -FMath::RadiansToDegrees(Yaw), AppliedLowPoint,
+			BlockingNormal, bWorldStaticBlocked);
+		if(bNavigation)
+		{
+			AppliedLowPoint=ProphecyFootIKNavigation::CommitMove(AgentActors[AgentIndex],Navigation,AppliedLowPoint);
+			// Contact with the support is ordinary navigation. Only a horizontal
+			// obstruction enters the existing blocked-root/NN rebase path.
+			if(FVector::DistSquared2D(AppliedLowPoint,TrainingToUnreal(Root))<1.e-4)bHit=false;
+		}
+		if (bHit)
 		{
 			Agent.bPhysicalWorldBlockedPending |= bWorldStaticBlocked;
 			const FVector3f AppliedRoot = UnrealToTraining(AppliedLowPoint);
@@ -5929,6 +6080,7 @@ bool AProphecyNNLocomotionManager::ReadRuntimeBenchmarkStats(FProphecyNNRuntimeB
 	OutStats.PreparedPhysicalBatches = Impl->PreparedPhysicalBatches;
 	OutStats.BuildSeconds = Impl->Stats.BuildSeconds;
 	OutStats.InferenceSeconds = Impl->Stats.InferenceSeconds;
+	OutStats.ModelInferenceCalls = Impl->Stats.ModelInferenceCalls;
 	OutStats.OutputSeconds = Impl->Stats.OutputSeconds;
 	OutStats.StoreSeconds = Impl->Stats.StoreSeconds;
 	return true;
@@ -6292,7 +6444,7 @@ bool AProphecyNNLocomotionManager::PlayAgentAnimationLayer(
 	bool bLoop)
 {
 	AProphecyAgent* AgentActor = ResolveAgent(Handle);
-	if (!Impl || !AgentActor || !Animation || Handle.Index < 0 ||
+	if (!Impl || !AgentActor || ProphecyBodyflip::Active(AgentActor) || !Animation || Handle.Index < 0 ||
 		!Impl->Agents.IsValidIndex(Handle.Index) || PlayRate <= UE_SMALL_NUMBER ||
 		Animation->GetPlayLength() <= UE_SMALL_NUMBER)
 	{

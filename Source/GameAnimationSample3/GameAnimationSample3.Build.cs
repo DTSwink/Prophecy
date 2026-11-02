@@ -5,6 +5,29 @@ public class GameAnimationSample3 : ModuleRules
 	public GameAnimationSample3(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PrivateDependencyModuleNames.Add("ProphecyFootIKMath");
+        PrivateDependencyModuleNames.Add("NNEOnnxruntime");
+        foreach (string Asset in new[] { "Runtime.js", "Receipt.json", "ThirdPartyNotices.txt" })
+            RuntimeDependencies.Add("$(ProjectDir)/Content/FootIKLab/" + Asset, StagedFileType.UFS);
+        foreach (string Asset in new[] { "ClearScriptV8.win-x64.dll", "License.txt", "Receipt.json" })
+            RuntimeDependencies.Add("$(ProjectDir)/Content/FootIKLab/V8/" + Asset, StagedFileType.NonUFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/FootIKLab/NN/Receipt.json", StagedFileType.UFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/FootIKLab/NN/LiveLowerReceipt.json", StagedFileType.UFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/FootIKLab/NN/run-forward-live-lower-resume.onnx", StagedFileType.UFS);
+        foreach (string Direction in new[] { "forward", "backward", "left", "right" })
+            foreach (string Suffix in new[] { "-seed.json", "-seed.onnx", "-step.onnx", "-resume.onnx" })
+                RuntimeDependencies.Add("$(ProjectDir)/Content/FootIKLab/NN/run-" + Direction + Suffix, StagedFileType.UFS);
+        // Bodyflip shares the pinned V8 DLL above, in an independent context.
+        // Its pure authored solver is staged; no browser/Node/process dependency.
+        foreach (string Asset in new[] { "Runtime.js", "Assets.json", "Projectiles.json", "Receipt.json", "AttackIndex.json", "LabSettings.json" })
+            RuntimeDependencies.Add("$(ProjectDir)/Content/BodyflipLab/" + Asset, StagedFileType.UFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/BodyflipLab/Attacks/*.json", StagedFileType.UFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/BodyflipLab/NN/Receipt.json", StagedFileType.UFS);
+        foreach (string Profile in new[] { "run-unarmed", "run-drawn", "walk-unarmed", "walk-drawn" })
+            foreach (string Suffix in new[] { "-seeds.json", "-seed.onnx", "-step.onnx" })
+                RuntimeDependencies.Add("$(ProjectDir)/Content/BodyflipLab/NN/" + Profile + Suffix, StagedFileType.UFS);
+        foreach (string Asset in new[] { "rig.json", "getup_161960.onnx", "clanker_214358.onnx" })
+            RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/robots/" + Asset, StagedFileType.UFS);
         RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/SwordHolsterProfile.json", StagedFileType.UFS);
         RuntimeDependencies.Add("$(ProjectDir)/Content/ThrowLab/Profile.json", StagedFileType.UFS);
 		RuntimeDependencies.Add("$(ProjectDir)/Content/locomotion/NN/prophecy_slash_half_gt.json", StagedFileType.UFS);

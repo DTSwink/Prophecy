@@ -125,7 +125,7 @@ bool ApplyGetUpPresentation(AProphecyNNLocomotionManager::FImpl& Impl,int32 I,AP
 bool AProphecyNNLocomotionManager::StartAgentGetUp(FProphecyAgentHandle Handle,float Rate)
 {
     auto* Actor=ResolveAgent(Handle);
-    if(!Impl || !Impl->bInitialized || !Actor || !Actor->bNNInferenceEnabled || IsSimBridgeActive() ||
+    if(!Impl || !Impl->bInitialized || !Actor || ProphecyBodyflip::Active(Actor) || !Actor->bNNInferenceEnabled || IsSimBridgeActive() ||
         !FMath::IsFinite(Rate) || Rate<=0 || ProphecyGetUp::IsActive(Actor))return false;
     const auto* Mesh=Actor->GetPoseReferenceMesh();auto* Asset=Mesh?Mesh->GetSkeletalMeshAsset():nullptr;
     if(!Asset || !Actor->GetAgentMesh() || !Actor->GetAgentCapsule())return false;

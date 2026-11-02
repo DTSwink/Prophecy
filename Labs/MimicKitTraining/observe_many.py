@@ -82,8 +82,10 @@ class MultiRecorder(Recorder):
     def __init__(self,env,directory,rows=20):
         super().__init__(env,directory)
         self.row_count=min(rows,env._motion_ids.numel())
+        if getattr(env, '_motion_subset', None):
+            self.row_count=min(self.row_count,len(env.active_motion_labels))
         self.selection_round=0
-        for name in ('pose','reference_pose','absolute_velocities','data','components','impacts','phase_values','prior_values'):
+        for name in ('pelvis_window_values','pelvis_target_values','pose','reference_pose','absolute_velocities','data','components','impacts','phase_values','prior_values'):
             value=getattr(self,name)
             if value is not None:
                 setattr(self,name,torch.empty((self.capacity,self.row_count,*value.shape[1:]),device=value.device,dtype=value.dtype))
@@ -143,6 +145,10 @@ class MultiRecorder(Recorder):
         angular=self.engine.get_body_ang_vel(self.char)[ids]
         velocity=self.engine.get_body_vel(self.char)[ids]-torch.cross(angular,q.quat_rotate(self.pose[i,:,:,3:],self.env._body_com[ids]),dim=-1)
         self.absolute_velocities[i].copy_(torch.cat((velocity,angular,self.env.reward_target_vel[ids],self.env.reward_target_ang[ids]),-1))
+        if self.pelvis_target_values is not None:self.pelvis_target_values[i].copy_(getattr(self.env,'_pelvis_target_world',self.env._ref_body_pos[:,self.env._pelvis_id])[ids])
+        if self.pelvis_window_values is not None:
+            w=self.env._pelvis_window
+            self.pelvis_window_values[i].copy_(torch.stack((w.radius[ids],w.ready[ids].float(),w.age[ids].float()),-1))
         self.data[i,:,0].copy_(self.env._done_buf[ids])
         self.data[i,:,1].copy_(self.env._time_buf[ids])
         self.data[i,:,2].copy_(self.env._reward_buf[ids])
@@ -159,7 +165,7 @@ class MultiRecorder(Recorder):
         self.enabled=False;started=time.perf_counter();arrays={};metas=[]
         for i,w in enumerate(self.ids.cpu().tolist()):
             row=copy.copy(self);row.world=w;row.equipment_metadata=self.row_metadata[i]
-            for name in ('pose','reference_pose','absolute_velocities','data','components','impacts','phase_values','prior_values'):
+            for name in ('pelvis_window_values','pelvis_target_values','pose','reference_pose','absolute_velocities','data','components','impacts','phase_values','prior_values'):
                 value=getattr(self,name)
                 if value is not None:setattr(row,name,value[:,i])
             meta,values=Recorder.finish(row,iteration,samples,extra_metadata,_arrays_only=True)

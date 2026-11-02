@@ -75,6 +75,15 @@ void PredictCommandFrame(const FVelocityServo::FTarget& Target,const JPH::Body& 
     const double Speed=Angular.Size();
     const FQuat EndRotation=Speed>UE_SMALL_NUMBER ? (FQuat(Angular/Speed,Speed*H)*Rotation).GetNormalized() : Rotation;
     Frame.Pose=FTransform(EndRotation,FromJoltPosition(Body.GetPosition())+OriginVelocity*H);
+    Frame.ActualRotation=Rotation;
+    Frame.LinearCommandCmPerSecond=Linear;
+    Frame.GravityCancellationCmPerSecond=0.f;
+    if(Target.bFiniteJointCarry)
+    {
+        Frame.GravityCancellationCmPerSecond=Target.GravityCompensationCmPerSecondSquared*Body.GetMotionProperties()->GetGravityFactor()*H;
+        const FVector LocalCOM=FromJoltPosition(JPH::RVec3(Body.GetShape()->GetCenterOfMass()));
+        Frame.Pose.SetLocation(FromJoltPosition(Body.GetCenterOfMassPosition())+Linear*H-EndRotation.RotateVector(LocalCOM));
+    }
     Frame.Valid=true;
 }
 
@@ -84,7 +93,8 @@ struct FVelocityRewrite
     JPH::Vec3 NativeAngular = JPH::Vec3::sZero();
 };
 
-bool ReadParent(const FVelocityServo::FTarget& Target,const JPH::BodyLockInterface& Locks,FVelocityServo::FParentSample& Sample)
+bool ReadParent(const FVelocityServo::FTarget& Target,const JPH::BodyLockInterface& Locks,
+    FVelocityServo::FParentSample& Sample,float StepSeconds)
 {
     using namespace Conversions;
     Sample.Valid=false;
@@ -93,7 +103,76 @@ bool ReadParent(const FVelocityServo::FTarget& Target,const JPH::BodyLockInterfa
     if(!Lock.SucceededAndIsInBroadPhase())return false;
     const auto& B=Lock.GetBody();
     Sample.Pose=FTransform(FromJoltRotation(B.GetRotation()),FromJoltPosition(B.GetPosition()));
+    Sample.ActualRotation=Sample.Pose.GetRotation();
+    Sample.LinearCommandCmPerSecond=FromJoltLinearVelocity(B.GetLinearVelocity());
+    Sample.GravityCancellationCmPerSecond=0.f;
+    if(Target.bFiniteJointCarry && B.IsKinematic())
+    {
+        // This parent is moved by its owner, not a dynamic servo command. Predict
+        // the SAME substep from its actual COM velocity, including finite anchor rotation.
+        const FVector Angular=FromJoltAngularVelocity(B.GetAngularVelocity());
+        const double Speed=Angular.Size();
+        const FQuat End=Speed>UE_SMALL_NUMBER
+            ? (FQuat(Angular/Speed,Speed*StepSeconds)*Sample.ActualRotation).GetNormalized() : Sample.ActualRotation;
+        const FVector LocalCOM=FromJoltPosition(JPH::RVec3(B.GetShape()->GetCenterOfMass()));
+        Sample.Pose=FTransform(End,FromJoltPosition(B.GetCenterOfMassPosition())
+            +Sample.LinearCommandCmPerSecond*StepSeconds-End.RotateVector(LocalCOM));
+    }
     Sample.Valid=true;return true;
+}
+
+// The lab drives angular endpoints, not child positions. Preserve the existing
+// anchor separation while both bodies rotate by finite angles during this step:
+// Vchild = Vparent + (delta(parent anchor) - delta(child anchor)) / dt.
+// Root V is computed directly at COM, avoiding the first-order W cross r error.
+bool CalculateFiniteJointCarry(const FVelocityServo::FTarget& Target,const JPH::Body& Body,
+    double Elapsed,float H,FVelocityServo::FSample& Sample,FVelocityRewrite& Rewrite,
+    const FVelocityServo::FParentSample* Parent)
+{
+    using namespace Conversions;
+    const double Alpha=Target.TrajectoryDurationSeconds>0
+        ? FMath::Clamp(Elapsed/Target.TrajectoryDurationSeconds,0.,1.) : 1.;
+    FQuat DesiredRotation=FQuat::Slerp(Target.StartRotation,Target.TargetRotation,Alpha).GetNormalized();
+    if(Target.WorldAlpha<1.f)
+    {
+        if(!Parent || !Parent->Valid)return false;
+        const FQuat LocalStart=Target.ParentStart.GetRotation().Inverse()*Target.StartRotation;
+        const FQuat LocalEnd=Target.ParentTarget.GetRotation().Inverse()*Target.TargetRotation;
+        DesiredRotation=(Parent->Pose.GetRotation()*FQuat::Slerp(LocalStart,LocalEnd,Alpha)).GetNormalized();
+    }
+    FQuat Delta=(DesiredRotation*Sample.Rotation.Inverse()).GetNormalized();
+    if(Delta.W<0.)Delta=Delta*-1.;
+    FVector Axis=FVector::ForwardVector;float Angle=0.f;
+    Delta.ToAxisAndAngle(Axis,Angle);
+    FVector Angular=Axis.GetSafeNormal()*(Angle/H);
+    const double MaxAngular=Body.GetMotionProperties()->GetMaxAngularVelocity();
+    Angular=Angular.GetClampedToMaxSize(MaxAngular);
+    const double Speed=Angular.Size();
+    const FQuat EndRotation=Speed>UE_SMALL_NUMBER
+        ? (FQuat(Angular/Speed,Speed*H)*Sample.Rotation).GetNormalized() : Sample.Rotation;
+    FVector Linear;
+    if(Target.WorldAlpha<1.f)
+    {
+        const FVector ParentDelta=Parent->Pose.GetRotation().RotateVector(Target.ParentAnchorCOMCm)
+            -Parent->ActualRotation.RotateVector(Target.ParentAnchorCOMCm);
+        const FVector ChildDelta=EndRotation.RotateVector(Target.ChildAnchorCOMCm)
+            -Sample.Rotation.RotateVector(Target.ChildAnchorCOMCm);
+        Linear=Parent->LinearCommandCmPerSecond+(ParentDelta-ChildDelta)/H;
+        // Usually identical for every body, and inherited exactly once. Account
+        // for an existing per-body gravity flag without changing saved physics.
+        Linear.Z-=Parent->GravityCancellationCmPerSecond;
+    }
+    else
+    {
+        const FVector Position=FMath::Lerp(Target.StartPositionCm,Target.TargetPositionCm,Alpha);
+        const FVector LocalCOM=FromJoltPosition(JPH::RVec3(Body.GetShape()->GetCenterOfMass()));
+        Linear=(Position+EndRotation.RotateVector(LocalCOM)-FromJoltPosition(Body.GetCenterOfMassPosition()))/H;
+    }
+    Linear.Z+=Target.GravityCompensationCmPerSecondSquared*Body.GetMotionProperties()->GetGravityFactor()*H;
+    Rewrite.NativeLinear=ToJoltLinearVelocity(Linear);
+    Rewrite.NativeAngular=ToJoltAngularVelocity(Angular);
+    return !Linear.ContainsNaN() && !Angular.ContainsNaN()
+        && FMath::IsFinite(Rewrite.NativeLinear.Length()) && FMath::IsFinite(Rewrite.NativeAngular.Length());
 }
 
 bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Body, float DenominatorSeconds,
@@ -106,6 +185,8 @@ bool CalculateRewrite(const FVelocityServo::FTarget& Target, const JPH::Body& Bo
     Sample.Rotation = FromJoltRotation(Body.GetRotation());
     Sample.LinearBeforeCmPerSecond = FromJoltLinearVelocity(Body.GetLinearVelocity());
     Sample.AngularBeforeRadiansPerSecond = FromJoltAngularVelocity(Body.GetAngularVelocity());
+    if(Target.bFiniteJointCarry)
+        return CalculateFiniteJointCarry(Target,Body,TrajectoryElapsedSeconds,IntegrationSeconds,Sample,Rewrite,Parent);
     FVector Linear = Sample.LinearBeforeCmPerSecond;
     FVector Angular = Sample.AngularBeforeRadiansPerSecond;
     FVector TargetPositionCm = Target.TargetPositionCm;
@@ -230,6 +311,9 @@ bool FVelocityServo::PublishPerTarget(TConstArrayView<FTarget> InTargets, FStrin
             !FMath::IsFinite(Target.AngularStrength) || Target.AngularStrength < 0.0f ||
             !FMath::IsFinite(Target.DenominatorSeconds) || Target.DenominatorSeconds <= 0.0f ||
             !FMath::IsFinite(Target.TrajectoryDurationSeconds) || Target.TrajectoryDurationSeconds < 0.0f ||
+            (Target.bFiniteJointCarry && (Target.LinearStrength!=1.f || Target.AngularStrength!=1.f ||
+                (Target.WorldAlpha!=0.f && Target.WorldAlpha!=1.f) ||
+                Target.ParentAnchorCOMCm.ContainsNaN() || Target.ChildAnchorCOMCm.ContainsNaN())) ||
             (Target.TrajectoryDurationSeconds > 0.0f && (Target.StartPositionCm.ContainsNaN()
                 || Target.StartRotation.ContainsNaN() || !Target.StartRotation.IsNormalized())))
         { OutError = TEXT("Servo targets require distinct valid bodies, finite endpoints, nonnegative strengths, positive finite denominators and valid optional trajectories."); return false; }
@@ -279,8 +363,10 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     {
         if(Local->EndFrames[Index].Valid)return true;
         const FTarget& Target=Targets[Index];
+        const float H=Target.TrajectoryDurationSeconds>0 && FirstStepSeconds>0?FirstStepSeconds:Target.DenominatorSeconds;
+        const float Integration=FirstStepSeconds>0?FirstStepSeconds:H;
         FParentSample Parent;
-        if(!ReadParent(Target,ReadLocks,Parent))return false;
+        if(!ReadParent(Target,ReadLocks,Parent,Integration))return false;
         const int32 P=Local->ParentIndices[Index];
         if(P!=INDEX_NONE)
         {
@@ -291,7 +377,6 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
         if(!Lock.SucceededAndIsInBroadPhase() || !Lock.GetBody().IsDynamic())return false;
         const JPH::Body& Body=Lock.GetBody();
         FSample Sample;FVelocityRewrite Rewrite;
-        const float H=Target.TrajectoryDurationSeconds>0 && FirstStepSeconds>0?FirstStepSeconds:Target.DenominatorSeconds;
         if(!CalculateRewrite(Target,Body,H,Target.TrajectoryElapsedSeconds+H,FirstStepSeconds>0?FirstStepSeconds:H,
             Sample,Rewrite,BodyFollows?BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()):nullptr,
             Offsets?Offsets->Find(Target.Body.GetIndexAndSequenceNumber()):nullptr,&Parent))return false;
@@ -306,8 +391,11 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
     {
         const int32 Index=Local?Local->Order[Ordinal]:Ordinal;
         const FTarget& Target=Targets[Index];
+        const float H = Target.TrajectoryDurationSeconds > 0.0f && FirstStepSeconds > 0.0f
+            ? FirstStepSeconds : Target.DenominatorSeconds;
+        const float Integration=FirstStepSeconds>0?FirstStepSeconds:H;
         FParentSample Parent;
-        if(!ReadParent(Target,ReadLocks,Parent))
+        if(!ReadParent(Target,ReadLocks,Parent,Integration))
         { ++InvalidBodies;OutError=TEXT("Invalid physical parent in servo packet.");return false; }
         {
             const JPH::BodyLockRead Lock(ReadLocks,Target.Body);
@@ -329,8 +417,6 @@ bool FVelocityServo::PrepareActivation(JPH::PhysicsSystem& Physics, FString& Out
         const JPH::Body& Body=Lock.GetBody();
         FSample Sample;
         FVelocityRewrite Rewrite;
-        const float H = Target.TrajectoryDurationSeconds > 0.0f && FirstStepSeconds > 0.0f
-            ? FirstStepSeconds : Target.DenominatorSeconds;
         if (!CalculateRewrite(Target, Body, H, Target.TrajectoryElapsedSeconds + H,
             FirstStepSeconds > 0.0f ? FirstStepSeconds : H, Sample, Rewrite,
             BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr,
@@ -407,7 +493,7 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         FTarget& Target = Targets[Index];
         if(Local && Local->ParentIndices[Index]!=INDEX_NONE && Local->EndFrames[Local->ParentIndices[Index]].Valid)
             ParentSamples[Index]=Local->EndFrames[Local->ParentIndices[Index]];
-        else if(Local)ReadParent(Target,Context.mPhysicsSystem->GetBodyLockInterfaceNoLock(),ParentSamples[Index]);
+        else if(Local)ReadParent(Target,Context.mPhysicsSystem->GetBodyLockInterfaceNoLock(),ParentSamples[Index],Context.mDeltaTime);
         if (Target.TrajectoryDurationSeconds > 0.0f)
             Target.TrajectoryElapsedSeconds = FMath::Min(double(Target.TrajectoryDurationSeconds),
                 Target.TrajectoryElapsedSeconds + Context.mDeltaTime);
@@ -428,7 +514,7 @@ void FVelocityServo::OnStep(const JPH::PhysicsStepListenerContext& Context)
         { ++InvalidBodies; continue; }
         // Stock clamped setters enforce the body's captured caps without changing those limits.
         bool MotorDriven = false;
-        if (ArmDrives)
+        if (ArmDrives && !Target.bFiniteJointCarry)
         {
             const auto* Follow = BodyFollows ? BodyFollows->Find(Target.Body.GetIndexAndSequenceNumber()) : nullptr;
             MotorDriven = ArmMotors::Apply(ArmDrives, Body, Target, Context.mDeltaTime,

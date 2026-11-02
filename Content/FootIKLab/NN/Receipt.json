@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "graphs": {
+    "forward": {
+      "frames": 72,
+      "maxGraphError": 1.1324882507324219e-05,
+      "maxStreamPoseError": 8.285045623779297e-06,
+      "seconds": 32.35862109999289,
+      "sha256": {
+        "run-forward-seed.json": "65d1f16be53bfa2c1883768e7fadd6c61ba6a0c8afd18bea77ab6e7824b047f8",
+        "run-forward-seed.onnx": "ec3618e74d0f4c18490e6e308622f8e744bd6a1fc1506ed1ef685cecc83900fe",
+        "run-forward-step.onnx": "d251fa403b9dfe59e15d1cb6346709ad0c1db5009824b2aeeb839c05e6799d44"
+      }
+    },
+    "backward": {
+      "frames": 72,
+      "maxGraphError": 9.03010368347168e-06,
+      "maxStreamPoseError": 8.07642936706543e-06,
+      "seconds": 35.17637869999453,
+      "sha256": {
+        "run-backward-seed.json": "f3c6dca77edb5e9da50a6a27334b6ecd91cc816fed99cfc68e710d327ca3e06a",
+        "run-backward-seed.onnx": "7ba27b856fbf620cfc5be96167b15cecb6e1a08f9b35c73f7c12dee3f1a34ff3",
+        "run-backward-step.onnx": "f08ddfee6ae287a5dd84a8ec384dafa9115a8403c3a10b29161a2fbd094bb037"
+      }
+    },
+    "left": {
+      "frames": 72,
+      "maxGraphError": 6.616115570068359e-06,
+      "maxStreamPoseError": 1.0013580322265625e-05,
+      "seconds": 37.47447529999772,
+      "sha256": {
+        "run-left-seed.json": "d04383317fc5bfc994fab284c39efdff8c98c6272d3ba6418328451bd466470b",
+        "run-left-seed.onnx": "89acd54b6da4ece10bf1749a75b89742dd8acf76bb14e8bb832cb79f4b3f249c",
+        "run-left-step.onnx": "b08294de5fc7db04cc76e1df06c9f65454d409a52980be069e764e0f31e6c9b9"
+      }
+    },
+    "right": {
+      "frames": 72,
+      "maxGraphError": 5.424022674560547e-06,
+      "maxStreamPoseError": 5.9604644775390625e-06,
+      "seconds": 28.245060299988836,
+      "sha256": {
+        "run-right-seed.json": "2202caadcedd7d68ed5a2663c93c11e0e79125fe2afc101f1c4da8397b357b0f",
+        "run-right-seed.onnx": "24320cc3a7499e9a4c186b62334880614b4fa9fb18f2b5ee21fdf295dc04595c",
+        "run-right-step.onnx": "6ac2ec304c9c7b77ec3229441a9fa3275dc37dd3e1bc82b12c93585fd81477a5"
+      }
+    }
+  },
+  "seedInput": 641,
+  "seedOutput": 373,
+  "stepInput": 413,
+  "stateWidth": 370,
+  "rootRows": 10,
+  "future": 8,
+  "policy": "Run181751",
+  "upper": "Upper82500",
+  "mode": -1,
+  "stepOutput": 710,
+  "pinWidth": 2,
+  "resumeGraphs": {
+    "forward": {
+      "frames": 18,
+      "maxPoseError": 4.649162292480469e-06,
+      "seconds": 128.68782410000858,
+      "sha256": {
+        "run-forward-resume.onnx": "acc3a8e9ee5321179713ec40e8ef027e0135756ef275cef6b5cfa04aafc66764"
+      }
+    },
+    "backward": {
+      "frames": 18,
+      "maxPoseError": 2.4139881134033203e-06,
+      "seconds": 142.0901584999956,
+      "sha256": {
+        "run-backward-resume.onnx": "49a7f2f1842923409c21aaf94c8bd3ea1dc3f85c2334fa8987e494aaf09d7620"
+      }
+    },
+    "left": {
+      "frames": 18,
+      "maxPoseError": 2.4810433387756348e-06,
+      "seconds": 157.21905319999496,
+      "sha256": {
+        "run-left-resume.onnx": "a813997952f574bc59463fa234ccbc7320d11d982662de5807c2abe2bb8f52d0"
+      }
+    },
+    "right": {
+      "frames": 18,
+      "maxPoseError": 2.175569534301758e-06,
+      "seconds": 88.98938009999983,
+      "sha256": {
+        "run-right-resume.onnx": "74d4be76273068cd6a7bda27b1952d3c2712b57e8aaadd206bcf065a1df73a0c"
+      }
+    }
+  },
+  "shapeMetadata": {
+    "run-forward-seed.onnx": {
+      "exactFrames": 24,
+      "originalCpuMs": 1.953125,
+      "annotatedCpuMs": 1.953125,
+      "originalWallMs": 1.7851999958414428,
+      "annotatedWallMs": 1.7500125043928467,
+      "originalSha256": "e65f6153acf2ef557ef0740b5ba180d4a045aa191f8494ccd8bb72aeb03f123a",
+      "annotatedSha256": "ec3618e74d0f4c18490e6e308622f8e744bd6a1fc1506ed1ef685cecc83900fe",
+      "bytesBefore": 222622,
+      "bytesAfter": 316621,
+      "computationSha256": "0cdc85b73e56ced345fa674a236263783cd40ca6ce393cc7f5058dccbd709ea2"
+    },
+    "run-forward-step.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 16.927083333333332,
+      "annotatedCpuMs": 12.659143518518519,
+      "originalWallMs": 16.766774074144283,
+      "annotatedWallMs": 13.035779629043882,
+      "originalSha256": "b83c71ee561405bfb0f10aa1fa946f82bea68e33549ab75b7691dd5b5cd5a9dc",
+      "annotatedSha256": "d251fa403b9dfe59e15d1cb6346709ad0c1db5009824b2aeeb839c05e6799d44",
+      "bytesBefore": 5922190,
+      "bytesAfter": 6977938,
+      "computationSha256": "279f6c45cff396dabb4127fc8140a6aec5ab4388adb02a8fd42b439e983d0fd2"
+    },
+    "run-forward-resume.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 21.556712962962962,
+      "annotatedCpuMs": 17.14409722222222,
+      "originalWallMs": 22.096888889117743,
+      "annotatedWallMs": 17.48346574189512,
+      "originalSha256": "b94ccb8c743c607fa294a79c7de83814ce37d0cd6808c1ebfd4914d32f6898e6",
+      "annotatedSha256": "acc3a8e9ee5321179713ec40e8ef027e0135756ef275cef6b5cfa04aafc66764",
+      "bytesBefore": 5920589,
+      "bytesAfter": 6975705,
+      "computationSha256": "1a7f9f6c5fd9ea922baa08b0bd254db7932cf630bf890b5723eb31ff7a05af66"
+    },
+    "run-backward-seed.onnx": {
+      "exactFrames": 24,
+      "originalCpuMs": 1.3020833333333333,
+      "annotatedCpuMs": 1.953125,
+      "originalWallMs": 1.5854916612928112,
+      "annotatedWallMs": 1.5692041609630298,
+      "originalSha256": "4ceaa7a46c78a3288c2ab5070316a742867617e91a6d42ea8e0b4a8ae9555dad",
+      "annotatedSha256": "7ba27b856fbf620cfc5be96167b15cecb6e1a08f9b35c73f7c12dee3f1a34ff3",
+      "bytesBefore": 222622,
+      "bytesAfter": 316621,
+      "computationSha256": "56d3ee0d2ef7f90ed573c3820c643e4b5cfe2b0b94bb3bd35557031c86be7c3c"
+    },
+    "run-backward-step.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 16.63773148148148,
+      "annotatedCpuMs": 13.020833333333334,
+      "originalWallMs": 17.024664351252053,
+      "annotatedWallMs": 13.242759259743185,
+      "originalSha256": "a6b535cbe428f9eebaada03c60d548043a273575609e6ca0a94ceafc3ff5304a",
+      "annotatedSha256": "f08ddfee6ae287a5dd84a8ec384dafa9115a8403c3a10b29161a2fbd094bb037",
+      "bytesBefore": 5922190,
+      "bytesAfter": 6977938,
+      "computationSha256": "d3fd13024c5520addfb6456b32214cd192089992a36f761ae3b938c27be3eea1"
+    },
+    "run-backward-resume.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 27.488425925925927,
+      "annotatedCpuMs": 21.99074074074074,
+      "originalWallMs": 28.878137500551357,
+      "annotatedWallMs": 23.069651851848768,
+      "originalSha256": "d9f49116ca988db4f0df594710d5bc3a865f651a92296b2914a14a7defe9f8c2",
+      "annotatedSha256": "49a7f2f1842923409c21aaf94c8bd3ea1dc3f85c2334fa8987e494aaf09d7620",
+      "bytesBefore": 5920589,
+      "bytesAfter": 6975705,
+      "computationSha256": "25d2abcedbbf7aa2ef0da28f8a9b4c041e73a6788e983b3f5a48faa50db2145d"
+    },
+    "run-left-seed.onnx": {
+      "exactFrames": 24,
+      "originalCpuMs": 2.6041666666666665,
+      "annotatedCpuMs": 3.2552083333333335,
+      "originalWallMs": 2.7666749992931727,
+      "annotatedWallMs": 2.7464500005104733,
+      "originalSha256": "40ee057d3571256244918592fdeeb9cdef4572baf1dc68b7ea0b6808822e78d5",
+      "annotatedSha256": "89acd54b6da4ece10bf1749a75b89742dd8acf76bb14e8bb832cb79f4b3f249c",
+      "bytesBefore": 222622,
+      "bytesAfter": 316621,
+      "computationSha256": "0112b1f2c793fc2385c4b0a50f40e48a8a3a67d963d49a0bb79241b0e7f92ac0"
+    },
+    "run-left-step.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 15.335648148148149,
+      "annotatedCpuMs": 13.527199074074074,
+      "originalWallMs": 16.907959258080357,
+      "annotatedWallMs": 13.331956019235939,
+      "originalSha256": "2145e453a65f0bfa5acd565b64523d24b730af104fc0b43ff3426070c16c4de2",
+      "annotatedSha256": "b08294de5fc7db04cc76e1df06c9f65454d409a52980be069e764e0f31e6c9b9",
+      "bytesBefore": 5922190,
+      "bytesAfter": 6977938,
+      "computationSha256": "4a93d09984a0bf4b85388ad01da3dd58a8e1e6f14230070d926a766e9ea84f3a"
+    },
+    "run-left-resume.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 13.816550925925926,
+      "annotatedCpuMs": 10.99537037037037,
+      "originalWallMs": 14.05098055571822,
+      "annotatedWallMs": 11.205058331446102,
+      "originalSha256": "bf03beeaa5cc16c4be4e3e9a71d31b6d6a3f61f236a430d8f22d3257bbc6626c",
+      "annotatedSha256": "a813997952f574bc59463fa234ccbc7320d11d982662de5807c2abe2bb8f52d0",
+      "bytesBefore": 5920589,
+      "bytesAfter": 6975705,
+      "computationSha256": "356cd1099404d57cb531940d6fc3f91abd8cd0988e93aaac22af85c03db34b88"
+    },
+    "run-right-seed.onnx": {
+      "exactFrames": 24,
+      "originalCpuMs": 2.6041666666666665,
+      "annotatedCpuMs": 1.953125,
+      "originalWallMs": 2.0888458311674185,
+      "annotatedWallMs": 2.7316291683140057,
+      "originalSha256": "f4f57df2900c24097cab8e26928a194b9716799c591bd1a13ffb39dbf1532116",
+      "annotatedSha256": "24320cc3a7499e9a4c186b62334880614b4fa9fb18f2b5ee21fdf295dc04595c",
+      "bytesBefore": 222622,
+      "bytesAfter": 316621,
+      "computationSha256": "df2cbda516e519d987c6d01778da3aa1dd3773fdd8c0a8924adc2f12d40cf309"
+    },
+    "run-right-step.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 21.846064814814813,
+      "annotatedCpuMs": 17.79513888888889,
+      "originalWallMs": 23.25233981496745,
+      "annotatedWallMs": 18.676854629625772,
+      "originalSha256": "784c87c2c5739943590cd2af0e34cfeed05289dc1026877ebf33bf996c446868",
+      "annotatedSha256": "6ac2ec304c9c7b77ec3229441a9fa3275dc37dd3e1bc82b12c93585fd81477a5",
+      "bytesBefore": 5922190,
+      "bytesAfter": 6977938,
+      "computationSha256": "be15ed7d957eb6b9189d83ac2f3e538595f71c8ef8355a228006a33aa5db4ebb"
+    },
+    "run-right-resume.onnx": {
+      "exactFrames": 216,
+      "originalCpuMs": 19.386574074074073,
+      "annotatedCpuMs": 14.684606481481481,
+      "originalWallMs": 21.404115278225316,
+      "annotatedWallMs": 16.37182175895928,
+      "originalSha256": "d8ff232d5ab9d61035f2515f060f53468cca0dd83ac41bb63fa1ad3e111f414f",
+      "annotatedSha256": "74d4be76273068cd6a7bda27b1952d3c2712b57e8aaadd206bcf065a1df73a0c",
+      "bytesBefore": 5920589,
+      "bytesAfter": 6975705,
+      "computationSha256": "a0985cd83e08c3587516d152116d605abfb323f056aa23d2a9aedfd8df86948b"
+    }
+  }
+}

@@ -6,6 +6,8 @@
 #include "ProphecyJoltWorldSubsystem.generated.h"
 
 struct FProphecyJoltRigSnapshot;
+struct FProphecyJoltRobotMotor;
+struct FProphecyJoltRobotDrag;
 struct FProphecyJoltRigJoint;
 class FProphecyJoltPreparedRig;
 class UPrimitiveComponent;
@@ -37,6 +39,15 @@ struct FProphecyJoltWorldStatus
     EProphecyJoltWorldResult Code = EProphecyJoltWorldResult::Success;
     FString Message;
     bool IsSuccess() const { return Code == EProphecyJoltWorldResult::Success; }
+};
+
+// Optional, per-call release/force schedule. Fractions are strictly inside0..1.
+// Callbacks run on the game thread between native updates, never from Jolt jobs.
+struct FProphecyJoltStepSchedule
+{
+    TArray<double> Fractions;
+    TFunction<FProphecyJoltWorldStatus(double,double)> Before;
+    TFunction<void(double)> After;
 };
 
 /** Small-fixture resource settings. These are not production physics or collision-channel defaults. */
@@ -203,7 +214,10 @@ struct FProphecyJoltRigVelocityTarget
     FTransform ParentStart = FTransform::Identity;
     FTransform ParentTarget = FTransform::Identity;
     float WorldAlpha = 1.f;
-
+    // Exact finite-rotation COM carry: only the root tracks absolute position;
+    // descendants inherit its motion through their live native joint anchors.
+    // The owner resolves anchors from the captured PHAT constraints. Opt-in only.
+    bool bFiniteJointCarry = false;
 };
 
 struct FProphecyJoltCollisionUpdate
@@ -318,7 +332,7 @@ public:
     FProphecyJoltWorldStatus InitializeSimulation(const FProphecyJoltWorldSettings& Settings);
     // Explicit shutdown permits reinitialization until world/subsystem teardown begins.
     FProphecyJoltWorldStatus ShutdownSimulation();
-    FProphecyJoltWorldStatus Step(float DeltaSeconds, int32 CollisionSteps);
+    FProphecyJoltWorldStatus Step(float DeltaSeconds, int32 CollisionSteps,const FProphecyJoltStepSchedule* Schedule=nullptr);
 #if !UE_BUILD_SHIPPING
     // Explicit console-only experiment; no tick registration or production sampling.
     void RunContactExperiment(const TArray<FString>& Args);
@@ -351,6 +365,10 @@ public:
     FProphecyJoltWorldStatus SetRigCCDMode(const FProphecyJoltRigHandle& Rig, uint8 Mode);
     // Zero restores world defaults. The highest override in a connected island determines its work.
     FProphecyJoltWorldStatus SetRigSolverIterations(const FProphecyJoltRigHandle& Rig, int32 Velocity, int32 Position);
+    FProphecyJoltWorldStatus ConfigureRobotRig(const FProphecyJoltRigHandle& Rig,
+        TConstArrayView<FProphecyJoltRobotMotor> Motors,TConstArrayView<FProphecyJoltRobotDrag> Drag);
+    FProphecyJoltWorldStatus PublishRobotMotors(const FProphecyJoltRigHandle& Rig,
+        TConstArrayView<FProphecyJoltRobotMotor> Motors,float LimitAlpha);
     // Absolute toe-end box trim. Atomic across both feet, preserving captured COM/mass and joints.
     FProphecyJoltWorldStatus SetRigFootColliderFrontTrim(const FProphecyJoltRigHandle& Rig,
         double TrimCm, const FVector& LeftToeDirection, const FVector& RightToeDirection);
@@ -412,10 +430,19 @@ public:
     FProphecyJoltWorldStatus PublishRigFixtureVelocityTargets(TConstArrayView<FProphecyJoltRigVelocityTarget> Targets, float MaximumSubstepSeconds);
     FProphecyJoltWorldStatus ReadRigFixtureServoSamples(FProphecyJoltRigServoState& OutState) const;
     FProphecyJoltWorldStatus ReadBody(const FProphecyJoltBodyHandle& Handle, FProphecyJoltBodyState& OutState) const;
+    // Oil is local to this native body, not a component-wide material override.
+    FProphecyJoltWorldStatus AddOilPatch(const FProphecyJoltBodyHandle& Surface, const FVector& PointCm,
+        const FVector& Normal, float RadiusCm, float Strength, uint64& OutId);
+    FProphecyJoltWorldStatus SetOilStrength(uint64 Id, float Strength);
+    FProphecyJoltWorldStatus RemoveOilPatch(uint64 Id);
+    FProphecyJoltWorldStatus ReadOilCoverage(const FProphecyJoltBodyHandle& Surface,
+        const FVector& PointCm, const FVector& Normal, float& OutCoverage) const;
+    int32 GetOilPatchCount() const;
+
     // Game-thread, idle-world closest segment query over all fixture layers; no UE channel/complex-trace filtering.
     // A miss succeeds with bOutHit=false and cleared OutHit. Stock Jolt treats convex interiors as fraction-zero hits.
     FProphecyJoltWorldStatus RayCast(const FVector& StartCm, const FVector& EndCm,
-        FProphecyJoltRayHit& OutHit, bool& bOutHit) const;
+        FProphecyJoltRayHit& OutHit, bool& bOutHit, FName IgnoreActorTag=NAME_None) const;
     FProphecyJoltWorldStatus ExecutePhysicsCommand(const FProphecyJoltBodyHandle& Handle,
         const FProphecyJoltPhysicsCommand& Command);
     FProphecyJoltWorldStatus AddPointImpulse(const FProphecyJoltBodyHandle& Handle,
@@ -456,7 +483,12 @@ public:
     FProphecyJoltWorldStatus PoseRigKinematicLimb(TConstArrayView<FProphecyJoltBodyHandle> Bodies,
         TConstArrayView<FTransform> BodyWorld, float DeltaSeconds);
     FProphecyJoltWorldStatus SetBodyDynamic(const FProphecyJoltBodyHandle& Body);
+    FProphecyJoltWorldStatus SetBodyGyroscopic(const FProphecyJoltBodyHandle& Body,bool Enabled);
     FProphecyJoltWorldStatus SetBodyPose(const FProphecyJoltBodyHandle& Body, const FTransform& BodyOrigin);
+    // Scoped replay/pause of an independent body. Restores pose, COM V/W and
+    // activation, clearing only its own force accumulators; never steps a world.
+    FProphecyJoltWorldStatus RestoreBodyState(const FProphecyJoltBodyHandle& Body,
+        const FProphecyJoltBodyState& State,bool bPaused);
 #if !UE_BUILD_SHIPPING
     // Explicit diagnostic pose restoration outside Step; retains rig ownership and constraints.
     FProphecyJoltWorldStatus DebugSetRigBodyPose(const FProphecyJoltBodyHandle& Body, const FTransform& BodyOrigin);
@@ -470,6 +502,9 @@ public:
     bool IsBodyShapeWelded(const FProphecyJoltBodyHandle& Source) const;
     /** Absolute additive sword inertia factor; zero restores original parent inertia. Mass/COM/velocity stay unchanged. */
     FProphecyJoltWorldStatus SetWeldedBodyInertiaScale(const FProphecyJoltBodyHandle& Source, float Scale);
+    // Read-only preflight for a staged character packet. It never changes motion type or velocity.
+    FProphecyJoltWorldStatus ValidateKinematicBodyMove(const FProphecyJoltBodyHandle& Body,
+        const FTransform& TargetBodyOrigin, float DeltaSeconds) const;
     FProphecyJoltWorldStatus MoveKinematicBody(const FProphecyJoltBodyHandle& Body,
         const FTransform& TargetBodyOrigin, float DeltaSeconds);
     /** Pair exclusions owned by a standalone body, automatically released with that body. */

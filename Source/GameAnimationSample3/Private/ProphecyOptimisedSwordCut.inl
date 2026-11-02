@@ -7,9 +7,9 @@ struct FState
 {
     TWeakObjectPtr<AActor> Owner;
     double Length = 0, HalfWidth = 0, Side = 1, MinimumZ = 0, SideStop = 0;
-    double LastStain = 0;
+    double LastStain = 0, ForwardExitZ = 0;
     int32 Type = 0, Matter = 0, StepsToCap = 0, Id = -1;
-    bool WasCaptured = false;
+    bool WasCaptured = false, PassThrough = false;
     uint64 LastFrame = MAX_uint64;
 };
 
@@ -69,7 +69,9 @@ void Limits(const FState& Cut, FProphecyJoltJointSettings& Settings)
     // monitor releases it there. Large finite open bounds avoid API infinities.
     constexpr double Open = 1.e8;
     Settings.bRadialTranslation = false;
-    Settings.Translation[2] = {EProphecyJoltAxisMotion::Limited, Cut.MinimumZ, Open};
+    Settings.Translation[2] = Cut.PassThrough
+        ? FProphecyJoltAxisLimit{EProphecyJoltAxisMotion::Free, 0, 0}
+        : FProphecyJoltAxisLimit{EProphecyJoltAxisMotion::Limited, Cut.MinimumZ, Open};
     if (Cut.Type != 0)
         Settings.Translation[1] = Cut.Side > 0
             ? FProphecyJoltAxisLimit{EProphecyJoltAxisMotion::Limited, Cut.SideStop, Open}

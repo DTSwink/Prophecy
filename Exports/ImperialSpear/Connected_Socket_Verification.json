@@ -1,0 +1,44 @@
+{
+  "status": "connected socket engraving generated",
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\BeforeConnectedSocket_v1",
+  "region": [
+    3584,
+    0,
+    4096,
+    2048
+  ],
+  "columns_rows": [
+    7,
+    12
+  ],
+  "motif_size_mm": [
+    17.5,
+    12.706666666666665
+  ],
+  "cut_width_mm": 1.2,
+  "depth_mm": 0.15,
+  "lip_width_mm": 0.14,
+  "orm_alpha_preserved": true,
+  "protected_pixels": {
+    "T_ImperialSpear_BaseColor.png": {
+      "before_sha256": "e72d679125a776b5156c1999d5c446f0a9b492c7fa04a571b655f196a6119278",
+      "after_sha256": "e72d679125a776b5156c1999d5c446f0a9b492c7fa04a571b655f196a6119278",
+      "unchanged": true
+    },
+    "T_ImperialSpear_ORM.png": {
+      "before_sha256": "585989730db5a97ef87497ceae8a12453b3d1533b7e04192f77c297e9ccefa77",
+      "after_sha256": "585989730db5a97ef87497ceae8a12453b3d1533b7e04192f77c297e9ccefa77",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalGL.png": {
+      "before_sha256": "03d61b21be25ce8f0b3546ac0d8791fcf1ef15f13e844de9251a5b08b4afbeaa",
+      "after_sha256": "03d61b21be25ce8f0b3546ac0d8791fcf1ef15f13e844de9251a5b08b4afbeaa",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalDX.png": {
+      "before_sha256": "df6cda685bf5176785b8131f7451a6e582d9afc37c4ae035129d9547be1d079c",
+      "after_sha256": "df6cda685bf5176785b8131f7451a6e582d9afc37c4ae035129d9547be1d079c",
+      "unchanged": true
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "concept": "03 \u2014 Flattened leaf",
+  "components": [
+    {
+      "name": "02 \u2022 flattened leaf pommel",
+      "triangles": 3992,
+      "vertices": 1998,
+      "closed": true,
+      "volume_m3": 7.265657009832688e-05,
+      "minimum_face_area_m2": 8.027706712709914e-07
+    },
+    {
+      "name": "Pommel \u2022 turned socket with rolled lips",
+      "triangles": 1212,
+      "vertices": 608,
+      "closed": true,
+      "volume_m3": 2.236642051163522e-05,
+      "minimum_face_area_m2": 2.0805114218092058e-06
+    },
+    {
+      "name": "Pommel \u2022 blunt rolled end cap",
+      "triangles": 956,
+      "vertices": 480,
+      "closed": true,
+      "volume_m3": 9.407334717741916e-06,
+      "minimum_face_area_m2": 2.211266519225319e-06
+    }
+  ],
+  "pommel_triangles": 6160,
+  "protected_components_unchanged": 70,
+  "length_m": 2.2,
+  "pommel_span_m": [
+    0,
+    0.1281
+  ],
+  "texture_files_modified": false,
+  "body_width_mm": 49,
+  "body_depth_mm": 21.4
+}

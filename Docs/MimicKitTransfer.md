@@ -1,5 +1,309 @@
 # Isolated Run LR checkpoint transfer assessment
 
+## October 26 — Accepted recovery checkpoint packaged for Unreal
+
+`Exports/MimicKitEquipment/Recovery_Pelvismax161960_Unreal_20261026/HANDOFF.md`
+is the handoff for accepted 13-11-28 pelvismax final161960 (3,668,983,808 samples).
+Original ZIP CRC/SHA256 verified; its model bytes match the transfer-tested model.
+Includes configs, frozen rig, final32Hz Jolt references, 100-start transfer summary,
+ONNX actor, I/O contract and file hash manifest. Rejected custom fine-tunes excluded.
+Reproducer: `Labs/MimicKitTransfer/package_getup_handoff.py`.
+
+ONNX CPU parity on516 recorded observations: max motor error1.431e-5rad/s,
+phase error7.868e-6 (tolerance3e-5). Extreme synthetic std100 inputs at batches
+1/7/64: max motor error0.000719rad/s (explicit stress tolerance0.001).
+ONNX has not yet run inside Unreal; previous100/100 physical transfer used Python
+inference. Handoff distinguishes this and documents required opt-in rig settings.
+No training, cloud allocation, gameplay change or editor operation.
+
+## October 23 — Why the Jolt get-up viewer sometimes looks faster
+
+Read-only investigation; accepted weights, physics profile and gameplay untouched.
+Across99paired successful fresh starts, native mean25.49ticks (0.850s), Jolt26.90
+(0.897s); medians22vs23. Jolt faster16, equal18, slower65. Common-time-window mean
+per-case angular RMS ratio0.944 and linear RMS ratio0.967. No global speedup;
+viewer advances both recordings on one30Hz timeline, simulations240Hz/30Hz.
+
+Default viewer case0 is a real outlier: Jolt32ticks vs native62. Native head first
+passes its height threshold at43, then fails feet-height gate through61; Jolt
+passes all gates at32. Head-origin peak vertical speed3.174vs2.489m/s, so its
+push is also sharper in this case. Case94 native72/Jolt24 follows different
+recovery attempts; it is not a rescaled copy of the same movement.
+
+Frozen-policy mechanism probes on12stratified cases used the existing isolated
+candidate executable. Baseline state arrays matched saved Unreal exactly.
+No drag:12/12, mean23.83ticks vs baseline23.83; case0 remains32. Gyro enabled:
+12/12,25.17; case0 remains32. Limit16Hz:12/12,24.08; case0=34. Limit8Hz:
+11/12,46.92 (includes failure tick), case0=71. Half motor gain:12/12,41.08;
+case0=46. Alternative motor clamp ordering:12/12,25.50; case0=32.
+These are diagnostics, not adopted settings or a new tuned profile.
+
+Loaded native model confirms no passive DOF damping, no fluid viscosity/density,
+no armature and no extra drag hook; velocity-motor gains/caps match Jolt.
+Jolt adds small compound drag and zero native per-body damping. Native ball limits
+use solref[0.02,1], while Jolt uses32Hz critical spring limits; contact/integration
+also differ. Limit response demonstrably influences the sharper recovery; this
+does not isolate all contact/motor contributions or establish trajectory parity.
+Success transfer remains100/100, but that never established equal trajectories.
+No reason from these measurements to globally slow Jolt or add arbitrary damping.
+
+Evidence: Saved/MimicKitTransfer/getup-transfer-20261023/speed-investigation/
+(trajectory-stats.json,case-details.json,ablations.json,native-model.json).
+Reproducer: Labs/MimicKitTransfer/investigate_getup_speed.py.
+References: MuJoCo modeling solver parameters; Jolt5.6 MotorSettings and architecture
+damping documentation. Training stays stopped, no cloud GPU allocation.
+
+## October 23 — Broader frozen-checkpoint transfer test: Unreal/Jolt 100/100
+
+Viewer follow-up: fixed a first-animation-frame negative time delta that could
+index frame -1 and kill playback. Clock starts on the first animation callback
+and resets on resume; Play at the endpoint restarts. Both viewers and the shared
+template updated; fresh-100 generator now reads/writes HTML explicitly as UTF-8,
+also correcting its stale18-test header. Browser Play/Pause verified after reload.
+
+User requested 100 fresh get-ups before accepting transfer. Fixed-seed2026102301
+test used the actual saved training reset code:50front/50back, each with25ordinary
+perturbed and25perturbed+ starts; uniform whole-pose limp blending, original
+floor correction, separate locomotion root/joint velocity frames and0–700deg/s
+spin.94distinct limp poses; no filtering, retries or tuning against the results.
+The prior32Hz spherical-limit profile and accepted pelvismax161960_final weights
+were frozen before sampling. Deterministic policy, flat floor,240Hz/30Hz unchanged.
+
+Results: native MuJoCo99/100; actual installed Jolt inside Unreal100/100.
+All99native successes transfer, and native failure case27 also succeeds in Jolt.
+All four25-case cohorts pass in Unreal. Five owned headless Unreal automation
+processes completed successfully. Initial observations were checked against the
+production environment. Full initial states, metadata and trajectories retained.
+
+Evidence: Saved/MimicKitTransfer/getup-transfer-20261023/fresh-100/summary.json.
+Viewer: http://127.0.0.1:8843/Saved/MimicKitTransfer/getup-transfer-20261023/fresh-100/.
+Harness: Labs/MimicKitTransfer/check_getup_100.py. No training or cloud allocation.
+This supports using the accepted weights without fine-tuning for this reset
+distribution. Same installed Jolt library as gameplay, but the new spherical
+constraints remain opt-in on the isolated test rig; gameplay defaults are NOT
+updated. No RunLR changes. Uneven-floor/live gameplay integration not covered.
+
+## October 23 — Native pelvismax works in opt-in Jolt recovery tests; training STOPPED
+
+The accepted native pelvismax run13-11-28 checkpoint161960_final stays unchanged.
+Local ZIP SHA256 reverified:0dc58150f87f1cb25816235f9e565638e9972d262b9203c5da0d14c0ea736a2b.
+User requested adapting Jolt to these weights to avoid long retraining. No training,
+GPU allocation, checkpoint deletion, PHAT edit or gameplay-default change this turn.
+Recovery poduks8hn8yeqnpxf remains stopped by the prior explicit user request;
+stop receipt Saved/MimicKitEquipment/user-stop-transfer-doubt-20261023.json.
+Earlier RUNNING entries below are historical, not current authorization/status.
+
+Actual Unreal/Jolt frozen-policy tests now pass18/18 recorded perturbed starts,
+versus1/18 with the prior angular limits; both recorded normal clips also complete.
+The fix is an opt-in Jolt spherical angular-limit constraint matching the native
+training bound (PHAT-centered total angle, radius=max of the three limits), with
+32Hz critically damped softness. Motors/caps,240Hz physics/30Hz policy and success
+criteria are unchanged. Native Jolt library unchanged; only isolated recovery rig
+construction adds this constraint. This is not the rejected custom MJWarp solver.
+
+Evidence/profile: Saved/MimicKitTransfer/getup-transfer-20261023/jolt-native-profile/.
+Comparison: http://127.0.0.1:8843/Saved/MimicKitTransfer/getup-transfer-20261023/comparison/.
+Unreal and standalone full state traces match exactly for all18. Four starts used
+for tuning, fourteen additional starts; deterministic flat-floor evaluation only.
+Normal front test starts0.933s into its clip (18ticks remaining), back starts0s
+(42ticks). This does not establish arbitrary-state or full gameplay integration.
+Details, activation and limitations: Docs/MimicKitTransfer.md. Training stays stopped.
+
+### Reproducible Jolt profile and verification
+
+- Builder: `Labs/MimicKitTransfer/build_getup_native_profile.py`; constraint:
+  `Labs/MimicKitTransfer/recovery_spherical_limit.inl`; generated Unreal fixture:
+  `Labs/MimicKitTransfer/generated/recovery_fixture.inl`.
+- Profile `native-pelvismax-spherical32` adds ten spherical soft angular constraints
+  to the recovery rig. Hinge restrictions remain. Enable
+  `TRANSFER_NATIVE_BALL_LIMITS=1`, `TRANSFER_RIG_VELOCITY_STEPS=40`,
+  `TRANSFER_RIG_POSITION_STEPS=8`, `TRANSFER_TRAINING_CONTACT=1`,
+  `TRANSFER_FRICTIONLESS_SELF=1`. These fixture settings are explicit and opt-in.
+  Floor friction1/restitution0, self friction0; original geometry, mass, inertia,
+  compound drag, motor gains/caps and action normalization remain unchanged.
+- Existing Jolt `AngleConstraintPart` supplies the spring/impulse solve. No new
+  contact solver, root assistance, forced animation, altered reward/reset threshold,
+  core Jolt library patch, or unlimited-torque motor is used in the final profile.
+  Early explicit/native-motor experiments are rejected and absent from this build.
+- Angular coordinates analytically match the native model centers (rotation error
+  below7e-14 degrees). The bound is soft, not a strict PHAT swing/twist ellipse.
+  Maximum transient spherical-bound excess: native31.72deg; selected Jolt32Hz35.36deg.
+  The earlier16Hz prototype also passed18 but allowed51.52deg, so it was superseded.
+  `limit-excursions.json` records these finite-trajectory extrema.
+- Accepted native hard rows3/8/9/16 complete in26/21/27/44ticks in native physics,
+  and27/21/61/36 in the final Unreal Jolt profile. Broader18-row result is18/18,
+  with unchanged head, feet, speed and pelvis failure checks. Original Jolt1/18.
+  Normal back maximum foot-target error32.90cm stays below its unchanged35cm gate.
+- `jolt-native-unreal-native-profile32.json` and per-row NPZs are actual project-DLL
+  simulations inside headless Unreal, with the frozen policy receiving each new
+  physical state. They match standalone `sphere32-all` traces at every saved
+  full-precision body state. Unreal process/automation succeeded; normal build
+  completed. `-NoHotReloadFromIDE` avoided the unrelated WeaponWheelLab executable's
+  global Live Coding mutex; its process had no Prophecy modules loaded and remained
+  untouched. One linker retry waited for a separate owned diagnostic process to exit.
+- The browser comparison is explicitly recorded physics, not a live gameplay
+  controller. It uses original native replay, prior Jolt, and final Unreal Jolt data.
+  Looping pauses each column at its actual terminal state; body transforms are not
+  corrected for presentation (only a common horizontal view origin is removed).
+- Do not silently apply this recovery profile to RunLR/gameplay or retrain. Existing
+  RunLR fixture, old modified-contact DLL and gameplay defaults were untouched.
+  Frozen tests show that long retraining is unnecessary for these recorded starts;
+  live component integration and unseen/uneven-floor cases remain unverified.
+
+## October 23 16:24 Warsaw — corrected recovery restart RUNNING
+
+Resumed directly from accepted native pelvismax13-11-28 checkpoint161960_final,
+SHA0dc58150f87f1cb25816235f9e565638e9972d262b9203c5da0d14c0ea736a2b.
+Run20261023_162429_uefn_getup_bounded_jolt40_native161960_1024, Secure L4
+uks8hn8yeqnpxf,$0.59/hour, until stopped. Tested warning-fixed custom source
+753129e55c65 and bounded_jolt_40_20,1024agents,240Hz/30Hz; learning settings unchanged.
+This supersedes the capacity-blocked status below. No stale custom continuation.
+
+Verified advancing161981 /3,669,671,936samples,2.42s/update (~13.2k transitions/s).
+New backup SHA/persistent readback verified; resume.zip exact native SHA checked
+on pod. TB curve live; local replay downloaded. Setup guard released only after
+successful verification. Audit native-restart-20261023/live-verified.json.
+Trainer452/exit guard453; bridge20768/dashboard780. No locomotion changes.
+Unrelated TensorBoard history restored; only four stale custom attempts hidden.
+
+## October 23 — corrected restart pending GPU; TensorBoard cleaned
+
+User explicitly rejected all custom-solver continuations as stale. Resume ONLY
+native pelvismax run20261022_131128_uefn_getup_pelvismax7_1024, checkpoint161960_final,
+SHA0dc58150f87f1cb25816235f9e565638e9972d262b9203c5da0d14c0ea736a2b.
+Local ZIP and persistent readback verified again. Main getup-success-prepared.json
+and unexpected-stop-20261023/prepared.json now pin that original checkpoint with
+warning-fixed source753129e55c65, bounded_jolt_40_20,1024 worlds, same settings.
+Do not use prepare() in resume_contact_warnings.py: the stale162261 route is disabled.
+Its stage/launch/verify now support the corrected native restart. Evidence and
+superseded plan: Saved/MimicKitTransfer/getup-transfer-20261023/native-restart-20261023/.
+
+Run155033 stopped15:56:48 Warsaw: checkpoint upload QuotaExceeded at162364,
+not a solver error. Podl4fcl20i2n04u9 EXITED; restart GPU unavailable. Replacement
+Secure L4/RTX4000Ada and Community4090/5000Ada/A6000 unavailable at<=0.59/hour.
+No new pod allocated or billing. Until-stopped restart remains authorized, pending
+capacity. Earlier RUNNING entries below are historical and superseded.
+
+Freed7,392,990,078bytes by deleting170 redundant intermediate backups from the
+original pelvismax run under the standing intermediate-cleanup authorization;
+first and final161960 preserved. Old replay archives were already absent.
+Other branch checkpoints untouched. Cleanup inventory/receipt in audit directory.
+
+TensorBoard cleanup corrected after user objected to overreach: unrelated historical
+runs restored to normal newest-ten selection. Only four October23 custom-solver
+attempts (09-00-57,11-35-22,11-50-10,15-50-33) remain hidden. No event logs deleted.
+The earlier storage deletion of170 intermediate pelvismax checkpoints was outside
+this TensorBoard cleanup request; first/final retained. Do not infer authorization
+for future checkpoint deletion from a request to hide TensorBoard runs.
+
+## October 23 follow-up — permissive contact geometry running on RTX4000 Ada
+
+The verified run below later stopped12:07 Warsaw at162338 because a five-point
+patch tripped inherited error7. Saved equations are all finite; their40-pass
+solution remains exactly identical after replacing the assertion with diagnostics.
+No point or sample is discarded. Larger patches now warn; different normals get
+separate friction patches instead of fatal error9. The same existing finite solver
+and physical tuning remain. NaN/capacity/malformed-equation guards remain fatal.
+Tests cover1/4/5/8/12 points, distinct normals, actual captured equations, CUDA
+capture, torque caps and real validator warning throttling. No new RunLR sweep
+was needed for this unchanged four-point/aligned-normal path.
+Latest162261 safely preserved; fixed two-file source753129e55c65 verified in S3.
+After user authorized equivalent hardware, resumed155033 on Secure RTX4000Ada
+podl4fcl20i2n04u9 at$0.28/hour. Last30 updates2.604s vs previous L4's2.315s,
+12.5% more time/update at less than half the hourly price. Correct resume, new
+checkpoint readback, TB and replay verified. See MimicKitTraining.md for details.
+Audit: getup-transfer-20261023/unexpected-stop-20261023/warning-fix-tests.json.
+
+## October 23 — recovery transfer audit; bounded solver fine-tune verified
+
+Native161960 and custom162044 remain preserved. Frozen source, extracted copies,
+tests and results are under `Saved/MimicKitTransfer/getup-transfer-20261023`.
+User authorized restarting fine-tuning if viable, from native161960 rather than
+the stale custom162044. Replacement recovery L4 `grxkeijwtwvrkp` ($0.59/h) runs
+`20261023_115010_uefn_getup_bounded_jolt40_1024`, with failure/billing guards.
+At162011, last30 updates average2.40693s /13,614 transitions/s. Previous custom
+averaged25.72s, so the live run is10.69x faster; nativeMJ averaged2.118s, making
+this about14% more time per update than native. New backup161961 passed local
+pod SHA and persistent readback; TB and20-row replay served successfully.
+Setup guard released only after verification. Old recovery disks retained;
+locomotion remains stopped. Receipts: live-verified.json and live-performance.json.
+
+Four difficult successful native-MJ get-ups (replay rows3/8/9/16) reproduce
+their recorded success at26/21/27/44 ticks in native MJ. All four fail in
+Unreal's installed Jolt DLL with the test rig at40 velocity/8 position iterations,
+friction1, restitution0, frictionless self-contact. Custom checkpoint perturbed
+row11 succeeds at18 ticks in custom and19 in Unreal; other custom successes
+do not all transfer. Full-precision Unreal/standalone trajectories match exactly.
+These are frozen-policy feedback simulations inside headless Unreal automation,
+with a separate15-body world. No gameplay controller or user asset was changed.
+
+Correction to interpretation of old evidence: accepted RunLR4013 Jolt used the
+isolated per-point-contact DLL at `no-armature-3913/point-contact/profile`.
+It was never installed in Unreal; the RunLR map displayed recordings. The old
+16/16 result is not proof of installed gameplay-DLL transfer. Both DLL profiles
+were tested here; difficult native get-ups fail with both.
+
+Fixed custom backend reset telemetry in `uefn_engine.py`: missing
+`refresh_body_velocities` left zero/old body velocities in frame0 recordings.
+The audit reconstructs historical custom starts from saved metadata/motion data;
+policy phase reconstruction matches within0.000364. The packaged reset hook
+agrees with the reconstructed moving starts within5.13e-6 velocity units. This
+bug is not asserted to explain the broad transfer failure.
+
+Custom solver hashes match the October17 optimized source; no accidental rollback
+of that optimization. The current recovery workload repeatedly enters expensive
+motor-branch/contact loops. Split kernels, inverse reuse, lower sweep budgets
+and a staged fast path did not give enough improvement. In particular,24/16/8
+alone increased coupled fallback calls26->1014 on the full diagnostic batch.
+`prepared-fast24.json` is marked REJECTED; never launch that package.
+
+Selected profile `bounded_jolt_40_20`:40 sequential motor/contact/limit sweeps,
+relaxation1, register-resident velocity, existing20 position passes and floor
+guard. No block-branch search, seed, coupled Newton or3000-pass fallback executes.
+This deliberately changes numerical accuracy, not the mass, gains, torque caps,
+PHAT values, geometry, friction or240/30Hz frequencies. It is a finite approximation,
+not an exact converged-equation replacement. The legacy profile remains available.
+The first rollout reports its approximate motor-equation residual explicitly;
+nonfinite states and unsupported constraints still stop training before PPO.
+On the live first rollout, maximum motor-equation residual was440.17Nm. This is
+an equation-convergence diagnostic, not an applied-torque-cap override. Torque
+caps remain enforced. Do not describe this finite profile as fully converged.
+
+Validation: all16 distinct original RunLR4013 phase starts complete10seconds,
+maximum tracking error17.62cm (limit27cm). Six selected custom-checkpoint get-ups
+all succeed in the packaged profile. Row11 succeeds at17ticks, versus19ticks in
+Unreal. This does NOT claim all other custom/MJ successes now transfer to Jolt.
+Recorded floor penetration reaches1.88cm across these six cases; the original
+four-case custom diagnostic reaches1.65cm. Different case sets, not a paired
+penetration improvement claim. No hidden root lift or collision disable was added.
+
+Matched frozen constraints: register versus tiled40-pass solver differs by
+at most4.44e-5 generalized velocity; NaN rejection and preservation of unsupported
+error flags pass. Full MJ step differences include nondeterministic contact order
+and must not be represented as bitwise equality. Frozen1024-world batched-policy
+timing is194.805->83.590ms/tick,2.33x faster locally. Earlier411.7/488.5/371.1/
+379.0/342.8ms timings used a slow per-world CPU driver which idled the GPU and
+changed its clock; retain them only as diagnostics, not the final speed claim.
+The final driver is checked against the original observation construction.
+Live L4/full-PPO result is recorded above; local timing is a separate benchmark.
+
+Prepared source `source-bounded40.zip` SHA256
+`1d8d01a041ae54a6ef91d023ff25254e7be786082da3b668569d992635776779` changes only
+the custom engine/kernel, reset refresh, package inventory, explicit resume
+handling/reporting and engine profile. Native161960 and source passed persistent readback.
+Environment/agent settings remain unchanged. Restart helper:
+`Labs/MimicKitTraining/resume_recovery_bounded.py`; audit directory above.
+First attempt113522 failed before any PPO update because the warning logger
+required legacy convergence counters. Fixed it to emit only provided fields,
+tested both actual callback variants, and relaunched from native161960. Failed
+pod bn0gshkxl2eo8n was stopped by its exit guard; retained disk was not deleted.
+
+Normal editor build succeeded with `-NoHotReloadFromIDE`, bypassing the shared
+executable LiveCoding guard owned by the separate WeaponWheelLab game. No
+`-NoLiveCoding` compile-setting change. WeaponWheelLab/gameplay/editor assets
+untouched. Opt-in test `Prophecy.Jolt.RecoveryTransfer` requires
+`-RecoveryAuditDir`; normal test discovery does not wait for the policy bridge.
+
 ## October 18 — native profile integrated for get-up training
 
 User chose pure configured native MJWarp, cancelling proposed solver mixing.

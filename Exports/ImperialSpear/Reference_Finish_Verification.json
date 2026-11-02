@@ -1,0 +1,232 @@
+{
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\BeforeReferenceFinish_v1",
+  "backup_files": {
+    "T_ImperialSpear_BaseColor.png": "c7e6384b70e4953fdefd6ac1126fb5e0a280a622ff5746b19d657726e732b1f3",
+    "T_ImperialSpear_ORM.png": "a8f392d2934867a401b581036f5d6a25478130325ac601cc50732b84baf2c535",
+    "T_ImperialSpear_NormalGL.png": "4e56dcf30e9a9742dcd236fd6f0a69e6831d71b7502972395bb654d608bb4d9e",
+    "T_ImperialSpear_NormalDX.png": "42849175648f7d4bfff666b3c1f82f6c6f3e6e7713c378483ce9276e5d6568d2"
+  },
+  "seed": 27102706,
+  "regions": {
+    "steel": {
+      "pixels": [
+        0,
+        0,
+        1024,
+        2048
+      ],
+      "base_mean_srgb": [
+        147.16,
+        151.14,
+        156.12
+      ],
+      "roughness_min_mean_max": [
+        0.3569,
+        0.4527,
+        0.6706
+      ]
+    },
+    "edge": {
+      "pixels": [
+        1024,
+        0,
+        1536,
+        2048
+      ],
+      "base_mean_srgb": [
+        192.34,
+        200.33,
+        209.33
+      ],
+      "roughness_min_mean_max": [
+        0.2667,
+        0.2956,
+        0.3569
+      ]
+    },
+    "ridge": {
+      "pixels": [
+        1536,
+        0,
+        1792,
+        2048
+      ],
+      "base_mean_srgb": [
+        183.35,
+        193.34,
+        202.33
+      ],
+      "roughness_min_mean_max": [
+        0.2706,
+        0.3066,
+        0.3765
+      ]
+    },
+    "steel_shadow": {
+      "pixels": [
+        1792,
+        0,
+        2048,
+        2048
+      ],
+      "base_mean_srgb": [
+        51.46,
+        58.46,
+        65.46
+      ],
+      "roughness_min_mean_max": [
+        0.451,
+        0.4691,
+        0.5059
+      ]
+    },
+    "gold": {
+      "pixels": [
+        2048,
+        0,
+        3072,
+        2048
+      ],
+      "base_mean_srgb": [
+        162.58,
+        127.11,
+        68.97
+      ],
+      "roughness_min_mean_max": [
+        0.4157,
+        0.4723,
+        0.5725
+      ]
+    },
+    "gold_shadow": {
+      "pixels": [
+        3072,
+        0,
+        3328,
+        2048
+      ],
+      "base_mean_srgb": [
+        74.94,
+        49.3,
+        20.76
+      ],
+      "roughness_min_mean_max": [
+        0.5608,
+        0.6163,
+        0.7176
+      ]
+    },
+    "gold_etched": {
+      "pixels": [
+        3584,
+        0,
+        4096,
+        2048
+      ],
+      "base_mean_srgb": [
+        159.8,
+        124.93,
+        67.79
+      ],
+      "roughness_min_mean_max": [
+        0.4157,
+        0.4824,
+        0.6863
+      ]
+    },
+    "wood": {
+      "pixels": [
+        0,
+        2048,
+        2048,
+        4096
+      ],
+      "base_mean_srgb": [
+        34.02,
+        11.01,
+        10.01
+      ],
+      "roughness_min_mean_max": [
+        0.6353,
+        0.6749,
+        0.7294
+      ]
+    },
+    "leather": {
+      "pixels": [
+        2048,
+        2048,
+        3072,
+        4096
+      ],
+      "base_mean_srgb": [
+        48.0,
+        14.0,
+        15.0
+      ],
+      "roughness_min_mean_max": [
+        0.6824,
+        0.72,
+        0.7608
+      ]
+    },
+    "beads": {
+      "pixels": [
+        3328,
+        0,
+        3584,
+        1024
+      ],
+      "base_mean_srgb": [
+        48.02,
+        5.0,
+        8.0
+      ],
+      "roughness_min_mean_max": [
+        0.2588,
+        0.2652,
+        0.2745
+      ]
+    },
+    "cord": {
+      "pixels": [
+        3328,
+        1024,
+        3584,
+        2048
+      ],
+      "base_mean_srgb": [
+        58.0,
+        9.0,
+        13.0
+      ],
+      "roughness_min_mean_max": [
+        0.749,
+        0.7851,
+        0.8196
+      ]
+    }
+  },
+  "silk_pixels_unchanged": true,
+  "depths_mm": {
+    "gold_scratches": 0.0035,
+    "wood_pores": 0.007,
+    "existing_socket_engraving": 0.1,
+    "steel_scratches_retained": 0.008
+  },
+  "required_uv_regions": {
+    "beads": [
+      0.8125,
+      0.875,
+      0.75,
+      1
+    ],
+    "cord": [
+      0.8125,
+      0.875,
+      0.5,
+      0.75
+    ]
+  },
+  "status": "reference finish generated"
+}

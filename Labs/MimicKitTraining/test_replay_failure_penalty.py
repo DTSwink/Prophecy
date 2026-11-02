@@ -26,6 +26,19 @@ class ReplayPenaltyTest(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError,'Recorded reward'):
             convert_arrays(*self.recording(1,0.))
 
+    def test_com2_multiplier_keeps_failure_cost_unscaled(self):
+        args=self.recording(1)
+        args[0]['frame_com2_reward_multiplier']=[1.,.5,.001]
+        args[2][1:,2]=[.25,.0005-100.]
+        convert_arrays(*args)
+
+    def test_com2_multiplier_cannot_hide_missing_failure_cost(self):
+        args=self.recording(1)
+        args[0]['frame_com2_reward_multiplier']=[1.,.5,.001]
+        args[2][1:,2]=[.25,(.5-100.)*.001]
+        with self.assertRaisesRegex(AssertionError,'Recorded reward'):
+            convert_arrays(*args)
+
 
 if __name__=='__main__':
     unittest.main()

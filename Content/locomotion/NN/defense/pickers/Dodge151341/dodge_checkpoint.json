@@ -1,0 +1,23 @@
+{
+  "file": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\slashes2\\saved_defense_checkpoints\\20261007_043605_dodge_bs256_inertia_x3_resume_step151341.pt",
+  "sha256": "78091adcf920a9fdd5b658ea37e39a908ed03fbdaaf83ff9bad725c0e3500721",
+  "step": 151341,
+  "exact_forearms": true,
+  "models": {
+    "prophecy_dodge_upper.onnx": {
+      "sha256": "785be0643ba657b901b9b18af0980d8ab126a011f517a556e22c8c61281c2824",
+      "parity_batches": 17,
+      "max_abs_error": 8.940696716308594e-07
+    },
+    "prophecy_dodge_walk.onnx": {
+      "sha256": "849986b85c4ed5a7930226bb0bb26ffe01bb9ca30e2a226b13ca1b63eae5d852",
+      "parity_batches": 17,
+      "max_abs_error": 1.9073486328125e-06
+    },
+    "prophecy_dodge_run.onnx": {
+      "sha256": "f710c3f4c6d1d96d50b2d1b9ca964bee4e7ba7d97991e50fbc41c2d18a6173cd",
+      "parity_batches": 17,
+      "max_abs_error": 2.0265579223632812e-06
+    }
+  }
+}

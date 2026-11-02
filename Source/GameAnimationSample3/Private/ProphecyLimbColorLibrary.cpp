@@ -4,6 +4,7 @@
 #include "Components/SkinnedMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/Texture2D.h"
+#include "TextureResource.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Math/Float16Color.h"

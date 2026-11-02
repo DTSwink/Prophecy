@@ -1,0 +1,23 @@
+{
+  "status": "VERIFIED_SOURCE_AND_MAIN_FBX",
+  "date": "2026-10-28",
+  "before_triangles": 59460,
+  "after_triangles": 43494,
+  "reduction_percent": 26.851664984863778,
+  "files": {
+    "ImperialSpear_Optimized.blend": "fd2692ba674afcb677c09731042d4e26295ddf1b099ab85aab85e39afabe5dbc",
+    "SM_ImperialSpear.fbx": "e1dbb2b1414c32d180d75d5c3214f0c667abe695647f250c1bf0962449ef6814"
+  },
+  "historical_not_refreshed": [
+    "ImperialSpear_Source.blend",
+    "ImperialSpear_Game.blend",
+    "SM_ImperialSpear.glb",
+    "SM_ImperialSpear_LOD1.fbx",
+    "SM_ImperialSpear_LOD2.fbx",
+    "Asset_Report.json",
+    "Export_Verification.json"
+  ],
+  "unreal_import_tested": false,
+  "lab_cache_refreshed": false,
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\Optimization20261028"
+}

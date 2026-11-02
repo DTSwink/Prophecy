@@ -1,0 +1,14 @@
+const fs=require('fs'),path=require('path'),vm=require('vm');
+const root=__dirname,m=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'));
+let html=fs.readFileSync(path.join(root,'../2026-10-27-enclosed-panels/index.html'),'utf8');
+html=html.replaceAll('Enclosed menu / 20 variations','Ruby & gold / 20 refinements').replace('ENCLOSED PANEL STUDIES','RUBY & GOLD REFINEMENTS');
+html=html.replace('A closed rectangular panel, a translucent interior and bright vertical options. Twenty approaches to the details.','Your selected ruby-and-gold design, made taller and wider. Twenty refinements of its frame, lettering, materials and details.');
+html=html.replace('<nav><a href="#typography">01–05 Typography</a><a href="#craft">06–10 Craft</a><a href="#glass">11–15 Glass</a><a href="#geometry">16–20 Geometry</a></nav>','<nav><a href="#frame">01–05 Frame</a><a href="#typography">06–10 Typography</a><a href="#material">11–15 Material</a><a href="#detail-studies">16–20 Detail</a></nav>');
+const items=m.concepts.map(({id,title,group,detail,file})=>({id,title,group,detail,file}));
+html=html.replace(/const items=.*?;\r?\nconst byId/, 'const items='+JSON.stringify(items)+';\nconst byId');
+html=html.replace("heading.id=item.group.toLowerCase();","heading.id=item.group==='Detail'?'detail-studies':item.group.toLowerCase();");
+html=html.replace("detail.textContent=item.detail;","detail.textContent=item.detail;\n history.replaceState(null,'','#concept-'+item.id);");
+html=html.replace("viewer.addEventListener('click'","const initial=location.hash.match(/^#concept-(\\d{2})$/);if(initial){const i=items.findIndex(x=>x.id===initial[1]);if(i>=0)show(i);}\nviewer.addEventListener('click'");
+new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+fs.writeFileSync(path.join(root,'index.html'),html);
+console.log(JSON.stringify({gallery:path.join(root,'index.html'),concepts:items.length,scriptSyntax:'pass'}));

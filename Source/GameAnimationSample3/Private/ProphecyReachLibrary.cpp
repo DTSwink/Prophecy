@@ -1,4 +1,5 @@
 #include "ProphecyReachLibrary.h"
+#include "ProphecyBodyflipRuntime.h"
 #include "ProphecyReachRuntime.h"
 #include "ProphecyReachWristLimits.h"
 #include "ProphecyReachArm.h"
@@ -204,7 +205,7 @@ static void EnsureCleanup()
 }
 static FState* Admit(AProphecyAgent* A)
 {
-    if (!IsInGameThread()||!IsValid(A)||!A->HasActorBegunPlay()) return nullptr;
+    if (!IsInGameThread()||!IsValid(A)||!A->HasActorBegunPlay()||ProphecyBodyflip::Active(A)) return nullptr;
     ProphecySwordHolsterPose::FStatus Holster;
     if (ProphecySwordHolsterPose::Status(A,Holster)&&!Holster.Finished) return nullptr;
     if (auto* S=States.Find(A)) { (*S)->Returning=false;return S->Get(); }
@@ -553,6 +554,7 @@ void Update(AProphecyAgent* A,int Id)
 static bool StartGrab(AProphecyAgent* A,int Side,UPrimitiveComponent* C,FName Bone,FVector Point,bool Explicit,float Speed,float RotationSpeed,FString* Failure=nullptr,float Independence=0)
 {
     auto Reject=[Failure](const TCHAR* Why){if(Failure)*Failure=Why;return false;};
+    if(ProphecyBodyflip::Active(A))return Reject(TEXT("Stop this agent's Bodyflip controller before grabbing"));
     if(!FMath::IsFinite(Independence)||Independence<0||Independence>1)return Reject(TEXT("joint independence must be in [0,1]"));
     if (!ValidHand(Side)||!IsValid(C)||!IsValid(A)||!A->GetPoseReferenceMesh()||C->GetWorld()!=A->GetWorld()||C->GetOwner()==A||Point.ContainsNaN()||!FMath::IsFinite(Speed)||Speed<=0||!FMath::IsFinite(RotationSpeed)||RotationSpeed<=0) return Reject(TEXT("invalid input, self-grab or mismatched world"));
     UBodySetup* Shape=Collider(C,Bone);if (!Shape||Shape->AggGeom.SphereElems.Num()+Shape->AggGeom.SphylElems.Num()+Shape->AggGeom.BoxElems.Num()+Shape->AggGeom.ConvexElems.Num()==0) return Reject(TEXT("bone has no supported collider"));

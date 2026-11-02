@@ -1,0 +1,28 @@
+{
+  "clip": "sweepKick",
+  "frames": 36,
+  "fps": 30,
+  "phases": {
+    "armed": 8,
+    "hit": 17
+  },
+  "effector": "foot_r",
+  "circular": true,
+  "originalFamiliesUnchanged": 16,
+  "unchangedSamples": 232,
+  "maxEntryError": 1.2412670766236366e-16,
+  "deadlines": [
+    {
+      "directArmed": false,
+      "armed": 0.7666666666666666,
+      "hit": 1.0666666666666667
+    },
+    {
+      "directArmed": true,
+      "armed": 0.5666666666666667,
+      "hit": 0.8666666666666667
+    }
+  ],
+  "sourceSHA256": "0718752ae3d3425cedc2317951446d56087aa757a4bba6c5b6b7b579ae5a3545",
+  "visualVerified": false
+}

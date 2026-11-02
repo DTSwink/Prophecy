@@ -58,6 +58,13 @@ PIE settings. The manager's clamp switches affect all agents it owns.
 
 ## Player camera (current: 2026-10-05)
 
+October26 addition: robot locomotion uses this same player-only follower with
+independent in/out durations. COM X/Y is projected to floor Z=0, preserving the
+camera rig's authored height/offsets. Switch capture precedes NN root handoff;
+PostPhysics handles late root movement. Attack offsets transfer into this
+transition; attack/defense behavior below applies again after robot return.
+See [RobotLocomotion.md](RobotLocomotion.md) for current build and validation state.
+
 By default attacks keep the camera on the capsule. Animated pelvis displacement
 does not change the camera offset at follow alpha 0. A transient `UProphecyAttackCameraComponent` is created
 only for a possessed full attacker (or defense); NPCs receive no camera work.

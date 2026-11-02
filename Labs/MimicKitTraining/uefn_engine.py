@@ -117,11 +117,16 @@ class UefnNewtonEngine(NewtonEngine):
                   inputs=[raw_state.body_q,raw_state.body_qd,self._sim_model.body_inertia,
                           self._drag_coeff,self._drag_first,self._drag_second,raw_state.body_f],device=self._device)
 
+    def refresh_body_velocities(self):
+        # Reset writes generalized velocities before the first physics step.
+        # Observations/replay must not read the previous episode's body cache.
+        self._body_velocity.update(self._sim_state.raw_state)
+
     def _simulate(self):
         super()._simulate()
         # Included in the same CUDA graph; rewards and telemetry see the actual
         # final body velocities, including the last physics substep.
-        self._body_velocity.update(self._sim_state.raw_state)
+        self.refresh_body_velocities()
 
     def _build_dof_force_tensors(self):
         if self._bounded_velocity_motors:

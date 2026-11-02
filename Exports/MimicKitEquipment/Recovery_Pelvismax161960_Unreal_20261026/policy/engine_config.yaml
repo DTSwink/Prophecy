@@ -1,0 +1,27 @@
+engine_name: newton
+control_mode: vel
+control_freq: 30
+sim_freq: 240
+env_spacing: 5
+uefn_asset_directory: /workspace/mimickit_trial/assets/uefn
+uefn_zero_joint_armature: true
+transfer_capture_failures: true
+uefn_bounded_velocity_motors: false
+uefn_jolt_contact_profile: false
+uefn_motor_torque_caps_nm:
+  right_thigh:0: 732.8481536865235
+  right_thigh:1: 482.6681900024414
+  right_thigh:2: 547.7334869384766
+  right_shin: 321.15493927001955
+  right_foot:0: 403.23335723876954
+  right_foot:1: 239.51566085815432
+  right_foot:2: 469.4500076293946
+  left_thigh:0: 395.52479095458983
+  left_thigh:1: 494.32335662841797
+  left_thigh:2: 450.6542449951172
+  left_shin: 380.0389572143555
+  left_foot:0: 167.84636764526368
+  left_foot:1: 209.99386367797854
+  left_foot:2: 507.8737976074219
+transfer_floor_aware_projection: false
+uefn_native_profile: native_runlr_soft_contact_20261018

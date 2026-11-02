@@ -1,0 +1,116 @@
+{
+  "components": {
+    "07 \u2022 reference cast housing with pierced eye": {
+      "triangles": 7312,
+      "closed": true,
+      "volume_m3": 0.00013793048441468878,
+      "bounds": {
+        "min": [
+          -0.05501968041062355,
+          -0.012500000186264515,
+          1.6684000492095947
+        ],
+        "max": [
+          0.05000681430101395,
+          0.012500000186264515,
+          1.7609964609146118
+        ]
+      },
+      "minimum_geometric_corner_normal_dot": 0.4999865636928007,
+      "backward_corner_normals": 0
+    },
+    "Blade \u2022 flame and compact unified casting": {
+      "triangles": 3692,
+      "closed": true,
+      "volume_m3": 2.3535790327007778e-05,
+      "bounds": {
+        "min": [
+          -0.0026260176673531532,
+          -0.009243026375770569,
+          1.7462490797042847
+        ],
+        "max": [
+          0.04134900122880936,
+          0.009243026375770569,
+          1.8538579940795898
+        ]
+      },
+      "minimum_geometric_corner_normal_dot": 0.5331907570362091,
+      "backward_corner_normals": 0
+    },
+    "05 \u2022 long engraved socket and short end cuff": {
+      "triangles": 476,
+      "closed": true,
+      "volume_m3": 0.00015033739483609465,
+      "bounds": {
+        "min": [
+          -0.019200000911951065,
+          -0.019200000911951065,
+          1.531570315361023
+        ],
+        "max": [
+          0.019200000911951065,
+          0.019200000911951065,
+          1.6640000343322754
+        ]
+      }
+    },
+    "Socket \u2022 thin flared neck ring": {
+      "triangles": 572,
+      "closed": true,
+      "volume_m3": 9.902191383928563e-06,
+      "bounds": {
+        "min": [
+          -0.024800000712275505,
+          -0.024800000712275505,
+          1.6632000207901
+        ],
+        "max": [
+          0.024800000712275505,
+          0.024800000712275505,
+          1.6684000492095947
+        ]
+      }
+    },
+    "Socket \u2022 broad asymmetrical middle ring": {
+      "triangles": 1920,
+      "closed": true,
+      "volume_m3": 1.6926559804442104e-05,
+      "bounds": {
+        "min": [
+          -0.026399999856948853,
+          -0.026399999856948853,
+          1.5775442123413086
+        ],
+        "max": [
+          0.026399999856948853,
+          0.026399999856948853,
+          1.5959441661834717
+        ]
+      }
+    },
+    "Tassel \u2022 pierced small dark lacquer bead": {
+      "triangles": 1088,
+      "closed": true,
+      "volume_m3": 3.5156508351371458e-06,
+      "bounds": {
+        "min": [
+          0.042027223855257034,
+          -0.01979999989271164,
+          1.6614446640014648
+        ],
+        "max": [
+          0.06161985173821449,
+          -0.00019999966025352478,
+          1.6810014247894287
+        ]
+      }
+    }
+  },
+  "sleeve_to_guard_axial_clearance_mm": 4.3999656677247145,
+  "collar_top_to_guard_seat_error_mm": 4.9209594621402175e-05,
+  "collar_axis_aligned": true,
+  "first_bead_round": true,
+  "appearance_acceptance": "Requires visual review; numeric checks do not establish fidelity",
+  "unreal_validated": false
+}

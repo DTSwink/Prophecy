@@ -2,6 +2,227 @@
 
 ## Current state
 
+The user accepted the current lab and requested the complete native port and
+backup on November 2. The package now includes pike_final, both-arm return
+protection, Pike heading/elevation aiming and the accepted continuous thrust
+steering. The rejected06 chest lock is absent. Lab source hashes identify five
+changed solver modules since the preceding port; only the Pike authored clip
+changed. All earlier port behavior described below remains included.
+
+Current settings: `Content/BodyflipLab/LabSettings.json`, copied read-only from
+the live lab, with steering ON, source cutoff16, flip400/twist200, delay1s and the
+current target/markers. **Start Bodyflip Saved Lab Setup** replays these exact
+settings. Normal typed Settings now exposes **Pike: Steer Through Thrust** and
+includes the same Pike cutoff. Existing Blueprint overrides remain untouched.
+`Get Bodyflip State` Diagnostics Json includes `pikeSteeringFallback` when a fit
+cannot be applied; it uses standard aim just as the lab does.
+
+Normal Editor builds passed. TestNN is open in the normal editor. Cold reflection
+is healthy (status3, native_properties0, pin_types0), and an owned Play startup
+check advanced the existing Blueprint/NN for60 game ticks, then ended only that
+owned session. No Blueprint/map/mesh assets or live lab settings were saved or
+rewritten. Existing Blueprint compilation preserves all10,552 original pins/links.
+
+Final evidence: `Saved/Diagnostics/BodyflipFinalPort20261102`; compact restorable
+receipt: `Tools/Recovery/Receipts20261102Bodyflip/native-port-verification.json`.
+
+- App versus package:18 cases /513 frames, maximum position difference7.54e-8m.
+  Decoded inputs match exactly; Pike finite-difference roundoff changes fitted
+  angles below1e-9degrees. The comparison permits1micrometre and1e-6radians;
+  native physical-tracking limits were not relaxed.
+- Pinned V8 versus Node:21 cases /607 frames /137251 numeric values, exact.
+  Includes steering on/off, front/rear/fast flips and current/front/rear native
+  rig variants. The front native-rig probe initially hit180s under load; isolated
+  front/rear retries passed with600s time limits and unchanged numeric gates.
+- Actual Unreal VM:513 frames /117,179 numeric values, exact. Package audit100
+  checks passes, including current source, inputs, settings and protected assets.
+- Initial native suite:16 pass,2 fail. Additional clear-air saved setup and full
+  Unreal VM parity completed successfully. The host's900s overall limit then
+  interrupted the repeated left-hand test; this is recorded, not treated as a pass.
+- Clear-air saved setup:198 frames,6.76cm/12.96deg maximum physical tracking,
+  0.466cm/0.492deg RMS,0.1094cm maximum leg-length error. Lowering only the physical
+  test floor120cm preserves every canonical packet and removes all floor contacts.
+
+**Remaining contact limits:** the original floor-level Space Gym setup commands
+a foot into the floor during the flip and reaches89.2deg right-foot tracking
+error. The combined left-hand push also fails the unchanged3cm leg-length gate
+at4.125cm. Big/Small airborne throws pass. The earlier intermittent floor-level
+Big Throw issue below is not declared fixed merely because this run passed it.
+These contact issues are separate from the now-verified shared solver port.
+
+The requested repository checkpoint includes the complete current work, exact
+Pike FBX, saved lab profile, runtime/NN payloads and the pinned V8 DLL/license.
+Other systems are backed up without claiming Bodyflip tests validate them.
+
+## Earlier November 2 port verification (historical)
+
+## November 2 port — built; one native floor-contact issue remains
+
+The current accepted lab solver and captured tuning are ported and normally
+built. This includes authored Lara/Snatch/Ball/Ninja poses, Keep/disabled jumps,
+variant response and wobble, FinalNoAim throws, attack end frames, duration and
+angular-distance return, coupled forearm/wrist inertia and the Pike interpolation
+fix. No rejected braking or independent world-hand return was restored.
+
+The exact settings are `Content/BodyflipLab/LabSettings.json` (November 2).
+The read-only original snapshot is in
+`Saved/Diagnostics/BodyflipPort20261102/lab-state.json`. The package includes
+44 source modules and all authored inputs; no browser, local server or Node
+process is required in game. It uses the existing pinned V8 integration.
+
+### Controls and entry
+
+**Start Bodyflip Saved Lab Setup** loads the captured Space Gym/Pike scene,
+including target, all four markers (one enabled), platforms and timing, into
+this agent's starting frame. It uses the agent's existing Kinematic or Physical
+mode. This explicit node avoids changing the user's existing Blueprint wiring.
+
+Normal **Start Bodyflip** retains idle/no-marker admission. New settings defaults
+match the captured sliders. Existing serialized Blueprint values/connections
+remain user overrides; they were not rewritten. Split Settings exposes motion
+compensation, pelvis-to-five-spine transfer, 3D momentum, Space falling, shared
+attack return duration/distance, per-attack end frames, shared pose blend/easing/
+spin response and per-pose wobble. Legacy rate-based return is not revived.
+Pose1–4 keep their enum values and display Lara/Snatch/Ball/Ninja; Keep is appended.
+Legacy per-event pose blend pins remain compatible; shared settings own the
+accepted pose transitions. Camera and playback UI are not gameplay settings.
+
+**Queue Bodyflip Jump** exposes Enabled. Split Attack for an optional fixed
+**World Throw Direction**. Native conversion treats it as a normalized vector
+through the starting frame: translations and scale cannot bend the ray, and
+later pelvis/root motion does not move it. Without a supplied ray the shared
+throw solver aims from the target, retaining Small Throw's authored arc rule.
+**Set Bodyflip Target** remains a UE world-centimetre point.
+
+### Native corrections required by the port
+
+The shared packet now carries `attackFree`. Native Jolt temporarily permits the
+same authored attack/return joint freedom as the lab, then restores the live
+user constraint limits. It changes only effective native limits, never PHAT or
+mesh constraint profiles. Before this correction the native rig opposed legal
+lab attacks; the saved Pike differed by up to 54 cm. The final saved scene has
+5.212 cm maximum / 0.308 cm RMS body-position error across 198 frames and 23 bodies.
+
+Fractional projectile release formerly inserted a release next to an existing
+uniform collision cut. Small Throw produced a roughly 10-microsecond interval,
+causing huge servo velocities. Mandatory release times now divide the frame
+into spans, each subdivided evenly to respect the requested maximum step size.
+Release times, total elapsed time, shared publication and other clients' queued
+forces are preserved. Each resulting native Update also repeats activation
+preflight: bodies can sleep between Updates, so the old once-per-frame preflight
+could fault the rig after a throw returned to rest. Both throws now run through
+the complete two-second fixture without that fault. No velocity cap, release
+snap, extra damping or animation modification was introduced.
+
+### Verification and remaining limit
+
+Normal Win64 Development Editor build succeeded; the final host DLL hashes match
+the project DLLs. Tests ran in isolated headless Unreal transient worlds with the
+real mannequin/PHAT. The user's editor was closed before work and remains closed.
+No Blueprint/map/PHAT/mesh assets were saved; all four before/after hashes match.
+The live lab settings also match the read-only capture. No push was requested.
+
+- Actual lab app versus packaged adapter: 14 cases / 405 frames, zero positional
+  difference. Includes slashes, kick, sweep, both throws, twist variants, all four
+  poses/Keep/disabled markers and a fixed world throw direction.
+- Pinned V8 versus Node: 20 cases / 594 frames / 139,683 numbers, exact; includes six
+  native-rig variants. Actual Unreal VM: 405 frames / 94,047 numbers, exact.
+- Package/source/settings/asset audit: 101 checks pass. FinalNoAim manifest and
+  baked clips match `Exports/Throws/FinalNoAim`, not another throw export.
+- Existing manual-agent Blueprint compiles with all 10,552 original pin defaults
+  and links preserved. Compilation used SkipSave; source bytes stay untouched.
+- Native checks: 18 pass, 1 fails across the final 17-case combined run plus two
+  explicitly airborne throw cases. Controls, saved tuning, world direction,
+  substeps, preparation extension, kinematic/physical saved setup, pause/resume,
+  NN handoff, paired/single hand pushes, Small Throw and release timing pass.
+- Both airborne throws cover 121 frames including complete returns, restore the
+  temporary limit override and preserve the captured joint profiles. Maximum
+  physical position error: Big 0.656 cm, Small 0.988 cm; maximum leg-length error 0.127 cm.
+  Native PHAT collider sheets were reviewed against planned poses.
+
+**Fixture classification verified November 2:** this was the Space Gym airborne
+controller placed at floor level, not a normal grounded throw or a jump that
+later landed. All 121 frames have phase SPACE, grounded=false, zero gravity,
+zero commanded translation and the same root position. Foot-floor contacts
+already occur during PREPARING, before the throw. Lowering only the floor by
+1.2 m gives identical canonical frames and no foot-floor contacts. The measured
+4.273 cm discrepancy is calf_l to foot_l at 0.367 s. See
+`Saved/Diagnostics/BodyflipPort20261102/throw-classification-check.json`.
+
+**Unresolved:** `Prophecy.Bodyflip.PhysicalBigThrow`, the original fixture with
+feet at floor level, intermittently fails its unchanged 3 cm leg-length gate. The
+combined run measures 4.273 cm around 0.367 s, before release at 0.667 s. A left-foot
+floor contact then reports a downward normal on the floor's bottom face; this
+correlates with the transient stretch, but the collision cause is not yet proved.
+Canonical motion and rig profiles match the passing focused run. The focused
+full-return run passes at 0.365 cm; this does not erase the combined failure.
+The separate AirBigThrow/AirSmallThrow fixtures put the floor 1.2 m lower (the lab
+Space Gym height), keeping real collision and all original thresholds. The
+original floor-contact tests remain intact. No ground-contact workaround or
+threshold relaxation was applied. Follow this issue before claiming the entire
+native physical suite is green; it does not invalidate the exact solver parity.
+
+Evidence: `Saved/Diagnostics/BodyflipPort20261102/summary.json`,
+`native-results.json`, `combined-final/Reports/index.json`,
+`air-final/Reports/index.json`, per-agent JSON/contact sheets, `app-parity.json`,
+`current-v8.json`, `package-audit.json` and `final-binaries.json`.
+Full-return tests now fail immediately if their native world faults, rather than
+continuing to compare a frozen last physical pose. The earlier failed runs are
+retained for diagnosis. These are native automation/collider checks, not a claim
+of an interactive test of the user's entire game map or a cooked shipping build.
+
+Current Runtime.js: 998,973 bytes; SHA256
+`432f52c2300aaa0980df058716b7327a3fb33e039803a760d4877688a4682441`.
+
+## Historical package and verification notes
+
+The entries below predate the November2 port and are retained as evidence.
+Their pending-build/package status and old defaults are superseded above.
+
+October31 context-refresh boundary: the standalone lab has newer, unfinished
+direction-based aiming and cooperative-preparation experiments. They have NOT
+been packaged or parity-tested in this runtime. The package below remains the
+last packaged version, not the current lab source. See the
+[lab handoff](../Labs/BodyflipLab/README.md#context-refresh-handoff---october-31).
+Per-mode timeline persistence is UI-only and needs no native update. Flight and
+recovery decoder sources have changed; runtime-only packaging rejects their old
+asset fingerprints. Do not bypass this or assume a successful prior parity test
+validates the newer code. No editor build/restart was performed for this handoff.
+
+October31 current package:42modules/891446bytes; SHA256
+5ed93ac7db5248d4c727e244e6304bbcfc0c34d874984c20ddf51b6d840c402f.
+Airborne pelvis aim returns from Hit over Attack out; spine/shoulder offsets
+retain follow-through. Before/at Hit and flipless motion are preserved. Native
+slash V8 parity8frames/1723numbers exact. Lab-only no-op generation guards also
+fixed marker-click freezes. No C++/Blueprint/editor changes. The separate
+landing-to-NN issue remains. See the lab README for current scope/evidence.
+
+Previous October31 package:42modules/890981bytes; SHA256
+f15a76259e321254c5fabd66752eae0d417add02b944fdb05e4a3d4e219c44d3.
+Includes accepted foot follow and balanced airborne contact-position aiming,
+pelvis-local aim turn, independent shoulder steering and exact-integrator
+refinement. Native V8 six cases48frames/10577numbers match Node exactly.
+Header defaults remain source-only until a normal build; no editor/Blueprint
+changes. Separate landing-to-NN wrist spike nearF199 remains unresolved in the
+current scene; no speculative landing changes are packaged. Lab README has
+current metrics and evidence. Older package hashes below are historical.
+
+Default follow-up: core AimWeight and the typed Blueprint settings initializer now
+default to1.0 (100%). Generated runtime refreshed. Header default is source-only
+pending the next build; no editor rebuild/reload or existing Blueprint pin changes.
+Current runtime882827bytes; SHA256
+3e7e43b31452cc8dddd66ee795141ff103a6e9753ab6582d8c4631339603ddcf.
+
+October31 physical aim follow-up (local after checkpoint09476308): prediction
+now includes release carrier displacement/drift, uses neutral physical entry,
+bounded iterative correction and the attacking shoulder in the contact chain.
+Static/flipless attacks retain their exact approved path. Saved full-aim slash
+hits within10.046cm of the12cm target centre; saved80% deliberately remains partial.
+Runtime42modules/882829bytes, SHA256
+c4294b7d578d4996ecf94504db3731b093e21b75377c2fa38fe8f1b8dc9433d7.
+No C++/Blueprint/editor changes. See lab README for limits and verification.
+Native V8 parity: six cases,48frames/10583numeric comparisons, zero difference.
+
 October31 F145 release fix: floor projection of the captured leg now runs before
 rebasing its world pose into source coordinates. Physical flight starts from that
 captured articulation, retaining contact momentum/COM velocity and commanded

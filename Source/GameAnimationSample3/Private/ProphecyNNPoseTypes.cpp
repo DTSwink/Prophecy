@@ -670,10 +670,10 @@ bool ProphecyNNPresentation::ReadBoneWorld(int32 Id,FName Bone,FTransform& Out,F
     {
         // Same matrix-lerp polar rotation as the physical and animation readers.
         FQuat Start=A.GetRotation().GetNormalized(),End=B.GetRotation().GetNormalized();
-        float Cos=Start|End;if(Cos<0){End=End*-1.;Cos=-Cos;}
-        const float Angle=2.f*FMath::Acos(FMath::Clamp(Cos,0.f,1.f));
-        const FQuat Q=Angle<=1.e-6f?Start:FQuat::Slerp(Start,End,
-            FMath::Atan2(Alpha*FMath::Sin(Angle),(1.f-Alpha)+Alpha*FMath::Cos(Angle))/Angle).GetNormalized();
+        double Cos=Start|End;if(Cos<0){End=End*-1.;Cos=-Cos;}
+        const double Angle=2.*FMath::Acos(FMath::Clamp(Cos,0.,1.));
+        const FQuat Q=Alpha==0.f?Start:(Alpha==1.f?End:(Angle<=1.e-6?Start:FQuat::Slerp(Start,End,
+            FMath::Atan2(Alpha*FMath::Sin(Angle),(1.f-Alpha)+Alpha*FMath::Cos(Angle))/Angle).GetNormalized()));
         Out=FTransform(Q,FMath::Lerp(A.GetLocation(),B.GetLocation(),Alpha));
     }
     return true;

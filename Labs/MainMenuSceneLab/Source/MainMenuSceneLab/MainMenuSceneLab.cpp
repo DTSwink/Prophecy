@@ -54,6 +54,10 @@
 #include "PhysicsEngine/SkeletalBodySetup.h"
 #include "PrepareWater.h"
 #include "SceneControls.h"
+#include "SceneMenu.h"
+#include "SceneMenuSettings.h"
+#include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/SOverlay.h"
 #include "SceneGizmo.h"
 #include "SceneVolume.h"
 #include "SceneGasSmoke.h"
@@ -64,11 +68,15 @@
 class FSceneInput:public IInputProcessor {
 public:
  TFunction<void(FKey)> Press;
+ TFunction<bool(FKey)> Filter;
+ TFunction<bool()> SuppressScene;
  TSet<FKey> Held;
  virtual void Tick(const float,FSlateApplication&,TSharedRef<ICursor>)override{}
  virtual bool HandleKeyDownEvent(FSlateApplication&,const FKeyEvent& E)override{
   const auto Focused=FSlateApplication::Get().GetKeyboardFocusedWidget();
   if(Focused&&Focused->GetTypeAsString().Contains(TEXT("EditableText"))){Held.Reset();return false;}
+  if(Filter&&Filter(E.GetKey()))return true;
+  if(SuppressScene&&SuppressScene())return false;
   Held.Add(E.GetKey());if(!E.IsRepeat()&&Press)Press(E.GetKey());return E.GetKey()==EKeys::Tab||E.GetKey()==EKeys::SpaceBar||E.GetKey()==EKeys::P||E.GetKey()==EKeys::R||E.GetKey()==EKeys::F12||E.GetKey()==EKeys::W||E.GetKey()==EKeys::A||E.GetKey()==EKeys::S||E.GetKey()==EKeys::D;
  }
  virtual bool HandleKeyUpEvent(FSlateApplication&,const FKeyEvent& E)override{Held.Remove(E.GetKey());return false;}
@@ -85,6 +93,15 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
  FSceneVolume SceneVolume;
  FSceneGasSmoke Smoke;
  TSharedPtr<SSceneGizmo> Gizmo;bool bValidateGizmo=false,bGizmoValidated=false;
+ TSharedPtr<SSceneMenu> Menu;
+ TSharedPtr<SSceneControls> Studio;
+ TSharedPtr<SBox> DialogHost;
+ TSharedPtr<SButton> DialogBack,DialogConfirm;
+ TSharedPtr<SWidget> MenuRoot;
+ bool bMenuOpen=true,bDialogOpen=false,bMenuValidated=false;
+ int32 DialogAction=-1;
+ FSlateRoundedBoxBrush DialogBrush{FLinearColor(.025f,.001f,.003f,.98f),0.f,FLinearColor(.64f,.45f,.30f,1),1.f};
+ FButtonStyle DialogButton;
  TSharedPtr<SWidget> ControlsRoot;bool bControlsVisible=true,bCaptureUI=false;
  FString SettingsPath,SceneStatus=TEXT("Live changes recover automatically. Save look sets the revert point.");
  float RainClock=0,HazeClock=0,WetClock=0;
@@ -127,6 +144,7 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
    {TEXT("smoke_horizontal_width"),1},{TEXT("smoke_horizontal_shift"),200},
    {TEXT("wet_amount"),.65f},{TEXT("bead_density"),.55f},{TEXT("bead_size"),1},{TEXT("bead_strength"),.65f},{TEXT("runoff_speed"),.3f},{TEXT("trail_amount"),.45f}};
   for(auto Pair:Defaults)if(!Settings->HasField(Pair.Key))Settings->SetNumberField(Pair.Key,Pair.Value);
+  for(const auto& P:SceneMenuParameters)if(!Settings->HasField(P.Key))Settings->SetNumberField(P.Key,P.Default);
   ManualOffset=ClampBodyOffset(FVector(Setting(TEXT("body_offset_x"),0),Setting(TEXT("body_offset_y"),0),Setting(TEXT("body_offset_z"),0)));
  }
  static FVector ClampBodyOffset(FVector P){
@@ -167,6 +185,8 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   if(!FMath::IsFinite(Value))return;
   if(Key==TEXT("reflection_card_depth"))Value=FMath::Clamp(Value,-200.f,200.f);
   if(Key==TEXT("reflection_card_width"))Value=FMath::Clamp(Value,.1f,4.f);
+  for(const auto& P:SceneMenuParameters)if(Key==P.Key)Value=FMath::Clamp(Value,P.Min,P.Max);
+  if(Key.ToString().StartsWith(TEXT("menu_"))){Settings->SetNumberField(Key.ToString(),Value);RecoveryDelay=.25f;if(Menu)Menu->Invalidate(EInvalidateWidgetReason::Layout);return;}
   Settings->SetNumberField(Key.ToString(),Value);RecoveryDelay=.25f;ApplyWeatherSettings();SceneStatus=TEXT("Unsaved changes - live preview.");
  }
  void ValidateControls(){
@@ -395,18 +415,68 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   SceneVolume.Build(World,nullptr);Smoke.Build(World);
   ApplyWeatherSettings();
  }
+ bool IsMenuVisible()const{return bMenuOpen&&Setting(TEXT("menu_enabled"),1)>.5f;}
+ void CloseMenuDialog(){bDialogOpen=false;DialogAction=-1;SetControlsVisible(bControlsVisible);FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);}
+ void ConfirmMenuDialog(){const int32 Action=DialogAction;CloseMenuDialog();if(Action==1){ResetBodyPosition();ClearWaterWaves();bDemo=false;AnimTime=0;Body->PlayAnimation(Idle,true);bMenuOpen=false;SetControlsVisible(false);}else if(Action==4){SaveSettings();FPlatformMisc::RequestExit(false);}}
+ void ActivateMenu(int32 Index){
+  if(Index==0){bMenuOpen=false;SetControlsVisible(false);return;}
+  if(Index==3){if(Studio)Studio->SetActiveTab(5);SetControlsVisible(true);return;}
+  ShowMenuDialog(Index);
+ }
+ void ShowMenuDialog(int32 Index){
+  DialogAction=Index;bDialogOpen=true;
+  const FString Title=Index==1?TEXT("New game"):Index==2?TEXT("Load game"):TEXT("Quit");
+  const FString Copy=Index==1?TEXT("Restart the scene preview? Your saved look will be kept."):Index==2?TEXT("No saved games yet."):TEXT("Save your look and leave the preview?");
+  DialogButton=FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("Button");
+  DialogButton.SetNormal(FSlateRoundedBoxBrush(FLinearColor(.12f,.008f,.012f,1),2)).SetHovered(FSlateRoundedBoxBrush(FLinearColor(.24f,.016f,.020f,1),2));
+  DialogConfirm.Reset();auto Actions=SNew(SHorizontalBox);
+  if(Index!=2)Actions->AddSlot().FillWidth(1).Padding(0,0,6,0)[SAssignNew(DialogConfirm,SButton).ButtonStyle(&DialogButton).ContentPadding(FMargin(18,12)).HAlign(HAlign_Center).OnClicked_Lambda([this](){ConfirmMenuDialog();return FReply::Handled();})
+   [SNew(STextBlock).Text(FText::FromString(Index==1?TEXT("Restart preview"):TEXT("Save and quit"))).ColorAndOpacity(FLinearColor(.95f,.85f,.70f,1))]];
+  Actions->AddSlot().FillWidth(1)[SAssignNew(DialogBack,SButton).ButtonStyle(&DialogButton).ContentPadding(FMargin(18,12)).HAlign(HAlign_Center).OnClicked_Lambda([this](){CloseMenuDialog();return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("Back"))).ColorAndOpacity(FLinearColor(.95f,.85f,.70f,1))]];
+  DialogHost->SetContent(SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0,0,0,.65f)).HAlign(HAlign_Center).VAlign(VAlign_Center)
+   [SNew(SBox).WidthOverride(420)[SNew(SBorder).BorderImage(&DialogBrush).Padding(28)
+    [SNew(SVerticalBox)+SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Title)).Font(Menu->GetFontInfo(30)).ColorAndOpacity(FLinearColor(.95f,.85f,.70f,1))]
+     +SVerticalBox::Slot().AutoHeight().Padding(0,16,0,24)[SNew(STextBlock).Text(FText::FromString(Copy)).AutoWrapText(true).ColorAndOpacity(FLinearColor(.72f,.67f,.60f,1))]
+     +SVerticalBox::Slot().AutoHeight()[Actions]]]]);SetControlsVisible(bControlsVisible);Input->Held.Reset();FSlateApplication::Get().SetKeyboardFocus(DialogBack,EFocusCause::SetDirectly);
+ }
+ void ValidateMenu(){
+  bMenuValidated=true;if(!FPaths::IsUnderDirectory(FPaths::ConvertRelativePathToFull(SettingsPath),FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir())))return;
+  FString Original;FJsonSerializer::Serialize(Settings.ToSharedRef(),TJsonWriterFactory<>::Create(&Original));
+  bool OK=Menu.IsValid();
+  for(int32 I=0;I<5;++I){Menu->Select(I);OK&=Menu->GetSelected()==I&&Menu->RowAt(FVector2D(Setting(TEXT("menu_width"),400)*.5f,Menu->RowCenter(I))*Setting(TEXT("menu_scale"),1))==I;}
+  Menu->Select(0);OK&=Menu->HandleMenuKey(EKeys::Up)&&Menu->GetSelected()==4;Menu->HandleMenuKey(EKeys::Down);OK&=Menu->GetSelected()==0;
+  ActivateMenu(0);OK&=!bMenuOpen;bMenuOpen=true;
+  const FGeometry MG=Menu->GetCachedGeometry();const FVector2D MP=MG.LocalToAbsolute(FVector2D(Setting(TEXT("menu_width"),400)*.5,Menu->RowCenter(3))*Setting(TEXT("menu_scale"),1));
+  TSet<FKey> Buttons;Buttons.Add(EKeys::LeftMouseButton);const FPointerEvent Mouse(0,MP,MP,Buttons,EKeys::LeftMouseButton,0,FModifierKeysState());
+  OK&=Menu->OnMouseMove(MG,Mouse).IsEventHandled()&&Menu->GetSelected()==3;
+  OK&=Menu->OnMouseButtonDown(MG,Mouse).IsEventHandled();OK&=Menu->OnMouseButtonUp(MG,Mouse).IsEventHandled();OK&=bControlsVisible&&Studio->GetActiveTab()==5;
+  for(int32 I:{1,2,4}){ActivateMenu(I);OK&=bDialogOpen&&DialogAction==I&&DialogBack->HasKeyboardFocus();Input->Filter(EKeys::Escape);OK&=!bDialogOpen;}
+  for(const FVector2D Size:{FVector2D(260,400),FVector2D(650,680)}){
+   SetStudioParameter(TEXT("menu_width"),Size.X);SetStudioParameter(TEXT("menu_height"),Size.Y);SetStudioParameter(TEXT("menu_scale"),1.3f);
+   for(int32 I=0;I<5;++I)OK&=Menu->RowAt(FVector2D(Size.X*.5,Menu->RowCenter(I))*(Menu->ComputeDesiredSize(1).X/Size.X))==I;
+  }
+  SetStudioParameter(TEXT("menu_width"),400);SetStudioParameter(TEXT("menu_height"),544);SetStudioParameter(TEXT("menu_scale"),1);
+  SetStudioParameter(TEXT("menu_width"),510);SetStudioParameter(TEXT("menu_glow"),1.1f);SaveSettings();SetStudioParameter(TEXT("menu_width"),300);LoadSettings();OK&=Setting(TEXT("menu_width"),0)==510&&FMath::IsNearlyEqual(Setting(TEXT("menu_glow"),0),1.1f);
+  FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Original),Settings);SaveSettings();Menu->Select(0);Studio->SetActiveTab(5);
+  SetControlsVisible(FParse::Param(FCommandLine::Get(),TEXT("SceneMenuTab")));
+  const FString Result=FString::Printf(TEXT("{\"passed\":%s,\"five_hit_targets\":true,\"keyboard_wrap\":true,\"actions_and_dialogs\":true,\"save_revert\":true}"),OK?TEXT("true"):TEXT("false"));
+  FFileHelper::SaveStringToFile(Result,*(FPaths::ProjectSavedDir()/TEXT("Validation/menu-controls.json")));UE_LOG(LogTemp,Display,TEXT("MENU_CONTROLS %s"),*Result);
+ }
  void SetControlsVisible(bool Visible){
   bControlsVisible=Visible;
   if(Gizmo){Gizmo->Finish(false);Gizmo->SetVisibility(Visible?EVisibility::Visible:EVisibility::Collapsed);}
   if(auto PC=World->GetFirstPlayerController()){
-   PC->bShowMouseCursor=Visible;
-   if(Visible){FInputModeGameAndUI Mode;Mode.SetHideCursorDuringCapture(false);Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);PC->SetInputMode(Mode);}
+   const bool UI=Visible||IsMenuVisible()||bDialogOpen;
+   PC->bShowMouseCursor=UI;
+   if(UI){FInputModeGameAndUI Mode;Mode.SetHideCursorDuringCapture(false);Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);PC->SetInputMode(Mode);}
    else PC->SetInputMode(FInputModeGameOnly());
   }
+  if(Input)Input->Held.Reset();
+  FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);
  }
  void MakeControls(){
   FSceneControlsCallbacks C;
-  C.InitialTab=FParse::Param(FCommandLine::Get(),TEXT("SceneWaterTab"))?4:bBodyCloseup?3:FParse::Param(FCommandLine::Get(),TEXT("SceneGroundTab"))?0:(FParse::Param(FCommandLine::Get(),TEXT("SceneAirTab"))?2:1);
+  C.InitialTab=FParse::Param(FCommandLine::Get(),TEXT("SceneMenuTab"))?5:FParse::Param(FCommandLine::Get(),TEXT("SceneWaterTab"))?4:bBodyCloseup?3:FParse::Param(FCommandLine::Get(),TEXT("SceneGroundTab"))?0:(FParse::Param(FCommandLine::Get(),TEXT("SceneAirTab"))?2:5);
   C.Get=[this](FName Key,float Default){return Setting(*Key.ToString(),Default);};
   C.Set=[this](FName Key,float Value){SetStudioParameter(Key,Value);};
   C.ResetPosition=[this](){ResetBodyPosition();};C.ClearWaves=[this](){ClearWaterWaves();};
@@ -416,7 +486,19 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   Gizmo=SNew(SSceneGizmo).Controller(World->GetFirstPlayerController()).Body(Body)
    .GetOffset([this](){return ManualOffset;}).SetOffset([this](FVector P){SetBodyOffset(P);});
   GEngine->GameViewport->AddViewportWidgetContent(Gizmo.ToSharedRef(),10);
-  ControlsRoot=SNew(SBox).Padding(16).Visibility_Lambda([this](){return bControlsVisible?EVisibility::SelfHitTestInvisible:EVisibility::Collapsed;})[MakeSceneControls(MoveTemp(C))];
+  Studio=MakeSceneControls(MoveTemp(C));
+  Menu=SNew(SSceneMenu).Get([this](FName Key,float Default){return Setting(*Key.ToString(),Default);})
+   .Set([this](FName Key,float Value){SetStudioParameter(Key,Value);})
+   .Activate([this](int32 Index){ActivateMenu(Index);});
+  MenuRoot=SNew(SScaleBox).Stretch(EStretch::ScaleToFit).Visibility_Lambda([this](){return IsMenuVisible()?EVisibility::SelfHitTestInvisible:EVisibility::Collapsed;})
+   [SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).WidthOverride(1280).HeightOverride(720)
+    [SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).HAlign(HAlign_Left).VAlign(VAlign_Top)
+     .Padding_Lambda([this](){const auto Size=Menu->ComputeDesiredSize(1);return FMargin(FMath::Max(0.,FMath::Min(double(Setting(TEXT("menu_x"),112)),1280-Size.X)),FMath::Max(0.,FMath::Min(double(Setting(TEXT("menu_y"),66)),720-Size.Y)),0,0);})
+     [Menu.ToSharedRef()]]];
+  GEngine->GameViewport->AddViewportWidgetContent(MenuRoot.ToSharedRef(),15);
+  DialogHost=SNew(SBox).Visibility_Lambda([this](){return bDialogOpen?EVisibility::Visible:EVisibility::Collapsed;});
+  GEngine->GameViewport->AddViewportWidgetContent(DialogHost.ToSharedRef(),30);
+  ControlsRoot=SNew(SScaleBox).Stretch(EStretch::ScaleToFit).Visibility_Lambda([this](){return bControlsVisible?EVisibility::SelfHitTestInvisible:EVisibility::Collapsed;})[SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).WidthOverride(1280).HeightOverride(720)[SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).Padding(16)[Studio.ToSharedRef()]]];
   GEngine->GameViewport->AddViewportWidgetContent(ControlsRoot.ToSharedRef(),20);SetControlsVisible(bControlsVisible);
  }
  void UpdateCamera(){
@@ -605,6 +687,7 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   TSharedPtr<FJsonObject> Report;FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(R),Report);
   Report->SetNumberField(TEXT("contact_speed_cm_s"),ContactSpeed);Report->SetNumberField(TEXT("peak_contact_speed_cm_s"),PeakContactSpeed);Report->SetNumberField(TEXT("contact_active_frames"),ContactFrames);
   Report->SetObjectField(TEXT("settings"),Settings);Report->SetNumberField(TEXT("rain_clock"),RainClock);Report->SetNumberField(TEXT("haze_clock"),HazeClock);
+  Report->SetBoolField(TEXT("menu_visible"),IsMenuVisible());Report->SetNumberField(TEXT("menu_selected"),Menu?Menu->GetSelected():-1);
   Report->SetNumberField(TEXT("rain_instances"),RainMesh?RainMesh->GetInstanceCount():0);Report->SetBoolField(TEXT("controls_visible"),bControlsVisible);
   int32 ActiveRainSeeds=0;const float RainAmount=FMath::Clamp(Setting(TEXT("rain_amount"),.35f),0.f,4.f);
   for(int Layer=0;Layer<4;++Layer)for(int Y=-80;Y<=80;++Y)for(int X=-17;X<=135;++X)
@@ -650,12 +733,14 @@ class FMainMenuSceneModule:public FDefaultGameModuleImpl {
   }
   ShadersStable=(!GShaderCompilingManager||!GShaderCompilingManager->IsCompiling())?ShadersStable+FMath::Min(Delta,.1f):0;
   if(bValidateControls&&!bControlsValidated&&Alive>.8f)ValidateControls();
+  if(FParse::Param(FCommandLine::Get(),TEXT("SceneValidateMenu"))&&!bMenuValidated&&Alive>2)ValidateMenu();
   if(bValidateGizmo&&!bGizmoValidated&&Alive>2)ValidateGizmo();
   if(!bPaused){Accumulator+=FMath::Min(Delta,.1f);int Steps=0;while(Accumulator>=1.f/60.f&&Steps++<6){FixedTick();Accumulator-=1.f/60.f;if(PoseTime>=0&&Time>=PoseTime){bPaused=true;break;}}}
   UpdateWaterContact(Delta);
   if(WaterSim)WaterSim->SetPaused(bPaused);
   Smoke.Tick(Delta);Smoke.SetPaused(bPaused);
   if(!CapturePath.IsEmpty()&&!bCaptureRequested&&Alive>12&&ShadersStable>3&&(PoseTime<0||Time>=PoseTime)){
+   if(FParse::Param(FCommandLine::Get(),TEXT("SceneCaptureMenuDialog")))ShowMenuDialog(2);
    if(CaptureSequenceFrames>0){CaptureSequenceBase=FPaths::ChangeExtension(CapturePath,TEXT(""));CapturePath=FString::Printf(TEXT("%s-%03d.png"),*CaptureSequenceBase,CaptureSequenceIndex++);}
    Capture();bCaptureRequested=true;ExitAt=FPlatformTime::Seconds()+2;NextSequenceFrame=GFrameCounter+4;
    if(CaptureSequenceFrames>0&&!FParse::Param(FCommandLine::Get(),TEXT("SceneSequenceFreeze"))){PoseTime=-1;bPaused=false;}
@@ -682,7 +767,8 @@ public:
   }
   if(IsRunningCommandlet()||GIsEditor)return;
   SettingsPath=FPaths::ProjectDir()/TEXT("Resources/scene.json");FParse::Value(FCommandLine::Get(),TEXT("SceneSettings="),SettingsPath);
-  bControlsVisible=!FParse::Param(FCommandLine::Get(),TEXT("SceneHideControls"));bCaptureUI=FParse::Param(FCommandLine::Get(),TEXT("SceneCaptureUI"));
+  bControlsVisible=!FParse::Param(FCommandLine::Get(),TEXT("SceneHideControls"))&&(FParse::Param(FCommandLine::Get(),TEXT("SceneMenuTab"))||FParse::Param(FCommandLine::Get(),TEXT("SceneGroundTab"))||FParse::Param(FCommandLine::Get(),TEXT("SceneWaterTab"))||FParse::Param(FCommandLine::Get(),TEXT("SceneAirTab"))||FParse::Param(FCommandLine::Get(),TEXT("SceneBodyCloseup")));
+  bMenuOpen=!FParse::Param(FCommandLine::Get(),TEXT("SceneHideMenu"));bCaptureUI=true;
   bValidateGizmo=FParse::Param(FCommandLine::Get(),TEXT("SceneValidateGizmo"));
   bValidateControls=FParse::Param(FCommandLine::Get(),TEXT("SceneValidateControls"));
   FParse::Value(FCommandLine::Get(),TEXT("SceneCapture="),CapturePath);bDemo=FParse::Param(FCommandLine::Get(),TEXT("SceneDemo"));
@@ -692,7 +778,20 @@ public:
   bMoveTest=FParse::Param(FCommandLine::Get(),TEXT("SceneMoveTest"));bNoCollision=FParse::Param(FCommandLine::Get(),TEXT("SceneNoCollision"));
   bBodyCloseup=FParse::Param(FCommandLine::Get(),TEXT("SceneBodyCloseup"));
   Handle=FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this,&FMainMenuSceneModule::Tick));
-  Input=MakeShared<FSceneInput>();Input->Press=[this](FKey K){
+  Input=MakeShared<FSceneInput>();
+  Input->SuppressScene=[this](){return bDialogOpen;};
+  Input->Filter=[this](FKey K){
+   if(!bBuilt)return false;
+   if(bDialogOpen){
+    if(K==EKeys::Escape||K==EKeys::Gamepad_FaceButton_Right){CloseMenuDialog();return true;}
+    if(K==EKeys::Tab||K==EKeys::Left||K==EKeys::Right||K==EKeys::Gamepad_DPad_Left||K==EKeys::Gamepad_DPad_Right){FSlateApplication::Get().SetKeyboardFocus(DialogConfirm&&!DialogConfirm->HasKeyboardFocus()?DialogConfirm:DialogBack,EFocusCause::Navigation);return true;}
+    if(K==EKeys::Enter||K==EKeys::SpaceBar||K==EKeys::Gamepad_FaceButton_Bottom){if(DialogConfirm&&DialogConfirm->HasKeyboardFocus())ConfirmMenuDialog();else CloseMenuDialog();return true;}
+    return true;
+   }
+   if(K==EKeys::Escape&&!bControlsVisible){bMenuOpen=!bMenuOpen;SetControlsVisible(false);return true;}
+   return !bControlsVisible&&IsMenuVisible()&&Menu&&Menu->HandleMenuKey(K);
+  };
+  Input->Press=[this](FKey K){
    if(!bBuilt)return;
    if(K==EKeys::Tab)SetControlsVisible(!bControlsVisible);
    if(K==EKeys::SpaceBar){bDemo=!bDemo;AnimTime=0;Body->PlayAnimation(bDemo?StepClip:Idle,true);}

@@ -57,11 +57,19 @@ class Dashboard:
             if run['objective']=='world_pose_mse':
                 mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','orientation_mse','body_pose_mse','head_height_band','pelvis_height_band','feet_lateral','termination_remaining','total')})
             if run['objective'] in ('absolute_walk_mse','uefn_omni_absolute_walk','uefn_crawl_idle_mse'):
-                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','motion_prior','extremity_speed_excess','feet_target_velocity','feet_idle_local_rotation','pelvis_horizontal_speed_excess','auto_phase','body_total','total')})
+                mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','motion_prior','extremity_speed_excess','walking_airborne','walking_height_excess','feet_target_velocity','feet_idle_local_rotation','pelvis_horizontal_speed_excess','auto_phase','body_total','total')})
                 mapping['motion_prior/raw_cost']=('motion_prior/raw_cost',1)
+                mapping['loss/com2_velocity']=('loss/com2_velocity',1)
+                mapping['loss/head_reversal']=('loss/head_reversal',1)
+                mapping['loss/idle_wobble']=('loss/idle_wobble',1)
+                for term in ('excessive_stepping', 'foot_linear_reversal', 'foot_angular_reversal', 'leg_reversal', 'idle_stop', 'idle_pose', 'idle_smooth', 'idle_steps', 'idle_slip', 'idle_posture'):
+                    mapping['loss/'+term]=('loss/'+term,1)
+                mapping['reward/com2_multiplier']=('reward/com2_multiplier',1)
                 mapping['loss/getup_head_height']=('loss/getup_head_height',1)
                 mapping['reward/getup_head_height']=('reward/getup_head_height',1)
                 mapping['reward/total']=('reward/total',1)
+                for key in ('crawl_forward','crawl_pose','crawl_forward_speed_m_s','crawl_target_speed_m_s'):
+                    mapping['reward/'+key]=('reward/'+key,1)
                 mapping.update({'Misc/Auto_Phase_Mse':('auto_phase/mse',1),'Misc/Auto_Phase_Weighted':('auto_phase/weighted_loss',1)})
             composite=run['objective']=='timed_best_pose_tail'
             if composite:

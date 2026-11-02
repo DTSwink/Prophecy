@@ -1,6 +1,7 @@
 #include "ProphecyBombLibrary.h"
 #if WITH_EDITOR
 #include "Engine/StaticMesh.h"
+#include "UObject/Package.h"
 #include "StaticMeshAttributes.h"
 #include "MeshDescription.h"
 #include "PhysicsEngine/BodySetup.h"

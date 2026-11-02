@@ -1,0 +1,618 @@
+{
+  "fbx_meshes": 1,
+  "fbx_hulls": 17,
+  "fbx_sockets": 4,
+  "collision_version": 2,
+  "expected_hull_names": [
+    "UCX_SM_ImperialSpear_00",
+    "UCX_SM_ImperialSpear_01",
+    "UCX_SM_ImperialSpear_02",
+    "UCX_SM_ImperialSpear_03",
+    "UCX_SM_ImperialSpear_04",
+    "UCX_SM_ImperialSpear_05",
+    "UCX_SM_ImperialSpear_06",
+    "UCX_SM_ImperialSpear_07",
+    "UCX_SM_ImperialSpear_08",
+    "UCX_SM_ImperialSpear_09",
+    "UCX_SM_ImperialSpear_10",
+    "UCX_SM_ImperialSpear_11",
+    "UCX_SM_ImperialSpear_12",
+    "UCX_SM_ImperialSpear_13",
+    "UCX_SM_ImperialSpear_14",
+    "UCX_SM_ImperialSpear_15",
+    "UCX_SM_ImperialSpear_16"
+  ],
+  "bounds_m": {
+    "min": [
+      -0.05900000035762787,
+      -0.026399999856948853,
+      -1.2660000324249268
+    ],
+    "max": [
+      0.16188524663448334,
+      0.026399999856948853,
+      0.9650000333786011
+    ]
+  },
+  "max_vertex_readback_error_m": 1.3969838619232178e-08,
+  "max_bounds_readback_error_m": 0.0,
+  "triangles": 46836,
+  "uv_channels": 2,
+  "uv_names": [
+    "UV0_SurfaceAtlas",
+    "UV1_Lightmap"
+  ],
+  "surface_attributes": {
+    "source_to_fbx": {
+      "corners_checked": 140508,
+      "maximum_position_error_m": 1.3969838619232178e-08,
+      "maximum_uv0_error": 0.0,
+      "minimum_normal_dot": 0.9999997466802597,
+      "kdtree_fallbacks": 193,
+      "material_assignment_checked_per_corner": true
+    },
+    "fbx_to_source": {
+      "corners_checked": 140508,
+      "maximum_position_error_m": 1.3969838619232178e-08,
+      "maximum_uv0_error": 0.0,
+      "minimum_normal_dot": 0.9999997466802597,
+      "kdtree_fallbacks": 193,
+      "material_assignment_checked_per_corner": true
+    },
+    "position_tolerance_m": 1e-05,
+    "uv0_tolerance": 1e-05,
+    "required_minimum_normal_dot": 0.9999,
+    "maximum_uv0_error": 0.0,
+    "minimum_normal_dot": 0.9999997466802597
+  },
+  "material_slots": 1,
+  "material_triangles": {
+    "M_ImperialSpear_PBR": 46836
+  },
+  "overall_length_m": 2.231000065803528,
+  "grip_from_pommel_m": 1.2660000324249268,
+  "sockets": {
+    "SOCKET_SM_ImperialSpear_BladeTip": [
+      0.0,
+      0.0,
+      0.965
+    ],
+    "SOCKET_SM_ImperialSpear_Grip": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "SOCKET_SM_ImperialSpear_Pommel": [
+      0.0,
+      0.0,
+      -1.266
+    ],
+    "SOCKET_SM_ImperialSpear_Tassel": [
+      0.0370983,
+      0.0,
+      0.4732263
+    ]
+  },
+  "lods": [
+    {
+      "name": "SM_ImperialSpear_LOD1",
+      "triangles": 25758,
+      "bounds_m": {
+        "min": [
+          -0.05900000035762787,
+          -0.026399999856948853,
+          -1.2660000324249268
+        ],
+        "max": [
+          0.16188524663448334,
+          0.026399999856948853,
+          0.9650009274482727
+        ]
+      },
+      "max_vertex_readback_error_m": 1.3969838619232178e-08,
+      "max_bounds_readback_error_m": 0.0,
+      "surface_attributes": {
+        "source_to_fbx": {
+          "corners_checked": 77274,
+          "maximum_position_error_m": 1.3969838619232178e-08,
+          "maximum_uv0_error": 0.0,
+          "minimum_normal_dot": 0.9999996438938865,
+          "kdtree_fallbacks": 52,
+          "material_assignment_checked_per_corner": true
+        },
+        "fbx_to_source": {
+          "corners_checked": 77274,
+          "maximum_position_error_m": 1.3969838619232178e-08,
+          "maximum_uv0_error": 0.0,
+          "minimum_normal_dot": 0.9999996438938865,
+          "kdtree_fallbacks": 52,
+          "material_assignment_checked_per_corner": true
+        },
+        "position_tolerance_m": 1e-05,
+        "uv0_tolerance": 1e-05,
+        "required_minimum_normal_dot": 0.9999,
+        "maximum_uv0_error": 0.0,
+        "minimum_normal_dot": 0.9999996438938865
+      },
+      "appearance_reviewed": false
+    },
+    {
+      "name": "SM_ImperialSpear_LOD2",
+      "triangles": 13114,
+      "bounds_m": {
+        "min": [
+          -0.05907671898603439,
+          -0.026372427120804787,
+          -1.2660000324249268
+        ],
+        "max": [
+          0.16177397966384888,
+          0.026372427120804787,
+          0.9650058150291443
+        ]
+      },
+      "max_vertex_readback_error_m": 1.3969838619232178e-08,
+      "max_bounds_readback_error_m": 0.0,
+      "surface_attributes": {
+        "source_to_fbx": {
+          "corners_checked": 39342,
+          "maximum_position_error_m": 1.3969838619232178e-08,
+          "maximum_uv0_error": 0.0,
+          "minimum_normal_dot": 0.9999998062849045,
+          "kdtree_fallbacks": 20,
+          "material_assignment_checked_per_corner": true
+        },
+        "fbx_to_source": {
+          "corners_checked": 39342,
+          "maximum_position_error_m": 1.3969838619232178e-08,
+          "maximum_uv0_error": 0.0,
+          "minimum_normal_dot": 0.9999998062849045,
+          "kdtree_fallbacks": 20,
+          "material_assignment_checked_per_corner": true
+        },
+        "position_tolerance_m": 1e-05,
+        "uv0_tolerance": 1e-05,
+        "required_minimum_normal_dot": 0.9999,
+        "maximum_uv0_error": 0.0,
+        "minimum_normal_dot": 0.9999998062849045
+      },
+      "appearance_reviewed": false
+    }
+  ],
+  "collision": [
+    {
+      "name": "UCX_SM_ImperialSpear_00",
+      "vertices": 24,
+      "triangles": 44,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.0008040431455864404,
+      "convex_max_plane_violation_m": 2.3283064365386963e-10,
+      "source_vertices": 24,
+      "bounds_m": {
+        "min": [
+          -0.016564419493079185,
+          -0.016564419493079185,
+          -1.1079000234603882
+        ],
+        "max": [
+          0.016564419493079185,
+          0.016564419493079185,
+          -0.13110001385211945
+        ]
+      },
+      "max_vertex_readback_error_m": 1.4481075227834594e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_01",
+      "vertices": 24,
+      "triangles": 44,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.0003565996271554922,
+      "convex_max_plane_violation_m": 4.656612873077393e-10,
+      "source_vertices": 24,
+      "bounds_m": {
+        "min": [
+          -0.0212231632322073,
+          -0.0212231632322073,
+          -0.13100001215934753
+        ],
+        "max": [
+          0.0212231632322073,
+          0.0212231632322073,
+          0.13289999961853027
+        ]
+      },
+      "max_vertex_readback_error_m": 1.862645149230957e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_02",
+      "vertices": 24,
+      "triangles": 44,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.0001347236063225422,
+      "convex_max_plane_violation_m": 2.3283064365386963e-10,
+      "source_vertices": 24,
+      "bounds_m": {
+        "min": [
+          -0.016564419493079185,
+          -0.016564419493079185,
+          0.13300000131130219
+        ],
+        "max": [
+          0.016564419493079185,
+          0.016564419493079185,
+          0.2966703474521637
+        ]
+      },
+      "max_vertex_readback_error_m": 1.4481075227834594e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_03",
+      "vertices": 56,
+      "triangles": 108,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 2.1706418326821363e-05,
+      "convex_max_plane_violation_m": 9.509676601737738e-08,
+      "source_vertices": 56,
+      "bounds_m": {
+        "min": [
+          -0.017650000751018524,
+          -0.017650000751018524,
+          -1.2661501169204712
+        ],
+        "max": [
+          0.017650000751018524,
+          0.017650000751018524,
+          -1.2308499813079834
+        ]
+      },
+      "max_vertex_readback_error_m": 1.3969838619232178e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_04",
+      "vertices": 56,
+      "triangles": 108,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.00014901319451886055,
+      "convex_max_plane_violation_m": 1.0166545649781256e-07,
+      "source_vertices": 56,
+      "bounds_m": {
+        "min": [
+          -0.024650000035762787,
+          -0.024650000035762787,
+          -1.2311500310897827
+        ],
+        "max": [
+          0.024650000035762787,
+          0.024650000035762787,
+          -1.130850076675415
+        ]
+      },
+      "max_vertex_readback_error_m": 2.63417798684884e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_05",
+      "vertices": 56,
+      "triangles": 108,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 2.829499903252543e-05,
+      "convex_max_plane_violation_m": 8.183997124433517e-08,
+      "source_vertices": 56,
+      "bounds_m": {
+        "min": [
+          -0.01915000006556511,
+          -0.01915000006556511,
+          -1.1311501264572144
+        ],
+        "max": [
+          0.01915000006556511,
+          0.01915000006556511,
+          -1.1067500114440918
+        ]
+      },
+      "max_vertex_readback_error_m": 1.862645149230957e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_06",
+      "vertices": 36,
+      "triangles": 68,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.0001749552272103252,
+      "convex_max_plane_violation_m": 3.259629011154175e-09,
+      "source_vertices": 36,
+      "bounds_m": {
+        "min": [
+          -0.022227216511964798,
+          -0.022227216511964798,
+          0.2965703308582306
+        ],
+        "max": [
+          0.022227216511964798,
+          0.022227216511964798,
+          0.42900002002716064
+        ]
+      },
+      "max_vertex_readback_error_m": 2.63417798684884e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_07",
+      "vertices": 48,
+      "triangles": 92,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 1.3570734230905249e-05,
+      "convex_max_plane_violation_m": 1.7462298274040222e-10,
+      "source_vertices": 48,
+      "bounds_m": {
+        "min": [
+          -0.030744990333914757,
+          -0.030744990333914757,
+          0.42820003628730774
+        ],
+        "max": [
+          0.030744990333914757,
+          0.030744990333914757,
+          0.4334000051021576
+        ]
+      },
+      "max_vertex_readback_error_m": 2.6878124170792717e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_08",
+      "vertices": 48,
+      "triangles": 92,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 4.005297700976729e-05,
+      "convex_max_plane_violation_m": 9.313225746154785e-10,
+      "source_vertices": 48,
+      "bounds_m": {
+        "min": [
+          -0.02780805341899395,
+          -0.02780805341899395,
+          0.34254419803619385
+        ],
+        "max": [
+          0.02780805341899395,
+          0.02780805341899395,
+          0.3609442412853241
+        ]
+      },
+      "max_vertex_readback_error_m": 2.63417798684884e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_09",
+      "vertices": 60,
+      "triangles": 116,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 4.726342283563883e-06,
+      "convex_max_plane_violation_m": 1.3969838619232178e-09,
+      "source_vertices": 60,
+      "bounds_m": {
+        "min": [
+          -0.02097534015774727,
+          -0.02097534015774727,
+          0.296770304441452
+        ],
+        "max": [
+          0.02097534015774727,
+          0.02097534015774727,
+          0.3007703125476837
+        ]
+      },
+      "max_vertex_readback_error_m": 1.862645149230957e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_10",
+      "vertices": 32,
+      "triangles": 60,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.00010643444942954269,
+      "convex_max_plane_violation_m": 8.015370658864818e-09,
+      "source_vertices": 32,
+      "bounds_m": {
+        "min": [
+          -0.05516968294978142,
+          -0.015169159509241581,
+          0.4332500696182251
+        ],
+        "max": [
+          0.00015000133134890348,
+          0.015169152989983559,
+          0.5258623361587524
+        ]
+      },
+      "max_vertex_readback_error_m": 4.6566128730773926e-09,
+      "max_bounds_readback_error_m": 4.6566128730773926e-09
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_11",
+      "vertices": 32,
+      "triangles": 60,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.00011213281556236533,
+      "convex_max_plane_violation_m": 1.544813965637104e-08,
+      "source_vertices": 32,
+      "bounds_m": {
+        "min": [
+          -0.00015000136045273393,
+          -0.01540040411055088,
+          0.4332500696182251
+        ],
+        "max": [
+          0.050156816840171814,
+          0.01540041621774435,
+          0.5261465311050415
+        ]
+      },
+      "max_vertex_readback_error_m": 4.6566128730773926e-09,
+      "max_bounds_readback_error_m": 4.6566128730773926e-09
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_12",
+      "vertices": 32,
+      "triangles": 60,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 6.15456459013425e-05,
+      "convex_max_plane_violation_m": 2.490576722635751e-08,
+      "source_vertices": 32,
+      "bounds_m": {
+        "min": [
+          -0.0027760188095271587,
+          -0.009393027052283287,
+          0.511099100112915
+        ],
+        "max": [
+          0.041499003767967224,
+          0.009393030777573586,
+          0.6190080046653748
+        ]
+      },
+      "max_vertex_readback_error_m": 3.725290298461914e-09,
+      "max_bounds_readback_error_m": 3.725290298461914e-09
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_13",
+      "vertices": 16,
+      "triangles": 28,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 5.3430270192885936e-05,
+      "convex_max_plane_violation_m": 1.3969838619232178e-09,
+      "source_vertices": 16,
+      "bounds_m": {
+        "min": [
+          -0.05763636529445648,
+          -0.008600001223385334,
+          0.5100000500679016
+        ],
+        "max": [
+          0.04227273166179657,
+          0.008600001223385334,
+          0.5750000476837158
+        ]
+      },
+      "max_vertex_readback_error_m": 5.038731210049718e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_14",
+      "vertices": 28,
+      "triangles": 52,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 6.108950209223286e-05,
+      "convex_max_plane_violation_m": 6.984919309616089e-10,
+      "source_vertices": 28,
+      "bounds_m": {
+        "min": [
+          -0.05900000408291817,
+          -0.008600001223385334,
+          0.5751000046730042
+        ],
+        "max": [
+          0.052000001072883606,
+          0.008600001223385334,
+          0.6330000162124634
+        ]
+      },
+      "max_vertex_readback_error_m": 5.1579442938987086e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_15",
+      "vertices": 16,
+      "triangles": 28,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 8.783779861705961e-05,
+      "convex_max_plane_violation_m": 9.313225746154785e-10,
+      "source_vertices": 16,
+      "bounds_m": {
+        "min": [
+          -0.046000003814697266,
+          -0.008600001223385334,
+          0.6331000328063965
+        ],
+        "max": [
+          0.0430000014603138,
+          0.008600001223385334,
+          0.7350000143051147
+        ]
+      },
+      "max_vertex_readback_error_m": 4.021448063440403e-09,
+      "max_bounds_readback_error_m": 0.0
+    },
+    {
+      "name": "UCX_SM_ImperialSpear_16",
+      "vertices": 38,
+      "triangles": 72,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "volume_m3": 0.00011291017443611548,
+      "convex_max_plane_violation_m": 2.2682805633778003e-09,
+      "source_vertices": 38,
+      "bounds_m": {
+        "min": [
+          -0.046000003814697266,
+          -0.008600001223385334,
+          0.7351000308990479
+        ],
+        "max": [
+          0.04400000348687172,
+          0.008600001223385334,
+          0.9650000333786011
+        ]
+      },
+      "max_vertex_readback_error_m": 4.021448063440403e-09,
+      "max_bounds_readback_error_m": 0.0
+    }
+  ],
+  "texture_contract": {
+    "base_color": "sRGB",
+    "normal": "Non-Color; NormalDX for Unreal",
+    "orm_channels": {
+      "R": "Ambient Occlusion",
+      "G": "Roughness",
+      "B": "Metallic",
+      "A": "Specular IOR Level"
+    },
+    "source_shader_verified": true,
+    "fbx_material_wiring_verified": false,
+    "unreal_material_wiring_verified": false,
+    "orm_alpha_mode": "CHANNEL_PACKED",
+    "source_orm_file": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Exports\\ImperialSpear\\Textures\\T_ImperialSpear_ORM.png",
+    "materials": [
+      {
+        "material": "M_ImperialSpear_PBR",
+        "source_orm_file": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Exports\\ImperialSpear\\Textures\\T_ImperialSpear_ORM.png",
+        "source_shader_verified": true,
+        "surface_opaque": true
+      }
+    ],
+    "surface_opaque": true
+  },
+  "unreal_import_validated": false,
+  "unreal_collision_cooking_validated": false
+}

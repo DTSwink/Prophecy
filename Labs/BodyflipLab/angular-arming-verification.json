@@ -1,0 +1,142 @@
+{
+  "passed": true,
+  "checks": 1141,
+  "attacks": 19,
+  "liveHarnessOracle": true,
+  "maxOracleError": 8.415430308161831e-8,
+  "reports": [
+    {
+      "name": "headbutt",
+      "firstDuration": 0.11726191861878435,
+      "changedPoseDuration": 0.12952749301032873,
+      "ratio": 0.5025510797947901,
+      "postArmedSeconds": 0.09999999999999998
+    },
+    {
+      "name": "hookL",
+      "firstDuration": 0.0940152741322213,
+      "changedPoseDuration": 0.09697857460903686,
+      "ratio": 0.5640916447933279,
+      "postArmedSeconds": 0.11156667073567705
+    },
+    {
+      "name": "hookR",
+      "firstDuration": 0.08992362531349346,
+      "changedPoseDuration": 0.11490199768727241,
+      "ratio": 0.5395417518809608,
+      "postArmedSeconds": 0.10179999669392903
+    },
+    {
+      "name": "jabL",
+      "firstDuration": 0.1334738318934403,
+      "changedPoseDuration": 0.14233582329329703,
+      "ratio": 0.800842991360642,
+      "postArmedSeconds": 0.13333333333333336
+    },
+    {
+      "name": "jabR",
+      "firstDuration": 0.11536604631457904,
+      "changedPoseDuration": 0.12305390482298718,
+      "ratio": 0.6921962778874743,
+      "postArmedSeconds": 0.13333333333333336
+    },
+    {
+      "name": "KickL",
+      "firstDuration": 0.1598610955244997,
+      "changedPoseDuration": 0.16760402375321282,
+      "ratio": 0.532870318414999,
+      "postArmedSeconds": 0.1333333333333333
+    },
+    {
+      "name": "KickR",
+      "firstDuration": 0.07788012997213145,
+      "changedPoseDuration": 0.08667874257294178,
+      "ratio": 0.2596004332404382,
+      "postArmedSeconds": 0.10000000000000003
+    },
+    {
+      "name": "overL",
+      "firstDuration": 0.10509982882882331,
+      "changedPoseDuration": 0.11212243651606828,
+      "ratio": 0.45042783783781415,
+      "postArmedSeconds": 0.14720001220703122
+    },
+    {
+      "name": "overR",
+      "firstDuration": 0.08287399849887161,
+      "changedPoseDuration": 0.09538019341540917,
+      "ratio": 0.49724399099322975,
+      "postArmedSeconds": 0.14186665217081706
+    },
+    {
+      "name": "pike",
+      "firstDuration": 0.25387159271117077,
+      "changedPoseDuration": 0.29637029497495576,
+      "ratio": 0.8462386423705692,
+      "postArmedSeconds": 0.2333333333333334
+    },
+    {
+      "name": "slashL",
+      "firstDuration": 0.28219262113057775,
+      "changedPoseDuration": 0.3157190033524557,
+      "ratio": 0.8465778633917334,
+      "postArmedSeconds": 0.2585999806722006
+    },
+    {
+      "name": "slashLD",
+      "firstDuration": 0.27233907724600387,
+      "changedPoseDuration": 0.2869441665045584,
+      "ratio": 0.6284747936446243,
+      "postArmedSeconds": 0.2480000178019206
+    },
+    {
+      "name": "slashLU",
+      "firstDuration": 0.31651856929101496,
+      "changedPoseDuration": 0.32864678225592336,
+      "ratio": 0.7912964232275373,
+      "postArmedSeconds": 0.20596669514973964
+    },
+    {
+      "name": "slashR",
+      "firstDuration": 0.4529247187380867,
+      "changedPoseDuration": 0.46545662519468584,
+      "ratio": 0.8492338476339126,
+      "postArmedSeconds": 0.1559666951497396
+    },
+    {
+      "name": "slashRD",
+      "firstDuration": 0.2647828758314469,
+      "changedPoseDuration": 0.25127214812654214,
+      "ratio": 0.5295657516628938,
+      "postArmedSeconds": 0.1282000223795573
+    },
+    {
+      "name": "slashRU",
+      "firstDuration": 0.336330112313111,
+      "changedPoseDuration": 0.36560284589652015,
+      "ratio": 0.7207073835280949,
+      "postArmedSeconds": 0.1216333389282227
+    },
+    {
+      "name": "sweepKick",
+      "firstDuration": 0.12511405399205897,
+      "changedPoseDuration": 0.15125485339771236,
+      "ratio": 0.4691777024702211,
+      "postArmedSeconds": 0.29999999999999993
+    },
+    {
+      "name": "big-throw",
+      "firstDuration": 0.4286051459727691,
+      "changedPoseDuration": 0.4121011254897253,
+      "ratio": 1.0286523503346459,
+      "postArmedSeconds": 0.1499999999999999
+    },
+    {
+      "name": "small-throw",
+      "firstDuration": 0.10933963060273255,
+      "changedPoseDuration": 0.1505068741894368,
+      "ratio": 0.9850417171417347,
+      "postArmedSeconds": 0.22084327823229116
+    }
+  ]
+}

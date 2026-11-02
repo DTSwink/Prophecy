@@ -38,6 +38,9 @@ public:
   SLATE_ARGUMENT(FSceneControlsCallbacks, Callbacks)
  SLATE_END_ARGS()
 
+ void SetActiveTab(int32 Index){ActiveTab=FMath::Clamp(Index,0,5);Invalidate(EInvalidateWidgetReason::Layout);}
+ int32 GetActiveTab() const{return ActiveTab;}
+
  void Construct(const FArguments& Args)
  {
   Callbacks = Args._Callbacks;
@@ -69,6 +72,8 @@ public:
   Rows->AddSlot().AutoHeight()[Ground];Rows->AddSlot().AutoHeight()[Rain];Rows->AddSlot().AutoHeight()[Air];Rows->AddSlot().AutoHeight()[Wet];
   auto Water = SNew(SVerticalBox).Visibility_Lambda([this](){return ActiveTab==4?EVisibility::Visible:EVisibility::Collapsed;});
   Rows->AddSlot().AutoHeight()[Water];
+  auto Menu = SNew(SVerticalBox).Visibility_Lambda([this](){return ActiveTab==5?EVisibility::Visible:EVisibility::Collapsed;});
+  Rows->AddSlot().AutoHeight()[Menu];
   auto AllRows=Rows;Rows=Ground;
   AddSection(Rows, TEXT("GROUND"), TEXT("Scale, shape and dark areas"));
   AddSlider(Rows, TEXT("ground_scale"), TEXT("Pattern size"), .4f, 3.f, 1.f, EValueFormat::Multiplier,
@@ -233,10 +238,44 @@ public:
    .OnClicked_Lambda([this](){if(Callbacks.ClearWaves)Callbacks.ClearWaves();RestoreViewportFocus();return FReply::Handled();})
    [SNew(STextBlock).Text(FText::FromString(TEXT("Clear existing waves"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",10)).ColorAndOpacity(Ivory)]];
   Rows->AddSlot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(TEXT("Start with Motion threshold to filter idle motion.\nUse Damping to shorten the wake. Clear waves\nto compare settings from a calm surface."))).Font(FCoreStyle::GetDefaultFontStyle("Regular",9)).ColorAndOpacity(Muted)];
+  Rows=Menu;
+  Rows->AddSlot().AutoHeight().Padding(0,3,0,6)
+  [SNew(SCheckBox).IsChecked_Lambda([this](){return Read(TEXT("menu_enabled"),1)>.5f?ECheckBoxState::Checked:ECheckBoxState::Unchecked;})
+   .OnCheckStateChanged_Lambda([this](ECheckBoxState State){if(Callbacks.Set)Callbacks.Set(TEXT("menu_enabled"),State==ECheckBoxState::Checked?1.f:0.f);RestoreViewportFocus();})
+   .ToolTipText(FText::FromString(TEXT("Show the main menu over the live scene. Turn off to inspect the background.")))
+   [SNew(STextBlock).Text(FText::FromString(TEXT("Show menu"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",10)).ColorAndOpacity(Ivory)]];
+  Rows->AddSlot().AutoHeight().Padding(0,0,0,7)
+  [SNew(SButton).ButtonStyle(&ButtonStyle).IsFocusable(false).HAlign(HAlign_Center)
+   .ToolTipText(FText::FromString(TEXT("Restore only the menu layout, type, colour and motion to the reference defaults. The scene is unchanged.")))
+   .OnClicked_Lambda([this](){ResetMenu();RestoreViewportFocus();return FReply::Handled();})
+   [SNew(STextBlock).Text(FText::FromString(TEXT("Reset menu to reference"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(Ivory)]];
+  AddSection(Rows,TEXT("LAYOUT"),TEXT("Position and proportions"));
+  Rows->AddSlot().AutoHeight().Padding(0,0,0,5)
+  [SNew(STextBlock).Text(FText::FromString(TEXT("Positions and sizes use the 1280 x 720 reference.\nEnter a value or drag its slider. TAB hides this panel."))).Font(FCoreStyle::GetDefaultFontStyle("Regular",8)).ColorAndOpacity(Muted)];
+  AddMenuNumber(Rows,TEXT("menu_x"),TEXT("Left / right"),0,1000,112,TEXT("Horizontal panel position in reference pixels."));
+  AddMenuNumber(Rows,TEXT("menu_y"),TEXT("Up / down"),0,600,66,TEXT("Vertical panel position in reference pixels."));
+  AddMenuNumber(Rows,TEXT("menu_width"),TEXT("Panel width"),260,650,400,TEXT("Width of the frame in reference pixels."));
+  AddMenuNumber(Rows,TEXT("menu_height"),TEXT("Panel height"),400,680,544,TEXT("Height of the frame in reference pixels."));
+  AddMenuNumber(Rows,TEXT("menu_scale"),TEXT("Overall scale"),.6f,1.3f,1,TEXT("Scale the complete panel, ornaments and lettering together. The panel fits within the window."));
+  AddMenuNumber(Rows,TEXT("menu_top"),TEXT("First row height"),60,200,129,TEXT("Distance from the panel top to the first row's centre."));
+  AddMenuNumber(Rows,TEXT("menu_row_spacing"),TEXT("Row spacing"),42,90,66,TEXT("Vertical spacing of the regular menu rows."));
+  AddSection(Rows,TEXT("APPEARANCE"),TEXT("Glass, fine rules and glow"));
+  AddMenuNumber(Rows,TEXT("menu_panel_opacity"),TEXT("Panel opacity"),0,1,.66f,TEXT("Transparency of the dark red panel; zero reveals the scene fully."));
+  AddMenuNumber(Rows,TEXT("menu_border_opacity"),TEXT("Border opacity"),0,1,1,TEXT("Strength of the ivory and red frame lines."));
+  AddMenuNumber(Rows,TEXT("menu_border_width"),TEXT("Line thickness"),.5f,3,1.5f,TEXT("Thickness of the fine frame and ornament strokes."));
+  AddMenuNumber(Rows,TEXT("menu_ornament_scale"),TEXT("Ornament size"),.5f,1.8f,1,TEXT("Size of the curved corners and diamond ornaments."));
+  AddMenuNumber(Rows,TEXT("menu_glow"),TEXT("Selection glow"),0,2,1,TEXT("Strength of the active row's soft crimson light and fine bright underline."));
+  AddMenuNumber(Rows,TEXT("menu_red"),TEXT("Crimson richness"),0,1,.65f,TEXT("Amount of red in the glass and selected-row treatment."));
+  AddSection(Rows,TEXT("TYPE & MOTION"),TEXT("Lettering and transitions"));
+  AddMenuNumber(Rows,TEXT("menu_font_size"),TEXT("Letter size"),20,44,34,TEXT("Regular label size in reference pixels; overall scale applies afterward."));
+  AddMenuNumber(Rows,TEXT("menu_tracking"),TEXT("Letter spacing"),0,6,3,TEXT("Additional space between letters in reference pixels."));
+  AddMenuNumber(Rows,TEXT("menu_selected_scale"),TEXT("Selected label size"),1,1.5f,1.25f,TEXT("Size multiplier for the selected label."));
+  AddMenuNumber(Rows,TEXT("menu_text_brightness"),TEXT("Text brightness"),.4f,1.3f,1,TEXT("Brightness of the warm ivory lettering."));
+  AddMenuNumber(Rows,TEXT("menu_motion"),TEXT("Glow motion"),0,1,.35f,TEXT("Strength of the slow breathing light. Zero gives a still menu treatment."));
   Rows=AllRows;
 
   SetVisibility(EVisibility::SelfHitTestInvisible);
-  ChildSlot.HAlign(HAlign_Left).VAlign(VAlign_Top)
+  ChildSlot.HAlign(HAlign_Right).VAlign(VAlign_Top)
   [
    SNew(SBox).WidthOverride(310.f).HeightOverride(668.f)
    [
@@ -254,7 +293,7 @@ public:
        .Font(FCoreStyle::GetDefaultFontStyle("Regular", 9)).ColorAndOpacity(Muted)]
      ]
      + SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 9.f)
-     [SNew(STextBlock).Text(FText::FromString(TEXT("Rain & atmosphere / live preview")))
+     [SNew(STextBlock).Text(FText::FromString(TEXT("Scene & menu / live preview")))
       .Font(FCoreStyle::GetDefaultFontStyle("Regular", 9)).ColorAndOpacity(Muted)]
      + SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
      [
@@ -262,8 +301,13 @@ public:
       + SHorizontalBox::Slot().FillWidth(1.f)[Tab(TEXT("Ground"),0)]
       + SHorizontalBox::Slot().FillWidth(1.f)[Tab(TEXT("Water"),4)]
       + SHorizontalBox::Slot().FillWidth(1.f)[Tab(TEXT("Rain"),1)]
+     ]
+     + SVerticalBox::Slot().AutoHeight().Padding(0.f, -8.f, 0.f, 10.f)
+     [
+      SNew(SHorizontalBox)
       + SHorizontalBox::Slot().FillWidth(1.f)[Tab(TEXT("Air"),2)]
       + SHorizontalBox::Slot().FillWidth(1.f)[Tab(TEXT("Body"),3)]
+      + SHorizontalBox::Slot().FillWidth(1.f)[Tab(TEXT("Menu"),5)]
      ]
      + SVerticalBox::Slot().FillHeight(1.f)
      [
@@ -322,7 +366,7 @@ private:
  TSharedRef<SWidget> Tab(const TCHAR* Label,int32 Index)
  {
   return SNew(SButton).ButtonStyle(&ButtonStyle).ContentPadding(FMargin(3.f,6.f)).IsFocusable(false).HAlign(HAlign_Center)
-   .OnClicked_Lambda([this,Index](){ActiveTab=Index;RestoreViewportFocus();return FReply::Handled();})
+   .OnClicked_Lambda([this,Index](){SetActiveTab(Index);RestoreViewportFocus();return FReply::Handled();})
    [SNew(STextBlock).Text(FText::FromString(Label)).Font(FCoreStyle::GetDefaultFontStyle("Bold",9))
     .ColorAndOpacity_Lambda([this,Index](){return ActiveTab==Index?Ivory:Muted;})];
  }
@@ -345,6 +389,46 @@ private:
    [SNew(STextBlock).Text(FText::FromString(Description)).Font(FCoreStyle::GetDefaultFontStyle("Regular", 8))
     .ColorAndOpacity(Muted)]
   ];
+ }
+
+ void ResetMenu()
+ {
+  if(!Callbacks.Set)return;
+  const TPair<const TCHAR*,float> Defaults[]={
+   {TEXT("menu_enabled"),1},{TEXT("menu_x"),112},{TEXT("menu_y"),66},
+   {TEXT("menu_width"),400},{TEXT("menu_height"),544},{TEXT("menu_scale"),1},
+   {TEXT("menu_top"),129},{TEXT("menu_row_spacing"),66},{TEXT("menu_font_size"),34},
+   {TEXT("menu_tracking"),3},{TEXT("menu_selected_scale"),1.25f},{TEXT("menu_panel_opacity"),.66f},
+   {TEXT("menu_border_opacity"),1},{TEXT("menu_border_width"),1.5f},{TEXT("menu_ornament_scale"),1},
+   {TEXT("menu_glow"),1},{TEXT("menu_red"),.65f},{TEXT("menu_text_brightness"),1},{TEXT("menu_motion"),.35f}};
+  for(const auto& Pair:Defaults)Callbacks.Set(Pair.Key,Pair.Value);
+ }
+
+ void AddMenuNumber(TSharedRef<SVerticalBox> Rows,FName Key,const TCHAR* Label,
+  float Min,float Max,float Default,const TCHAR* Tooltip)
+ {
+  Rows->AddSlot().AutoHeight().Padding(0,1,4,2)
+  [SNew(SHorizontalBox)
+   + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
+   [SNew(STextBlock).Text(FText::FromString(Label)).Font(FCoreStyle::GetDefaultFontStyle("Regular",10))
+    .ColorAndOpacity(Ivory).ToolTipText(FText::FromString(Tooltip))]
+   + SHorizontalBox::Slot().AutoWidth()
+   [SNew(SBox).WidthOverride(78)
+    [SNew(SNumericEntryBox<float>).AllowSpin(false).MinValue(Min).MaxValue(Max)
+     .MinFractionalDigits(0).MaxFractionalDigits(2)
+     .Value_Lambda([this,Key,Default]()->TOptional<float>{return Read(Key,Default);})
+     .OnValueCommitted_Lambda([this,Key,Min,Max](float V,ETextCommit::Type Why){
+      if(FMath::IsFinite(V)&&Callbacks.Set)Callbacks.Set(Key,FMath::Clamp(V,Min,Max));
+      if(Why==ETextCommit::OnEnter)RestoreViewportFocus();
+     }).ToolTipText(FText::FromString(Tooltip))]]];
+  Rows->AddSlot().AutoHeight().Padding(0,0,4,3)
+  [SNew(SBox).HeightOverride(15)
+   [SNew(SSlider).Style(&SliderStyle).IsFocusable(false).IndentHandle(false)
+    .SliderBarColor(FLinearColor(.18f,.115f,.12f,1)).SliderHandleColor(FLinearColor(.8f,.69f,.56f,1))
+    .Value_Lambda([this,Key,Min,Max,Default](){return (FMath::Clamp(Read(Key,Default),Min,Max)-Min)/(Max-Min);})
+    .OnValueChanged_Lambda([this,Key,Min,Max](float V){if(Callbacks.Set)Callbacks.Set(Key,FMath::Lerp(Min,Max,V));})
+    .OnMouseCaptureEnd_Lambda([](){RestoreViewportFocus();})
+    .ToolTipText(FText::FromString(Tooltip))]];
  }
 
  void AddSlider(TSharedRef<SVerticalBox> Rows, FName Key, const TCHAR* Label,

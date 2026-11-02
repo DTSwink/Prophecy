@@ -1,0 +1,118 @@
+{
+  "status": "gold finish softened",
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\BeforeSoftGold_v1",
+  "original_files": {
+    "T_ImperialSpear_BaseColor.png": "d1420064c06ef7fedc36c4b40a34943ec3904d9bd5be302deac2d88140e5cdb3",
+    "T_ImperialSpear_ORM.png": "b8937a02b1b7cf2ab9627adb20321f8cc608f2a39a496bf2664392c723e6b203",
+    "T_ImperialSpear_NormalGL.png": "1c951a0f6ce27ba918c4ff40d9e5c15d3c8dbf947d7bbef0454fd3e66507b2ac",
+    "T_ImperialSpear_NormalDX.png": "6739a3001104f0b816b33364f9cf818ec44baccb883addf8e65cc61b4c847bbe",
+    "socket_motif_source.py": "145733ca307b88cf29e5ca43ae864e86ecca6ac3b7d00d305c9df64ec79976fb"
+  },
+  "target_regions": {
+    "plain": [
+      2048,
+      0,
+      3072,
+      1024
+    ],
+    "body": [
+      2048,
+      1024,
+      3072,
+      2048
+    ],
+    "socket": [
+      3584,
+      0,
+      4096,
+      2048
+    ]
+  },
+  "finish_variation_retained": 0.3,
+  "body_border_protected_pixels": 54726,
+  "body_border_protected_fraction": 0.05219078063964844,
+  "body_border_sha256": {
+    "base": "bf67be637f6cdf4628cce9df2b0ed323d25cbfcedb9835b5f7e0e1989213759b",
+    "orm": "d4772f29f107232a0af1c9634d6799178bdf7d65dd4868f29953b48cdf71ad31",
+    "gl": "8b7e57fac586404a59fc1ede2fbf66f97dd93f1f390d2f3356ad3751ab55d8fe",
+    "dx": "610e98d7be40e7068bba31b58948eb3185903d4baff421ce700cc14314c6ad78"
+  },
+  "ORM_AO_metal_alpha_preserved": true,
+  "outside_gold_preserved": {
+    "T_ImperialSpear_BaseColor.png": {
+      "before_sha256": "93f006c1864dddacaaf9874123f5c68b5cb6e6357aecbd9c4b596af0e0a03b54",
+      "after_sha256": "93f006c1864dddacaaf9874123f5c68b5cb6e6357aecbd9c4b596af0e0a03b54",
+      "unchanged": true
+    },
+    "T_ImperialSpear_ORM.png": {
+      "before_sha256": "02ead21568f13163acd9c1d760622ead7590a1e51a45e240eefa70529abef3c1",
+      "after_sha256": "02ead21568f13163acd9c1d760622ead7590a1e51a45e240eefa70529abef3c1",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalGL.png": {
+      "before_sha256": "b5ccbb6c90b20c4c19efe0690e531285f8e3e742122fee36bae60f206096bbce",
+      "after_sha256": "b5ccbb6c90b20c4c19efe0690e531285f8e3e742122fee36bae60f206096bbce",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalDX.png": {
+      "before_sha256": "228a3e33a604c2da6483a84e8f8f7e01441065ae1ccbe94ba0e093520143fe71",
+      "after_sha256": "228a3e33a604c2da6483a84e8f8f7e01441065ae1ccbe94ba0e093520143fe71",
+      "unchanged": true
+    }
+  },
+  "details": {
+    "plain": {
+      "base_std_before": [
+        3.553058385848999,
+        2.745671033859253,
+        1.513514757156372
+      ],
+      "base_std_after": [
+        1.092068089534675,
+        0.937905271863512,
+        0.5291010696802385
+      ],
+      "roughness_std_before": 0.02891889214515686,
+      "roughness_std_after": 0.008707807272818837
+    },
+    "body": {
+      "base_std_before": [
+        3.560701608657837,
+        2.761082172393799,
+        1.5157005786895752
+      ],
+      "base_std_after": [
+        1.1061252576272897,
+        0.9425664486052052,
+        0.5326135568459339
+      ],
+      "roughness_std_before": 0.028997808694839478,
+      "roughness_std_after": 0.00878806038891262
+    },
+    "socket": {
+      "motif_layout": {
+        "STROKE_MM": 1.2,
+        "CIRCUMFERENCE_MM": 122.5,
+        "PIXELS_PER_MM": 14,
+        "ROWS": 12,
+        "LIP_MM": 0.14,
+        "H": 2048,
+        "COLUMNS": 7,
+        "W": 512,
+        "AXIAL_MM": 152.48
+      },
+      "base_carrier_median_srgb": [
+        158.0,
+        124.0,
+        76.0
+      ],
+      "roughness_carrier_median": 0.43529412150382996,
+      "new_depth_mm": 0.045,
+      "max_albedo_cut": 0.035,
+      "roughness_cut_increment": 0.032,
+      "lip_albedo_increment": 0.006,
+      "lip_roughness_increment": -0.008,
+      "normal_slope_max": 0.30220359563827515
+    }
+  }
+}

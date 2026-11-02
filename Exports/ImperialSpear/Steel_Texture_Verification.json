@@ -1,0 +1,51 @@
+{
+  "status": "steel wear generated",
+  "nonsteel_pixels_unchanged": true,
+  "nonsteel_sha256": {
+    "base": "4eacaabe618cb6891bf6b66df0a00938dedc180be8339e3045653e4ef95d6b43",
+    "orm": "4888f059bdb37ef101bebfdda75c310c3b6647c061c9bf8ae2c3abfc713f529f",
+    "gl": "604576e133b6635c209cd542ce8d0791d53ab99e38fedb0b3379bd1f193fbde1",
+    "dx": "43476b86328a8f761f288846ebef14ac1ca3cb38ee4ea61bb04786803b5276f5"
+  },
+  "wear": 1.0,
+  "density": 1.0,
+  "scratch_depth_mm": 0.008,
+  "regions": [
+    {
+      "region": "steel",
+      "scratch_strokes": 7515,
+      "roughness_min_max": [
+        0.3325192630290985,
+        0.647191047668457
+      ],
+      "normal_max_lateral_component": 0.05164790898561478
+    },
+    {
+      "region": "edge",
+      "scratch_strokes": 3757,
+      "roughness_min_max": [
+        0.19191239774227142,
+        0.28395599126815796
+      ],
+      "normal_max_lateral_component": 0.008430161513388157
+    },
+    {
+      "region": "ridge",
+      "scratch_strokes": 1878,
+      "roughness_min_max": [
+        0.21617475152015686,
+        0.32345619797706604
+      ],
+      "normal_max_lateral_component": 0.010654816403985023
+    },
+    {
+      "region": "steel_shadow",
+      "scratch_strokes": 1878,
+      "roughness_min_max": [
+        0.4281059801578522,
+        0.4823961555957794
+      ],
+      "normal_max_lateral_component": 0.003185708774253726
+    }
+  ]
+}

@@ -304,6 +304,7 @@ bool AProphecyNNLocomotionManager::GetAgentContinuousLocomotionRootWindow(
 		const FVector UnderPelvis(Pelvis.GetLocation().X,Pelvis.GetLocation().Y,AppliedRoot.GetLocation().Z);
 		for(auto& Root:Roots)Root.SetLocation(FMath::Lerp(Root.GetLocation(),UnderPelvis,double(Freeze)));
 	}
+	ProphecyFootIKNavigation::ProjectWindow(const_cast<AProphecyAgent*>(Actor),Roots);
 	return true;
 }
 

@@ -27,7 +27,15 @@ function attackAt(clip,frame,names,parents,transfer=false){
  // Remove the root coordinate frame before interpolation. Its translation is
  // carried by locomotion; its changing basis must not alter body articulation.
  clip.bodyLocals ||= clip.poses.map((pose,i)=>{const local=clip.locals[i],q=local.q.slice();q[pelvis]=R.qm(R.qinv(reference.q[0]),pose.q[pelvis]);q[0]=reference.q[0];return {...local,q};});
- const target=at({poses:clip.poses,locals:clip.bodyLocals},frame,parents);
+ let target=at({poses:clip.poses,locals:clip.bodyLocals},frame,parents);
+ if(clip.meta.name==='pike'){
+  // A thrust follows the recorded component-space sword direction. Separate
+  // forearm/wrist local arcs add false swings between these nearly aligned keys.
+  clip.bodyWorlds ||= clip.bodyLocals.map(local=>R.fk(local,parents).q);
+  const f=Math.max(0,Math.min(clip.poses.length-1,frame)),i=Math.min(clip.poses.length-2,Math.floor(f)),u=f-i;
+  const world=clip.bodyWorlds[i].map((q,j)=>R.qslerp(q,clip.bodyWorlds[i+1][j],u));
+  target={...target,q:world.map((q,j)=>parents[j]<0?q:R.qm(R.qinv(world[parents[j]]),q))};
+ }
  return transfer?distributePelvis(target,reference,names,parents):target;
 }
 // Authored attacks may exceed resting joint limits, including during recovery.
@@ -42,6 +50,23 @@ function overlay(pose,target,indices,parents,amount=1){
 // Current pose directly to Armed, in hierarchy-local axes. The endpoint
 // derivatives come only from Armed onward; no recorded pre-Armed pose is used.
 function directEntry(options){const {clip}=options;return Entry.direct({...options,armed:clip.meta.phases.armed,fps:clip.meta.fps});}
+// Retain the authored thrust's body travel as animation displacement. This
+// is separate from articulation and never changes the arm or a bone length.
+function pikeTravel(track,clip,base,names){
+ const pelvis=names.indexOf('pelvis'),armed=clip.meta.phases.armed,fps=clip.meta.fps;
+ const at=f=>{f=Math.max(0,Math.min(clip.poses.length-1,f));const i=Math.min(clip.poses.length-2,Math.floor(f));return R.add(clip.poses[i].points[pelvis],R.mul(R.sub(clip.poses[i+1].points[pelvis],clip.poses[i].points[pelvis]),f-i));};
+ const origin=at(armed),delta=f=>R.sub(at(f),origin),h=1e-4,endFrame=track.sourceFrame(track.end-track.start),endOffset=delta(endFrame),endVelocity=R.mul(R.sub(endOffset,delta(endFrame-h*fps)),1/h),entryVelocity=R.mul(delta(armed+h*fps),track.duration/h),sample=track.sample;
+ function offset(time){
+  if(time<=track.start||time>=track.returnEnd)return [0,0,0];
+  if(time<track.start+track.duration){const u=(time-track.start)/track.duration;return R.mul(entryVelocity,-4*u**3+7*u**4-3*u**5);}
+  if(time<=track.end)return delta(track.sourceFrame(time-track.start));
+  const duration=track.returnEnd-track.end,u=(time-track.end)/duration;return R.add(R.mul(endOffset,1-3*u*u+2*u*u*u),R.mul(endVelocity,duration*u*(1-u)*(1-u)));
+ }
+ return {...track,sample(time,...args){const frame=sample(time,...args);if(time<=track.start||time>=track.returnEnd)return frame;
+  const basis=R.qm(base(time).pose.q[pelvis],R.qinv(clip.poses[0].q[pelvis])),travel=R.rotate(basis,offset(time));
+  return {...frame,pose:{...frame.pose,pikeTravel:travel,points:frame.pose.points.map((p,i)=>i?R.add(p,travel):p)}};
+ }};
+}
 // Full attack-added spine rotation in the underlying pelvis frame. Upper
 // world orientation is restored after applying the opposite pelvis rotation.
 function compensate(pose,baseline,names,parents,amount){
@@ -69,7 +94,7 @@ function distanceReturn(track,base,clip,names,parents,settings,reference,poseOnl
  let returning=null;
  function sample(time,...args){
   if(time<=end)return track.sample(time,...args);
-  const active=time<returnEnd,pose=active?{...(returning ||= C.transition(t=>original(end+t),t=>base(end+t),duration,parents))(time-end),attackFree:true}:base(time);
+  const active=time<returnEnd,pose=active?{...(returning ||= C.transition(t=>original(end+t),t=>base(end+t),duration,parents,null,false,false,track.coupledHand??-1,track.protectedElbow??-1))(time-end),attackFree:true}:base(time);
   if(poseOnly)return pose;
   const frame=baseFrame?baseFrame(time,...args):track.sample(time,...args);if(!active)return {...frame,pose};
   return {...PoseMotion.restrict(frame,track.indices,returnPolicy.factor(time-end)),pose,attack:{...track.sample(end).attack,phase:'RETURN'}};
@@ -87,11 +112,15 @@ function create(event,segment,catalog,names,parents,settings,reference=null,{who
   const duration=kick.plan.track.armedTime,sourceFrame=kick.plan.track.sourceFrame;
   return {...kick,match:0,score:0,duration,sourceFrame,indices:names.map((_,i)=>i).slice(1),sample(time,...args){
    const frame=base(time,...args);if(time<start||time>=kick.returnEnd)return frame;
-   return {...PoseMotion.restrict(frame,names.map((_,i)=>i),time<start+duration?smooth((time-start)/duration):time<kick.end?1:kick.returnPolicy.factor(time-kick.end)),pose:kick.sample(time),attack:{name:e.attack,phase:time>=kick.end?'RETURN':time<start+duration?'ARM':'ATTACK',sourceFrame:Math.min(clip.poses.length-1,sourceFrame(time-start)),matchedFrame:0,armedTime:start+duration,start,end:kick.end}};
+   return {...PoseMotion.restrict(frame,names.map((_,i)=>i),time<start+duration?smooth((time-start)/duration):time<kick.end?1:kick.returnPolicy.factor(time-kick.end)),pose:kick.sample(time),attack:{name:e.attack,phase:time>=kick.end?'RETURN':time<start+duration?'ARM':'ATTACK',sourceFrame:Math.min(kick.plan.track.sourceEnd,sourceFrame(time-start)),matchedFrame:0,armedTime:start+duration,start,end:kick.end}};
   }};
  }
 
- const base=segment.sample,start=segment.airStart+e.attackDelay,indices=bones(names,parents,!settings.distributePelvisTurn),fps=clip.meta.fps,armed=clip.meta.phases.armed;
+ // Use the displayed resting pose for Pike's entry and return endpoints;
+ // source attack joints remain unrestricted throughout the attack.
+ const resting=clip.meta.name==='pike'?H.createProjection(names,parents,reference||clip.poses[0]):null,incoming=segment.sample;
+ const base=resting?(time,...args)=>{const frame=incoming(time,...args);return {...frame,pose:resting(frame.pose)};}:incoming;
+ const start=segment.airStart+e.attackDelay,indices=bones(names,parents,!settings.distributePelvisTurn),fps=clip.meta.fps,armed=clip.meta.phases.armed;
  const targetAt=armTrack(clip,names,parents,reference||clip.poses[0],settings.distributePelvisTurn);
  const initial=base(start).pose,from=R.localize(initial.points,initial.q,parents);
  // Match the authored pelvis and upper-body pose in hierarchy-local axes.
@@ -100,7 +129,7 @@ function create(event,segment,catalog,names,parents,settings,reference=null,{who
  if(settings.kickToArmed){match=armed;score=0;}
  const arming=settings.kickToArmed?Entry.plan({from,targetAt,armed,fps,indices,names,minimum:e.attackIn}):null;
  const duration=arming?.duration??Math.max(e.attackIn,(armed-match)/fps,1/60),hitTime=start+duration+(clip.meta.phases.hit-armed)/fps;
- const endFrame=clip.meta.phases.end??clip.poses.length-1,end=hitTime+(endFrame-clip.meta.phases.hit)/fps,returnEnd=end+returnPolicy.horizon;
+ const endFrame=C.attackEndFrame(settings,e.attack,clip.meta.phases.hit,clip.poses.length-1,clip.meta.phases.end??clip.poses.length-1),end=hitTime+(endFrame-clip.meta.phases.hit)/fps,returnEnd=end+returnPolicy.horizon;
  function sourceFrame(age){return age<duration?match+(armed-match)*clamp(age/duration):armed+(age-duration)*fps;}
  const direct=settings.kickToArmed?directEntry({base,start,duration,clip,names,parents,indices,targetAt}):null;
  function entry(time,frame=base(time)){
@@ -111,7 +140,8 @@ function create(event,segment,catalog,names,parents,settings,reference=null,{who
   // advances one source frame per authored frame. Smooth weight avoids entry stops.
   return overlay(frame.pose,target,indices,parents,smooth(age/duration));
  }
- let exit=null;const returning=t=>(exit ||= returnPolicy.transition(t=>entry(end+t),t=>base(end+t).pose,parents,indices))(t);
+ const coupledHand=e.attack==='pike'||e.attack.startsWith('slash')?names.indexOf('hand_r'):-1,protectedElbow=e.attack==='pike'?['lowerarm_l','lowerarm_r'].map(n=>names.indexOf(n)):-1;
+ let exit=null;const returning=t=>(exit ||= returnPolicy.transition(t=>entry(end+t),t=>base(end+t).pose,parents,indices,coupledHand,protectedElbow))(t);
  function uncorrected(time,frame=base(time)){
   if(time<start||time>=end+returnPolicy.horizon)return frame.pose;
   const returned=time>=end?returning(time-end):null;
@@ -129,10 +159,11 @@ function create(event,segment,catalog,names,parents,settings,reference=null,{who
   if(time>=returnEnd)return frame;
   const pose=time<=hitTime||!(amount>0)?displayed(time,frame):legal(recovery.sample(time));
   const age=time-start;
-  return {...PoseMotion.restrict(frame,indices,age<duration?smooth(age/duration):time<end?1:returnPolicy.factor(time-end)),pose:{...pose,attackFree:true},attack:{name:e.attack,phase:time>=end?'RETURN':age<duration?'ARM':'ATTACK',sourceFrame:Math.min(clip.poses.length-1,sourceFrame(age)),matchedFrame:match,armedTime:start+duration,start,end}};
+  return {...PoseMotion.restrict(frame,indices,age<duration?smooth(age/duration):time<end?1:returnPolicy.factor(time-end)),pose:{...pose,attackFree:true},attack:{name:e.attack,phase:time>=end?'RETURN':age<duration?'ARM':'ATTACK',sourceFrame:Math.min(endFrame,sourceFrame(age)),matchedFrame:match,armedTime:start+duration,start,end}};
  }
- const track={returnPolicy,sample,start,end,hitTime,returnEnd,recovery,match,score,duration,sourceFrame,indices,inertia,arming};
- return clipOverride?track:distanceReturn(track,t=>base(t).pose,clip,names,parents,settings,reference||clip.poses[0],false,base);
+ const track={coupledHand,returnPolicy,sample,start,end,hitTime,returnEnd,recovery,match,score,duration,sourceFrame,indices,inertia,arming,protectedElbow};
+ const result=clipOverride?track:distanceReturn(track,t=>base(t).pose,clip,names,parents,settings,reference||clip.poses[0],false,base);
+ return clip.meta.name==='pike'?pikeTravel(result,clip,base,names):result;
 }
 const api={distanceReturn,create,directEntry,at,attackAt,armTrack,distributePelvis,compensate,bones,overlay,labels};if(node)module.exports=api;else root.BodyflipJumpAttack=api;
 })(globalThis);

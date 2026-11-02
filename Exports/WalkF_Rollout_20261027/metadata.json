@@ -1,0 +1,78 @@
+{
+  "checkpoint": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\RunCheckpoint20260930-135852\\source_checkpoint.pt",
+  "checkpoint_sha256": "0f2565ac72c5209153cbd910135209487f9ef8a0e234ed0c6d99df2ff30a299e",
+  "source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\ue5\\animations_omni_only\\npz_final\\M_Neutral_Walk_Loop_F.npz",
+  "source_sha256": "32360b5d3491e1ebc3e2cf34ad14bbd9ea22cbd8f2da6d3d713b96fe3b91c7a8",
+  "viewer_source": "C:\\Users\\singerie\\Documents\\Cursor\\stepper\\training\\model_viewer_app.py",
+  "viewer_source_sha256": "58d4724b43ce5ec4f277452afd83c83066de3e751bb8556009bc71c4905e86b8",
+  "fps": 30.0,
+  "frame_count": 121,
+  "first_frame": 0,
+  "last_frame": 120,
+  "pose_span_seconds": 4.0,
+  "seed_frames": [
+    0,
+    1
+  ],
+  "inferred_frames": [
+    2,
+    120
+  ],
+  "bones": [
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "spine_03",
+    "spine_04",
+    "spine_05",
+    "clavicle_l",
+    "upperarm_l",
+    "lowerarm_l",
+    "hand_l",
+    "clavicle_r",
+    "upperarm_r",
+    "lowerarm_r",
+    "hand_r",
+    "neck_01",
+    "neck_02",
+    "head",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "ball_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r",
+    "ball_r"
+  ],
+  "visible_bones": [
+    "pelvis",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "ball_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r",
+    "ball_r"
+  ],
+  "body_mode": "lower_body",
+  "body_mask_note": "This is a lower-body policy; preview matches the viewer lower-body mask. Other raw FK slots are retained only for completeness.",
+  "coordinates": "Viewer world coordinates, metres, Y up; rotations are 3x3 world matrices.",
+  "pin_constraint": true,
+  "run_near_floor_pin": true,
+  "device": "cpu",
+  "orthogonality_max_error": 3.5762786865234375e-07,
+  "method": "Fresh deterministic rollout via unchanged Model Viewer Actor.load_checkpoint and generate_to; not a live window-memory capture.",
+  "preview": "Rendered from the saved poses, with two following cameras. World motion is retained in NPZ.",
+  "files": {
+    "walkf_rollout.npz": {
+      "bytes": 73810,
+      "sha256": "7c8414dda5d010a3c43a3d248f41cb0c984f1cd82dd1de8a4f1b85075af6351e"
+    },
+    "walkf_rollout.mp4": {
+      "bytes": 885225,
+      "sha256": "8f8fe25d69258ddee7c6ec9e46d9caedeb7b4b1cff0003b1e4205bb2d85691d6"
+    }
+  }
+}

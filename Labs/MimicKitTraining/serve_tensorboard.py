@@ -23,8 +23,11 @@ def main():
     previous = None
     try:
         while True:
+            hidden_file = args.logdir / 'hidden-runs.json'
+            hidden = set(json.loads(hidden_file.read_text()) if hidden_file.exists() else [])
             runs = sorted((p for p in args.logdir.resolve().iterdir()
                            if p.is_dir() and DATED_RUN.match(p.name)
+                           and p.name not in hidden
                            and any(p.glob('events.out.tfevents.*'))),
                           key=lambda p: p.name, reverse=True)[:args.limit]
             if runs != previous:

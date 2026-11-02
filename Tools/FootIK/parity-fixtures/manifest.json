@@ -1,0 +1,248 @@
+{
+  "schema": "footik-recorded-policy-input-v1",
+  "note": "Recorded policy inputs/replies, not baked solver output. Regenerate all pose oracles from current lab source.",
+  "cases": [
+    {
+      "name": "current-yaw-stop10",
+      "file": "current-yaw-stop10.json.gz",
+      "original": "Saved/FootIKArmSmooth20261029/yaw10-fixture.json.gz",
+      "originalSha256": "d74d5eb17d29d2a18a9e1fd13a8b09f61f449295703ceee25c511e93b9ce0d88",
+      "sha256": "67a57f4966cde12ddc90e2dbe8bc2c26212dc7c2caaa01a04f9a77c3e9281c24",
+      "bytes": 73477,
+      "policySteps": 21,
+      "endTime": 3.3666666666666667,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "current-yaw-stop12",
+      "file": "current-yaw-stop12.json.gz",
+      "original": "Saved/FootIKArmWall20261029/fixture.json.gz",
+      "originalSha256": "8dbd584aab2b16ebbbcf3dd51bd737e35e89213b69deb6136c05601d3aab9bda",
+      "sha256": "e0b41a503234ff260ac42eb657da5e1f873f8f5b59dc647dba35bf79ad92d338",
+      "bytes": 73474,
+      "policySteps": 21,
+      "endTime": 3.3666666666666667,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "coupled-wall-run",
+      "file": "coupled-wall-run.json.gz",
+      "original": "Labs/FootIKLab/data/wall-frame-run-fixture.json.gz",
+      "originalSha256": "9633871dc838a8bbd4442f668dec6fd415751a92649a707ab331737891ed6649",
+      "sha256": "4e8995e99371b70331b649785d55ede4aa3903c87388f8d9a2f2f6394998a71d",
+      "bytes": 831071,
+      "policySteps": 149,
+      "endTime": 5,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "coupled-wall-walk",
+      "file": "coupled-wall-walk.json.gz",
+      "original": "Labs/FootIKLab/data/wall-frame-walk-fixture.json.gz",
+      "originalSha256": "42fc24cc97b3a2711b0d17f914df62aac5a261d452c1ee3557dc02c52644600e",
+      "sha256": "f1e5cdaf4d5bd05fefd37870127a38621874c856557f5f05db8cce6e6ca80160",
+      "bytes": 829553,
+      "policySteps": 149,
+      "endTime": 5,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "final-run-forward",
+      "file": "final-run-forward.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/final-run-forward.fixture.json.gz",
+      "originalSha256": "4dc583e0114f5facbe1ec2c60fc5df12cf0cb22d7fdf9a80bda70cca06bac56d",
+      "sha256": "e7eeb7104706c4f0c0ee3b4f31b14636ca54bf5755b96d40cede559ea5dbcf9f",
+      "bytes": 147716,
+      "policySteps": 48,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "run-backward",
+      "file": "run-backward.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/run-backward.fixture.json.gz",
+      "originalSha256": "59d51c5d87a9ab5de730a4b926ba17f7acd3e7e799d559ed4f49d9c30e8af228",
+      "sha256": "fd68b1b6c5175784b3c736ee275e4526978c282fded8b056eb4f6c2b78e3ac7c",
+      "bytes": 108716,
+      "policySteps": 34,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "final-run-left",
+      "file": "final-run-left.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/final-run-left.fixture.json.gz",
+      "originalSha256": "a77da39ceb9e23a77f55c854604d20ec49ca458b53e6f5ceaee8a4031ae0d3cd",
+      "sha256": "b2f84d8807ce8209e3d005a3b679ad897838f7e488f9cef7a691c1c2e0e2ccca",
+      "bytes": 111219,
+      "policySteps": 35,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "run-right",
+      "file": "run-right.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/run-right.fixture.json.gz",
+      "originalSha256": "a8c071073589b6486d21889be9920154e13e56ea4dd2d7a540173b01f328d062",
+      "sha256": "a6d67c229d4eaedea1bf490c6f37897bdcbcfd9fd738e588c4077459a646f4af",
+      "bytes": 102963,
+      "policySteps": 32,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "walk-forward",
+      "file": "walk-forward.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/walk-forward.fixture.json.gz",
+      "originalSha256": "20bef32d50d3383968bfe831e12260b2d391e7e4ac17ba5192a0507ab0df4d19",
+      "sha256": "89362a78570682605a9680212b5756e08cbba0cf21365255da56705f22c4f058",
+      "bytes": 119385,
+      "policySteps": 38,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "final-walk-backward",
+      "file": "final-walk-backward.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/final-walk-backward.fixture.json.gz",
+      "originalSha256": "bdd7d5b130cef79328e17ca42814f6ca6ddf7f66e6c298183b87efbcdc95563d",
+      "sha256": "c1d2577d5af794678ede598e9a364f78c275d238e8499298519ae219d34ec916",
+      "bytes": 342375,
+      "policySteps": 119,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "walk-left",
+      "file": "walk-left.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/walk-left.fixture.json.gz",
+      "originalSha256": "ab273883dfe97aeb2afededa560cc07a43fba5fd129eaa6d2cb9bc4f7736c3b2",
+      "sha256": "bacd16b02405abb52d5efc0108a1b158705b3a7aa74b0fcc4a56b777e973a5e6",
+      "bytes": 113360,
+      "policySteps": 36,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "walk-right",
+      "file": "walk-right.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/walk-right.fixture.json.gz",
+      "originalSha256": "8a0f2d4fe065423090afc35e76c8adb0e51d5d1899b2f8a6773092e42c5e7495",
+      "sha256": "7947ac86aeea2637e1df92cbfda5c526597b2b0ce499ef7e52679072883c91e0",
+      "bytes": 116288,
+      "policySteps": 37,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "final-run-forward-yaw-120",
+      "file": "final-run-forward-yaw-120.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/final-run-forward-yaw-120.fixture.json.gz",
+      "originalSha256": "d6ecae3e609b0a4699f730075c46bda067f6caa623f57aca106ceb5169771eda",
+      "sha256": "1ff1cbafcb7250b5e12eb91d56bde10edb092dba5a5a20f81262cb398df2d61a",
+      "bytes": 150437,
+      "policySteps": 49,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "final-run-forward-yaw120",
+      "file": "final-run-forward-yaw120.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/final-run-forward-yaw120.fixture.json.gz",
+      "originalSha256": "345660e345c04672c5e8775fa789a771cf496ac06db597511c672342527394f3",
+      "sha256": "fc9ed09c548c60e4614c64296e0c4a3b1a4adf00c97417c7064d7773f86f248e",
+      "bytes": 142167,
+      "policySteps": 46,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "run-backward-yaw-120",
+      "file": "run-backward-yaw-120.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/run-backward-yaw-120.fixture.json.gz",
+      "originalSha256": "546c175c884e98ea4404c41f030e16d2a59ce436a8d72e312ab955ef0d5f513b",
+      "sha256": "8e082b78af593291ea1900cc6ba5b895ca3ffa60fdc2e75c415dc70b78897731",
+      "bytes": 111383,
+      "policySteps": 35,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "run-backward-yaw120",
+      "file": "run-backward-yaw120.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/run-backward-yaw120.fixture.json.gz",
+      "originalSha256": "2207ff0e8a298ee8b8de51cd650f0739af1e8d7d65c21237ac9e4de91e88ba4e",
+      "sha256": "e5987da5e4e65204d9f47da541c4c30c856a4601c666b81d92ab225d447ed960",
+      "bytes": 114105,
+      "policySteps": 36,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "walk-forward-82",
+      "file": "walk-forward-82.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/walk-forward-82.fixture.json.gz",
+      "originalSha256": "e6e48980aa3fd8222a7934b4674d63b982fe4a5e8feb474c05ee7fa8c80e0227",
+      "sha256": "c718d149db17614ccce78e8f980a60247659074664711afeb1bdbd5baafc72ea",
+      "bytes": 113513,
+      "policySteps": 36,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "run-backward-85",
+      "file": "run-backward-85.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/run-backward-85.fixture.json.gz",
+      "originalSha256": "65f7ab5625fda73d7d2f0476a3269d66a65e07a87198df8325aa2d8bc25d662b",
+      "sha256": "6214b27a493144ce2b2848b0ea66bba7d2f0c1f34d1cac89b32475bb0ac876f6",
+      "bytes": 100178,
+      "policySteps": 31,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "parallel-run-forward",
+      "file": "parallel-run-forward.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/parallel-run-forward.fixture.json.gz",
+      "originalSha256": "9c406b46b286def648517db71402ad1437f6156a06265688837dad295505f96e",
+      "sha256": "bd87684e4b020a86d40c45141d179e16740bcb7acc170bc1e92a5370d57a333f",
+      "bytes": 43505,
+      "policySteps": 10,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "parallel-walk-backward",
+      "file": "parallel-walk-backward.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/parallel-walk-backward.fixture.json.gz",
+      "originalSha256": "018f895294ab6b99ff82218c7662a43b88f6234a2d8b272e14e83cb1c9f3717b",
+      "sha256": "8fc377454dea564d25e5687aa1796b7e76cb6efc8735f7e9dc08eb2735fe0e74",
+      "bytes": 43596,
+      "policySteps": 10,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "parallel-turn",
+      "file": "parallel-turn.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/parallel-turn.fixture.json.gz",
+      "originalSha256": "f0d12b272feeea9bd2d704b054f8edea65ea8ab2e07ef65071710dabd5b8efad",
+      "sha256": "3b2c96a394211c7ca03cabc5b417a61cf3272f4ba8ff75e4fd2d27fe1b33bf5c",
+      "bytes": 43515,
+      "policySteps": 10,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    },
+    {
+      "name": "floor-deletes-during-entry",
+      "file": "floor-deletes-during-entry.json.gz",
+      "original": "Saved/FootIKSlideAudit20261029/floor-deletes-during-entry.fixture.json.gz",
+      "originalSha256": "e1c21094ce5e2fedd7a29228fe7a3f564527e4230966bd92aeb4e1fd0c364638",
+      "sha256": "b96f7187d0064e289f3cecde8b193f17642821ae05e03810fcce11027d8670ed",
+      "bytes": 130292,
+      "policySteps": 42,
+      "endTime": 4,
+      "source": "Run 181751 + Upper 82500 · root-window NN"
+    }
+  ]
+}

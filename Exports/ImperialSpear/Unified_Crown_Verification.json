@@ -1,0 +1,849 @@
+{
+  "replaced_objects": [
+    "Blade \u2022 flame and compact unified casting"
+  ],
+  "single_closed_casting": true,
+  "closed": true,
+  "volume_m3": 2.3535790327007778e-05,
+  "triangles": 3692,
+  "cap_half_depth_m": 0.009243026041984558,
+  "maximum_blade_depth_under_crown_m": 0.008343026041984558,
+  "minimum_vertex_blade_clearance_m": 0.0001999999999999988,
+  "minimum_terminal_burial_in_actual_guard_m": 0.0010811943888664258,
+  "guard_overlap_m": 0.0018,
+  "foot_construction": "Planar crown over blade; terminal wall buried under actual guard bevel, with no outside-guard depth fade",
+  "actual_guard_foot_samples": [
+    {
+      "vertex": 54,
+      "guard_half_depth_m": 0.008169353008270264,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": -0.0003736730337142932
+    },
+    {
+      "vertex": 55,
+      "guard_half_depth_m": 0.009546957910060883,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010039318680763257
+    },
+    {
+      "vertex": 56,
+      "guard_half_depth_m": 0.009624242782592773,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812167406082165
+    },
+    {
+      "vertex": 57,
+      "guard_half_depth_m": 0.009624287486076355,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001081261444091798
+    },
+    {
+      "vertex": 58,
+      "guard_half_depth_m": 0.00962425023317337,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812241911888135
+    },
+    {
+      "vertex": 59,
+      "guard_half_depth_m": 0.009632118046283722,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001089092004299165
+    },
+    {
+      "vertex": 60,
+      "guard_half_depth_m": 0.009632103145122528,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010890771031379712
+    },
+    {
+      "vertex": 61,
+      "guard_half_depth_m": 0.009632125496864319,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001089099454879762
+    },
+    {
+      "vertex": 62,
+      "guard_half_depth_m": 0.009633868932723999,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010908428907394421
+    },
+    {
+      "vertex": 63,
+      "guard_half_depth_m": 0.009633876383304596,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001090850341320039
+    },
+    {
+      "vertex": 64,
+      "guard_half_depth_m": 0.009633883833885193,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001090857791900636
+    },
+    {
+      "vertex": 65,
+      "guard_half_depth_m": 0.009625658392906189,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001082632350921632
+    },
+    {
+      "vertex": 66,
+      "guard_half_depth_m": 0.009625747799873352,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010827217578887952
+    },
+    {
+      "vertex": 67,
+      "guard_half_depth_m": 0.00962425023317337,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812241911888135
+    },
+    {
+      "vertex": 68,
+      "guard_half_depth_m": 0.009624220430850983,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010811943888664258
+    },
+    {
+      "vertex": 69,
+      "guard_half_depth_m": 0.009624257683753967,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812316417694104
+    },
+    {
+      "vertex": 70,
+      "guard_half_depth_m": 0.009319260716438293,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0007762346744537366
+    },
+    {
+      "vertex": 71,
+      "guard_half_depth_m": 0.00837351381778717,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": -0.00016951222419738649
+    },
+    {
+      "vertex": 219,
+      "guard_half_depth_m": 0.009024277329444885,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011874871253967148
+    },
+    {
+      "vertex": 220,
+      "guard_half_depth_m": 0.00902431458234787,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011871145963668686
+    },
+    {
+      "vertex": 221,
+      "guard_half_depth_m": 0.009033136069774628,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010988997220992905
+    },
+    {
+      "vertex": 222,
+      "guard_half_depth_m": 0.00905965268611908,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -8.337335586547714e-05
+    },
+    {
+      "vertex": 223,
+      "guard_half_depth_m": 0.009033165872097015,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010986016988754135
+    },
+    {
+      "vertex": 224,
+      "guard_half_depth_m": 0.009024277329444885,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011874871253967148
+    },
+    {
+      "vertex": 225,
+      "guard_half_depth_m": 0.009024344384670258,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011868165731429917
+    },
+    {
+      "vertex": 226,
+      "guard_half_depth_m": 0.009024456143379211,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011856989860534531
+    },
+    {
+      "vertex": 227,
+      "guard_half_depth_m": 0.009032115340232849,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011091070175170761
+    },
+    {
+      "vertex": 228,
+      "guard_half_depth_m": 0.009031161665916443,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011186437606811386
+    },
+    {
+      "vertex": 229,
+      "guard_half_depth_m": 0.009032130241394043,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011089580059051377
+    },
+    {
+      "vertex": 230,
+      "guard_half_depth_m": 0.009033992886543274,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010903315544128281
+    },
+    {
+      "vertex": 231,
+      "guard_half_depth_m": 0.009032778441905975,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011024760007858139
+    },
+    {
+      "vertex": 232,
+      "guard_half_depth_m": 0.00903385877609253,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010916726589202744
+    },
+    {
+      "vertex": 233,
+      "guard_half_depth_m": 0.009025730192661285,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011729584932327133
+    },
+    {
+      "vertex": 234,
+      "guard_half_depth_m": 0.009025737643241882,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011728839874267441
+    },
+    {
+      "vertex": 235,
+      "guard_half_depth_m": 0.009024210274219513,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.0001188157677650438
+    },
+    {
+      "vertex": 236,
+      "guard_half_depth_m": 0.009024262428283691,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011876361370086533
+    },
+    {
+      "vertex": 237,
+      "guard_half_depth_m": 0.009024254977703094,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011877106428146225
+    },
+    {
+      "vertex": 238,
+      "guard_half_depth_m": 0.009024232625961304,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011879341602325302
+    },
+    {
+      "vertex": 239,
+      "guard_half_depth_m": 0.009024307131767273,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011871891021728379
+    },
+    {
+      "vertex": 240,
+      "guard_half_depth_m": 0.008881889283657074,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00026113675832748276
+    },
+    {
+      "vertex": 241,
+      "guard_half_depth_m": 0.007966965436935425,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.001176060605049132
+    },
+    {
+      "vertex": 573,
+      "guard_half_depth_m": 0.007991105318069458,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.0011519207239150987
+    },
+    {
+      "vertex": 574,
+      "guard_half_depth_m": 0.008924230933189392,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031879510879516404
+    },
+    {
+      "vertex": 575,
+      "guard_half_depth_m": 0.008924223482608795,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031880255937576096
+    },
+    {
+      "vertex": 576,
+      "guard_half_depth_m": 0.008934646844863892,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00030837919712066453
+    },
+    {
+      "vertex": 577,
+      "guard_half_depth_m": 0.008965611457824707,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0002774145841598491
+    },
+    {
+      "vertex": 578,
+      "guard_half_depth_m": 0.008934706449508667,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00030831959247588914
+    },
+    {
+      "vertex": 579,
+      "guard_half_depth_m": 0.008924305438995361,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187206029891948
+    },
+    {
+      "vertex": 580,
+      "guard_half_depth_m": 0.00892426073551178,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031876530647277634
+    },
+    {
+      "vertex": 581,
+      "guard_half_depth_m": 0.008924432098865509,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003185939431190471
+    },
+    {
+      "vertex": 582,
+      "guard_half_depth_m": 0.008932135999202728,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031089004278182786
+    },
+    {
+      "vertex": 583,
+      "guard_half_depth_m": 0.008930996060371399,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003120299816131572
+    },
+    {
+      "vertex": 584,
+      "guard_half_depth_m": 0.008932195603847504,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031083043813705247
+    },
+    {
+      "vertex": 585,
+      "guard_half_depth_m": 0.008933931589126587,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003090944528579692
+    },
+    {
+      "vertex": 586,
+      "guard_half_depth_m": 0.008932523429393768,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003105026125907878
+    },
+    {
+      "vertex": 587,
+      "guard_half_depth_m": 0.008933916687965393,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00030910935401916306
+    },
+    {
+      "vertex": 588,
+      "guard_half_depth_m": 0.008925728499889374,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031729754209518235
+    },
+    {
+      "vertex": 589,
+      "guard_half_depth_m": 0.008925668895244598,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031735714673995774
+    },
+    {
+      "vertex": 590,
+      "guard_half_depth_m": 0.008924238383769989,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187876582145671
+    },
+    {
+      "vertex": 591,
+      "guard_half_depth_m": 0.008924230933189392,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031879510879516404
+    },
+    {
+      "vertex": 592,
+      "guard_half_depth_m": 0.008924216032028198,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003188100099563579
+    },
+    {
+      "vertex": 593,
+      "guard_half_depth_m": 0.008924245834350586,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187802076339702
+    },
+    {
+      "vertex": 594,
+      "guard_half_depth_m": 0.008924238383769989,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187876582145671
+    },
+    {
+      "vertex": 595,
+      "guard_half_depth_m": 0.008809022605419159,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0004340034365653972
+    },
+    {
+      "vertex": 596,
+      "guard_half_depth_m": 0.007892780005931854,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0013502460360527019
+    },
+    {
+      "vertex": 923,
+      "guard_half_depth_m": 0.007951311767101288,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0012917142748832683
+    },
+    {
+      "vertex": 978,
+      "guard_half_depth_m": 0.008169353008270264,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": -0.0003736730337142932
+    },
+    {
+      "vertex": 979,
+      "guard_half_depth_m": 0.009546957910060883,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010039318680763257
+    },
+    {
+      "vertex": 980,
+      "guard_half_depth_m": 0.009624257683753967,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812316417694104
+    },
+    {
+      "vertex": 981,
+      "guard_half_depth_m": 0.009624294936656952,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001081268894672395
+    },
+    {
+      "vertex": 982,
+      "guard_half_depth_m": 0.00962425023317337,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812241911888135
+    },
+    {
+      "vertex": 983,
+      "guard_half_depth_m": 0.009632125496864319,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001089099454879762
+    },
+    {
+      "vertex": 984,
+      "guard_half_depth_m": 0.009632118046283722,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001089092004299165
+    },
+    {
+      "vertex": 985,
+      "guard_half_depth_m": 0.009632125496864319,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001089099454879762
+    },
+    {
+      "vertex": 986,
+      "guard_half_depth_m": 0.009633876383304596,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001090850341320039
+    },
+    {
+      "vertex": 987,
+      "guard_half_depth_m": 0.009633876383304596,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001090850341320039
+    },
+    {
+      "vertex": 988,
+      "guard_half_depth_m": 0.00963389128446579,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.001090865242481233
+    },
+    {
+      "vertex": 989,
+      "guard_half_depth_m": 0.009625650942325592,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010826249003410351
+    },
+    {
+      "vertex": 990,
+      "guard_half_depth_m": 0.009625747799873352,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010827217578887952
+    },
+    {
+      "vertex": 991,
+      "guard_half_depth_m": 0.00962425023317337,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812241911888135
+    },
+    {
+      "vertex": 992,
+      "guard_half_depth_m": 0.009624220430850983,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010811943888664258
+    },
+    {
+      "vertex": 993,
+      "guard_half_depth_m": 0.009624257683753967,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0010812316417694104
+    },
+    {
+      "vertex": 994,
+      "guard_half_depth_m": 0.009319260716438293,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": 0.0007762346744537366
+    },
+    {
+      "vertex": 995,
+      "guard_half_depth_m": 0.00837349146604538,
+      "crown_half_depth_m": 0.008543026041984557,
+      "burial_m": -0.00016953457593917726
+    },
+    {
+      "vertex": 1143,
+      "guard_half_depth_m": 0.009024284780025482,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011874126195907456
+    },
+    {
+      "vertex": 1144,
+      "guard_half_depth_m": 0.00902431458234787,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011871145963668686
+    },
+    {
+      "vertex": 1145,
+      "guard_half_depth_m": 0.009033136069774628,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010988997220992905
+    },
+    {
+      "vertex": 1146,
+      "guard_half_depth_m": 0.00905965268611908,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -8.337335586547714e-05
+    },
+    {
+      "vertex": 1147,
+      "guard_half_depth_m": 0.009033165872097015,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010986016988754135
+    },
+    {
+      "vertex": 1148,
+      "guard_half_depth_m": 0.009024292230606079,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011873381137847763
+    },
+    {
+      "vertex": 1149,
+      "guard_half_depth_m": 0.00902433693408966,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011868910789489609
+    },
+    {
+      "vertex": 1150,
+      "guard_half_depth_m": 0.009024456143379211,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011856989860534531
+    },
+    {
+      "vertex": 1151,
+      "guard_half_depth_m": 0.009032115340232849,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011091070175170761
+    },
+    {
+      "vertex": 1152,
+      "guard_half_depth_m": 0.009031146764755249,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011187927722930771
+    },
+    {
+      "vertex": 1153,
+      "guard_half_depth_m": 0.00903213769197464,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011088835000991684
+    },
+    {
+      "vertex": 1154,
+      "guard_half_depth_m": 0.009033985435962677,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010904060602187973
+    },
+    {
+      "vertex": 1155,
+      "guard_half_depth_m": 0.009032778441905975,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011024760007858139
+    },
+    {
+      "vertex": 1156,
+      "guard_half_depth_m": 0.009033873677253723,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00010915236473083359
+    },
+    {
+      "vertex": 1157,
+      "guard_half_depth_m": 0.009025730192661285,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011729584932327133
+    },
+    {
+      "vertex": 1158,
+      "guard_half_depth_m": 0.009025737643241882,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011728839874267441
+    },
+    {
+      "vertex": 1159,
+      "guard_half_depth_m": 0.009024210274219513,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.0001188157677650438
+    },
+    {
+      "vertex": 1160,
+      "guard_half_depth_m": 0.009024269878864288,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.0001187561631202684
+    },
+    {
+      "vertex": 1161,
+      "guard_half_depth_m": 0.009024254977703094,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011877106428146225
+    },
+    {
+      "vertex": 1162,
+      "guard_half_depth_m": 0.009024232625961304,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011879341602325302
+    },
+    {
+      "vertex": 1163,
+      "guard_half_depth_m": 0.009024307131767273,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00011871891021728379
+    },
+    {
+      "vertex": 1164,
+      "guard_half_depth_m": 0.008881889283657074,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.00026113675832748276
+    },
+    {
+      "vertex": 1165,
+      "guard_half_depth_m": 0.007966957986354828,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.0011760680556297289
+    },
+    {
+      "vertex": 1497,
+      "guard_half_depth_m": 0.007991105318069458,
+      "crown_half_depth_m": 0.009143026041984557,
+      "burial_m": -0.0011519207239150987
+    },
+    {
+      "vertex": 1498,
+      "guard_half_depth_m": 0.008924230933189392,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031879510879516404
+    },
+    {
+      "vertex": 1499,
+      "guard_half_depth_m": 0.008924216032028198,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003188100099563579
+    },
+    {
+      "vertex": 1500,
+      "guard_half_depth_m": 0.008934639394283295,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00030838664770126145
+    },
+    {
+      "vertex": 1501,
+      "guard_half_depth_m": 0.008965611457824707,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0002774145841598491
+    },
+    {
+      "vertex": 1502,
+      "guard_half_depth_m": 0.008934706449508667,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00030831959247588914
+    },
+    {
+      "vertex": 1503,
+      "guard_half_depth_m": 0.008924305438995361,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187206029891948
+    },
+    {
+      "vertex": 1504,
+      "guard_half_depth_m": 0.008924268186092377,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187578558921794
+    },
+    {
+      "vertex": 1505,
+      "guard_half_depth_m": 0.008924417197704315,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031860884428024094
+    },
+    {
+      "vertex": 1506,
+      "guard_half_depth_m": 0.008932128548622131,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003108974933624248
+    },
+    {
+      "vertex": 1507,
+      "guard_half_depth_m": 0.008931003510951996,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003120225310325603
+    },
+    {
+      "vertex": 1508,
+      "guard_half_depth_m": 0.008932195603847504,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031083043813705247
+    },
+    {
+      "vertex": 1509,
+      "guard_half_depth_m": 0.008933931589126587,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003090944528579692
+    },
+    {
+      "vertex": 1510,
+      "guard_half_depth_m": 0.008932523429393768,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003105026125907878
+    },
+    {
+      "vertex": 1511,
+      "guard_half_depth_m": 0.00893392413854599,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00030910190343856614
+    },
+    {
+      "vertex": 1512,
+      "guard_half_depth_m": 0.008925721049308777,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003173049926757793
+    },
+    {
+      "vertex": 1513,
+      "guard_half_depth_m": 0.008925661444664001,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031736459732055466
+    },
+    {
+      "vertex": 1514,
+      "guard_half_depth_m": 0.008924238383769989,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187876582145671
+    },
+    {
+      "vertex": 1515,
+      "guard_half_depth_m": 0.008924230933189392,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031879510879516404
+    },
+    {
+      "vertex": 1516,
+      "guard_half_depth_m": 0.008924216032028198,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003188100099563579
+    },
+    {
+      "vertex": 1517,
+      "guard_half_depth_m": 0.008924245834350586,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0003187802076339702
+    },
+    {
+      "vertex": 1518,
+      "guard_half_depth_m": 0.008924230933189392,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.00031879510879516404
+    },
+    {
+      "vertex": 1519,
+      "guard_half_depth_m": 0.008809022605419159,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0004340034365653972
+    },
+    {
+      "vertex": 1520,
+      "guard_half_depth_m": 0.007892780005931854,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0013502460360527019
+    },
+    {
+      "vertex": 1847,
+      "guard_half_depth_m": 0.007951311767101288,
+      "crown_half_depth_m": 0.009243026041984556,
+      "burial_m": -0.0012917142748832683
+    }
+  ],
+  "generator_report": {
+    "construction": "One connected crown casting replacing separated mirrored slabs",
+    "vertices": 1848,
+    "triangles": 3692,
+    "closed_manifold": true,
+    "consistent_winding": true,
+    "positive_volume_m3": 2.8814676461216905e-05,
+    "projected_strips_checked": true,
+    "original_footprint_area_m2": 0.0013705332398206613,
+    "trimmed_footprint_area_m2": 0.0012831673082462085,
+    "guard_overlap_m": 0.0018,
+    "bevel_width_m": 0.0007,
+    "bevel_angle_degrees": 45,
+    "half_depths_m": [
+      0.0106,
+      0.0112,
+      0.0113
+    ],
+    "seat_baseline_m": 0.0083,
+    "cap_components": 1,
+    "core_connected": true,
+    "euler_characteristic": 2,
+    "corner_normals": "Planar caps;45degree chamfer normals follow traced footprint; smooth radial wall normals",
+    "chamfer_inclination_audit": {
+      "triangle_angle_quantiles_degrees": [
+        42.15603917055348,
+        44.99999999995976,
+        44.99999999998503,
+        45.00000000000353,
+        45.165553796197635,
+        45.27561996521669,
+        71.75041684044788
+      ],
+      "area_fraction_outside_35_55_degrees": 0.0040048387102792175,
+      "area_fraction_above_75_degrees": 0.0,
+      "area_fraction_inside_40_50_degrees": 0.9948403310898873,
+      "area_weighted_mean_degrees": 45.109954547312846,
+      "triangulation": "Constrained Delaunay plus six bounded local diagonal-optimization passes"
+    }
+  }
+}

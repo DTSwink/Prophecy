@@ -1,0 +1,27 @@
+{
+  "scope": "Wood and grip-only tiles; all accepted spearhead and silk pixels unchanged",
+  "images": [
+    {
+      "image": "T_ImperialSpear_BaseColor.png",
+      "protected_head_and_silk_sha256": "79a1b37c45276728330be25f8e6be5914cc01887a4e5a00b2286a4f53c05dbef",
+      "protected_pixels_unchanged": true
+    },
+    {
+      "image": "T_ImperialSpear_ORM.png",
+      "protected_head_and_silk_sha256": "a6eda453beb7d790bf3cc6bbd9b514a91f5af7747696d3580e39be0f038c4069",
+      "protected_pixels_unchanged": true
+    },
+    {
+      "image": "T_ImperialSpear_NormalGL.png",
+      "protected_head_and_silk_sha256": "8b51877ac49f79d358de87713be7eb7be96849c2a9abc999db40c52c72bce894",
+      "protected_pixels_unchanged": true
+    },
+    {
+      "image": "T_ImperialSpear_NormalDX.png",
+      "protected_head_and_silk_sha256": "52e5fca87c9071f59a73d95c0e081d091c3470e7af9a45f47b27820f95715dcd",
+      "protected_pixels_unchanged": true
+    }
+  ],
+  "wood_report": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\wood_v8\\Wood_Patch_Report.json",
+  "grip_manifest": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\HandleFinish\\patches\\HandlePatchManifest.json"
+}

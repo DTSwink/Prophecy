@@ -1,0 +1,84 @@
+{
+  "status": "cast-body border atlas generated",
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\BeforeCastBodyAtlas_v1",
+  "original_files": {
+    "T_ImperialSpear_BaseColor.png": "db8a3f50b367ed9642e9e31a384028a24d2b4081c3f1fc58fdf7b02fb303a73a",
+    "T_ImperialSpear_ORM.png": "3db032e978ef7bc79be58683dba917e00182d70f9faf647394176299c4b297f7",
+    "T_ImperialSpear_NormalGL.png": "3b853abcae5bc39935ac0e6a41a1397f29c1cd50cbed9f342a5b22ed10e813f0",
+    "T_ImperialSpear_NormalDX.png": "d8c084fd6980cbb0f04b4046fd05a46695407bbdcb568c47e3a41cfdc4de0efc"
+  },
+  "plain_pixels": [
+    2048,
+    0,
+    3072,
+    1024
+  ],
+  "body_pixels": [
+    2048,
+    1024,
+    3072,
+    2048
+  ],
+  "housing_world_x_m": [
+    -0.06,
+    0.06
+  ],
+  "housing_world_z_m": [
+    1.64,
+    1.77
+  ],
+  "guide_samples": 101,
+  "width_multiplier": 1.15,
+  "offset_beyond_relief_edge_mm": 0.6,
+  "stroke_width_mm": 1.4,
+  "depth_mm": 0.3,
+  "burnished_lip_mm": 0.12,
+  "floor_albedo_reduction": 0.75,
+  "local_arch_width_multiplier": 1.25,
+  "orm_specular_alpha": 128,
+  "geometry_modified": false,
+  "border_path_bounds_mm": [
+    [
+      [
+        39.51374739344066,
+        26.384022197424308
+      ],
+      [
+        77.3339957802339,
+        88.91074630197227
+      ]
+    ],
+    [
+      [
+        45.05403662958387,
+        37.951185683664065
+      ],
+      [
+        71.57347507975474,
+        94.44522807877132
+      ]
+    ]
+  ],
+  "protected_pixels": {
+    "T_ImperialSpear_BaseColor.png": {
+      "before_sha256": "d7d4c6f2c12df5388ba38cd7393fa6f0599a93302c1fadc24d9bf83d53e69820",
+      "after_sha256": "d7d4c6f2c12df5388ba38cd7393fa6f0599a93302c1fadc24d9bf83d53e69820",
+      "unchanged": true
+    },
+    "T_ImperialSpear_ORM.png": {
+      "before_sha256": "f0b0de4f0bc525855cb71b9c58facf32e50340715172e6ac58e371b8e5534353",
+      "after_sha256": "f0b0de4f0bc525855cb71b9c58facf32e50340715172e6ac58e371b8e5534353",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalGL.png": {
+      "before_sha256": "e98878ac6f5073e25c67ddedc6a41914eef3ae9af4da238b4338f00e91e559f2",
+      "after_sha256": "e98878ac6f5073e25c67ddedc6a41914eef3ae9af4da238b4338f00e91e559f2",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalDX.png": {
+      "before_sha256": "019f84845cc7443b31f9a834aa58428cae16ab3e6f0bc97923b9ffdfe03a3984",
+      "after_sha256": "019f84845cc7443b31f9a834aa58428cae16ab3e6f0bc97923b9ffdfe03a3984",
+      "unchanged": true
+    }
+  }
+}

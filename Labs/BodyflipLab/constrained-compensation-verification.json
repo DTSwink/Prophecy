@@ -1,0 +1,347 @@
+{
+  "passed": true,
+  "cases": 56,
+  "samples": 2750,
+  "maxConstraint": 1.7893334199634095e-15,
+  "maxLateCorrection": 4.034499909280351e-15,
+  "maxInvisibleResponse": 0,
+  "maxComShift": 5.551447150111397e-16,
+  "reports": [
+    {
+      "attack": "headbutt",
+      "native": false,
+      "soft": true,
+      "residual": 0.00009303769921984665
+    },
+    {
+      "attack": "headbutt",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "hookL",
+      "native": false,
+      "soft": true,
+      "residual": 0.000009793203157911813
+    },
+    {
+      "attack": "hookL",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "hookR",
+      "native": false,
+      "soft": true,
+      "residual": 0.000671421808509474
+    },
+    {
+      "attack": "hookR",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "jabL",
+      "native": false,
+      "soft": true,
+      "residual": 0.000008975727949243612
+    },
+    {
+      "attack": "jabL",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "jabR",
+      "native": false,
+      "soft": true,
+      "residual": 0.000009789688812698146
+    },
+    {
+      "attack": "jabR",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "overL",
+      "native": false,
+      "soft": true,
+      "residual": 0.0000067212734575243245
+    },
+    {
+      "attack": "overL",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "overR",
+      "native": false,
+      "soft": true,
+      "residual": 0.0000071106461882551225
+    },
+    {
+      "attack": "overR",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "pike",
+      "native": false,
+      "soft": true,
+      "residual": 0.00000978177684353846
+    },
+    {
+      "attack": "pike",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashL",
+      "native": false,
+      "soft": true,
+      "residual": 0.024503178712115575
+    },
+    {
+      "attack": "slashL",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashLD",
+      "native": false,
+      "soft": true,
+      "residual": 0.000009700949204091992
+    },
+    {
+      "attack": "slashLD",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashLU",
+      "native": false,
+      "soft": true,
+      "residual": 0.000009981705916320896
+    },
+    {
+      "attack": "slashLU",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashR",
+      "native": false,
+      "soft": true,
+      "residual": 0.00000983270222163714
+    },
+    {
+      "attack": "slashR",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashRD",
+      "native": false,
+      "soft": true,
+      "residual": 0.000009204127668301809
+    },
+    {
+      "attack": "slashRD",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashRU",
+      "native": false,
+      "soft": true,
+      "residual": 0.000009558853361699547
+    },
+    {
+      "attack": "slashRU",
+      "native": false,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "headbutt",
+      "native": true,
+      "soft": true,
+      "residual": 0.000006499359141267582
+    },
+    {
+      "attack": "headbutt",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "hookL",
+      "native": true,
+      "soft": true,
+      "residual": 0.002534922252633035
+    },
+    {
+      "attack": "hookL",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "hookR",
+      "native": true,
+      "soft": true,
+      "residual": 0.000009533714911667675
+    },
+    {
+      "attack": "hookR",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "jabL",
+      "native": true,
+      "soft": true,
+      "residual": 0.00001431364860572729
+    },
+    {
+      "attack": "jabL",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "jabR",
+      "native": true,
+      "soft": true,
+      "residual": 0.000006429609032649308
+    },
+    {
+      "attack": "jabR",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "overL",
+      "native": true,
+      "soft": true,
+      "residual": 0.000007558814618129635
+    },
+    {
+      "attack": "overL",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "overR",
+      "native": true,
+      "soft": true,
+      "residual": 0.00006698107363533924
+    },
+    {
+      "attack": "overR",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "pike",
+      "native": true,
+      "soft": true,
+      "residual": 0.00011709048652479264
+    },
+    {
+      "attack": "pike",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashL",
+      "native": true,
+      "soft": true,
+      "residual": 0.004819190161036961
+    },
+    {
+      "attack": "slashL",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashLD",
+      "native": true,
+      "soft": true,
+      "residual": 0.00000912484699749378
+    },
+    {
+      "attack": "slashLD",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashLU",
+      "native": true,
+      "soft": true,
+      "residual": 0.0011807876716712644
+    },
+    {
+      "attack": "slashLU",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashR",
+      "native": true,
+      "soft": true,
+      "residual": 0.0003964011480775388
+    },
+    {
+      "attack": "slashR",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashRD",
+      "native": true,
+      "soft": true,
+      "residual": 0.000009514164177753509
+    },
+    {
+      "attack": "slashRD",
+      "native": true,
+      "soft": false,
+      "residual": null
+    },
+    {
+      "attack": "slashRU",
+      "native": true,
+      "soft": true,
+      "residual": 0.000009849391191804968
+    },
+    {
+      "attack": "slashRU",
+      "native": true,
+      "soft": false,
+      "residual": null
+    }
+  ]
+}

@@ -1,0 +1,402 @@
+{
+  "cases": 56,
+  "samples": 11373,
+  "maxHingeError": 9.111258941810193e-11,
+  "maxLimitExcursion": 0.8257547493927272,
+  "maxUntouchedError": 1.2412670766236366e-16,
+  "maxEndpointError": 1.2412670766236366e-16,
+  "results": [
+    {
+      "attack": "headbutt",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 8.144484022228111
+    },
+    {
+      "attack": "headbutt",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 35.06157566969722,
+      "maxElbowStepDegrees240Hz": 8.144484022228111
+    },
+    {
+      "attack": "hookL",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 7.649153933686562
+    },
+    {
+      "attack": "hookL",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 47.31226205308624,
+      "maxElbowStepDegrees240Hz": 7.649153933686562
+    },
+    {
+      "attack": "hookR",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 10.354798078457922
+    },
+    {
+      "attack": "hookR",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 10.354798078457922
+    },
+    {
+      "attack": "jabL",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 11.605960331881128
+    },
+    {
+      "attack": "jabL",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 11.605960331881128
+    },
+    {
+      "attack": "jabR",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 7.670636977624856
+    },
+    {
+      "attack": "jabR",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 7.670636977624856
+    },
+    {
+      "attack": "overL",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 6.036646982466655
+    },
+    {
+      "attack": "overL",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 6.036646982466655
+    },
+    {
+      "attack": "overR",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 5.569548169830513
+    },
+    {
+      "attack": "overR",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 5.569548169830513
+    },
+    {
+      "attack": "pike",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 9.676459057120999
+    },
+    {
+      "attack": "pike",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 9.676459057120994
+    },
+    {
+      "attack": "slashL",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.623308797317039
+    },
+    {
+      "attack": "slashL",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.623308797317045
+    },
+    {
+      "attack": "slashLD",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.340144035530254
+    },
+    {
+      "attack": "slashLD",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.340144035530243
+    },
+    {
+      "attack": "slashLU",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 17.664117488929364
+    },
+    {
+      "attack": "slashLU",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 27.33482060349545,
+      "maxElbowStepDegrees240Hz": 17.66411748892936
+    },
+    {
+      "attack": "slashR",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.062488243043147
+    },
+    {
+      "attack": "slashR",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.062488243043152
+    },
+    {
+      "attack": "slashRD",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 3.8748168994012167
+    },
+    {
+      "attack": "slashRD",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 3.8748168994012087
+    },
+    {
+      "attack": "slashRU",
+      "native": false,
+      "direct": false,
+      "limitExcursionDegrees": 11.0272465298382,
+      "maxElbowStepDegrees240Hz": 8.479311540071212
+    },
+    {
+      "attack": "slashRU",
+      "native": false,
+      "direct": true,
+      "limitExcursionDegrees": 11.019458131589708,
+      "maxElbowStepDegrees240Hz": 8.479311540071206
+    },
+    {
+      "attack": "headbutt",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 8.144321277451349
+    },
+    {
+      "attack": "headbutt",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 31.629747420152647,
+      "maxElbowStepDegrees240Hz": 8.144321277451349
+    },
+    {
+      "attack": "hookL",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 7.649150137567297
+    },
+    {
+      "attack": "hookL",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 43.88040901742467,
+      "maxElbowStepDegrees240Hz": 7.649150137567297
+    },
+    {
+      "attack": "hookR",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 10.354732592461309
+    },
+    {
+      "attack": "hookR",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 10.354732592461309
+    },
+    {
+      "attack": "jabL",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 11.605857491504313
+    },
+    {
+      "attack": "jabL",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 11.605857491504313
+    },
+    {
+      "attack": "jabR",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 7.6706342740233895
+    },
+    {
+      "attack": "jabR",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 7.6706342740233895
+    },
+    {
+      "attack": "overL",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 2.151605113868938,
+      "maxElbowStepDegrees240Hz": 6.036644759695731
+    },
+    {
+      "attack": "overL",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 2.151605113868938,
+      "maxElbowStepDegrees240Hz": 6.036644759695731
+    },
+    {
+      "attack": "overR",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 5.400232104753051
+    },
+    {
+      "attack": "overR",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 5.400232104753051
+    },
+    {
+      "attack": "pike",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 9.676446575682194
+    },
+    {
+      "attack": "pike",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 9.676446575682215
+    },
+    {
+      "attack": "slashL",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.623306054671079
+    },
+    {
+      "attack": "slashL",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.623306054671065
+    },
+    {
+      "attack": "slashLD",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.340143331022374
+    },
+    {
+      "attack": "slashLD",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.340143331022478
+    },
+    {
+      "attack": "slashLU",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 10.786516288225789,
+      "maxElbowStepDegrees240Hz": 17.50000000000004
+    },
+    {
+      "attack": "slashLU",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 23.565957728322104,
+      "maxElbowStepDegrees240Hz": 17.50000000000004
+    },
+    {
+      "attack": "slashR",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.062485177238009
+    },
+    {
+      "attack": "slashR",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 4.062485177238009
+    },
+    {
+      "attack": "slashRD",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 3.874815285156421
+    },
+    {
+      "attack": "slashRD",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 0,
+      "maxElbowStepDegrees240Hz": 3.8748152851564197
+    },
+    {
+      "attack": "slashRU",
+      "native": true,
+      "direct": false,
+      "limitExcursionDegrees": 7.595447368661157,
+      "maxElbowStepDegrees240Hz": 8.479298515117897
+    },
+    {
+      "attack": "slashRU",
+      "native": true,
+      "direct": true,
+      "limitExcursionDegrees": 7.591377013529085,
+      "maxElbowStepDegrees240Hz": 8.47929851511789
+    }
+  ]
+}

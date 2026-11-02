@@ -1,0 +1,183 @@
+{
+  "scope": "Current leather and retained keeper-gold patches applied to verified source and exports",
+  "patches": {
+    "KeeperGold": {
+      "atlas_pixel_box": [
+        2048,
+        3808,
+        3072,
+        4096
+      ],
+      "gutter_px": 12,
+      "circumference_m": 0.125,
+      "axial_length_m": 0.02,
+      "measured_keeper_z_ranges_m": [
+        [
+          1.102,
+          1.122
+        ],
+        [
+          1.348,
+          1.368
+        ]
+      ],
+      "content_uv_bounds_umin_vmin_umax_vmax": [
+        0.5029296875,
+        0.0029296875,
+        0.7470703125,
+        0.0673828125
+      ],
+      "size": [
+        1024,
+        288
+      ],
+      "files": {
+        "BaseColor": {
+          "filename": "KeeperGold_BaseColor.png",
+          "sha256": "558c95af939b9bdaf642224ad40bbe2348554038a6510c8f69b26a051cebc8fc",
+          "mode": "RGB"
+        },
+        "ORM": {
+          "filename": "KeeperGold_ORM.png",
+          "sha256": "c2387a62193f8e18acfdeb0e53d98b4a6528d91acf6aa00724856ef8b265d6b2",
+          "mode": "RGBA"
+        },
+        "NormalGL": {
+          "filename": "KeeperGold_NormalGL.png",
+          "sha256": "9b0ec7bdfa8ce20b49527a4ea5238175fcd53b6aff9f8d7ed6e3dac141809f26",
+          "mode": "RGB"
+        },
+        "NormalDX": {
+          "filename": "KeeperGold_NormalDX.png",
+          "sha256": "d793f880af5320ae11da96cb6f8b4c71442ba7e059bcf53debc429d73eca92c1",
+          "mode": "RGB"
+        }
+      },
+      "base_rgb": [
+        162,
+        127,
+        69
+      ],
+      "score_depth_mm": 0.045,
+      "score_sigma_mm": 0.145,
+      "roughness_mean": 0.40840280055999756,
+      "score_color_darkening_max": 0.022,
+      "hairline_wear_count": 270,
+      "hairline_depth_mm": [
+        0.004,
+        0.012
+      ],
+      "edge_patina_width_mm": 0.48,
+      "mean_gold_brightness_preserved": true,
+      "pattern": "Ten crossed angular chevrons around each keeper",
+      "height_min_max_mm": [
+        -0.05471547320485115,
+        0.0069831982254981995
+      ],
+      "physical_uv": "U around circumference; V rises along shaft Z",
+      "circumference_seam_first_last_texels_identical": true
+    },
+    "Leather": {
+      "atlas_pixel_box": [
+        2048,
+        2048,
+        3072,
+        3808
+      ],
+      "gutter_px": 12,
+      "circumference_m": 0.116,
+      "axial_length_m": 0.24,
+      "measured_grip_z_range_m": [
+        1.115,
+        1.355
+      ],
+      "content_uv_bounds_umin_vmin_umax_vmax": [
+        0.5029296875,
+        0.0732421875,
+        0.7470703125,
+        0.4970703125
+      ],
+      "size": [
+        1024,
+        1760
+      ],
+      "files": {
+        "BaseColor": {
+          "filename": "Leather_BaseColor.png",
+          "sha256": "4f10ae94f3262d97ac3385ff4316d99b04ad5c2626b4e822964e34470004c910",
+          "mode": "RGB"
+        },
+        "ORM": {
+          "filename": "Leather_ORM.png",
+          "sha256": "9b5701c9ab7813be5598f75bee4546b45340094e7ab9c8a70a88f15fb91dcdcc",
+          "mode": "RGBA"
+        },
+        "NormalGL": {
+          "filename": "Leather_NormalGL.png",
+          "sha256": "2abc22397502a30776da8ebd882508be16966cc1ef18067dacb454e3ebcc79a2",
+          "mode": "RGB"
+        },
+        "NormalDX": {
+          "filename": "Leather_NormalDX.png",
+          "sha256": "bdc7aa6967f32de16de475fd4730f0c7f55579d0db84277b9e39a8d5e00f5ec6",
+          "mode": "RGB"
+        }
+      },
+      "base_rgb": [
+        67,
+        34,
+        33
+      ],
+      "score_depth_mm": 0.3,
+      "score_half_width_mm": 0.42,
+      "score_section": "Straight-sided V incision",
+      "roughness_mean": 0.8600451350212097,
+      "score_color_darkening_max": 0.105,
+      "discrete_pits_per_square_mm": 1.85,
+      "pit_depth_mm": 0.042,
+      "pit_radius_mm": [
+        0.045,
+        0.19
+      ],
+      "worn_score_lip_height_mm": 0.008,
+      "pebbled_grain_mean_cell_mm": 0.75,
+      "pebbled_grain_height_mm": [
+        0.055,
+        0.085
+      ],
+      "pebbled_grain_color_variation_max": 0.055,
+      "specular_ior_level": 0.18,
+      "rubbed_patch_grain_reduction_max": 0.7,
+      "incision_zone_grain_reduction_max": 0.88,
+      "rubbed_area_mean": 0.12433993071317673,
+      "dark_wear_mask_mean": 0.02551291137933731,
+      "pattern": "Crisp angular lozenges, small pointed crossing loops and fine witness scores; sparse rubbed wear patches",
+      "height_min_max_mm": [
+        -0.32961514592170715,
+        0.05460216850042343
+      ],
+      "physical_uv": "U around circumference; V rises along shaft Z",
+      "circumference_seam_first_last_texels_identical": true
+    }
+  },
+  "revision": "V5: crisp incised lozenges and sparse rubbed leather wear; gold preserved byte-for-byte",
+  "regenerated_materials": [
+    "Leather"
+  ],
+  "atlas_sha256_before": {
+    "BaseColor": "28085588050b3702ac565a5e5ea7a260edc953df9616e4b10e1e4bba7d57fdac",
+    "ORM": "f06cf01c744be809190bddda607cd18f07819900f157348128dac3eafb1cde5c",
+    "NormalGL": "2f31852c2948680e221a6b1e296fc7e31d6b6a0e461ffc7131947a244175d16f",
+    "NormalDX": "26a6e31b5a5ac86aa2698f760b44ff9eae75acdee4c28d38e4eb028a71be731a"
+  },
+  "channel_layout": "ORM alpha: Specular IOR Level",
+  "atlas_sha256_after": {
+    "BaseColor": "28085588050b3702ac565a5e5ea7a260edc953df9616e4b10e1e4bba7d57fdac",
+    "ORM": "f06cf01c744be809190bddda607cd18f07819900f157348128dac3eafb1cde5c",
+    "NormalGL": "2f31852c2948680e221a6b1e296fc7e31d6b6a0e461ffc7131947a244175d16f",
+    "NormalDX": "26a6e31b5a5ac86aa2698f760b44ff9eae75acdee4c28d38e4eb028a71be731a"
+  },
+  "existing_atlas_files_unchanged": true,
+  "generation_scope": "Independent patches only; existing atlases and Blender untouched",
+  "user_appearance_acceptance_recorded": false
+}

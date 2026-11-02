@@ -15,6 +15,7 @@
 #include "ProphecyJoltRig.h"
 #include "ProphecyJoltPose.h"
 #include "ProphecyJoltPoseAnimInstance.h"
+#include "ProphecySpearCutGeometry.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -374,6 +375,23 @@ bool StartOptimisedSwordCut(AActor* Owner, UPhysicsConstraintComponent* Componen
     Cut.Type = int32(SwordCuts::Number(SwordCuts::Field(Records.Struct, TEXT("typecut")), Value));
     Cut.Matter = int32(SwordCuts::Number(SwordCuts::Field(Records.Struct, TEXT("typematter")), Value));
     Cut.Id = int32(SwordCuts::Number(SwordCuts::Field(Records.Struct, TEXT("id")), Value, -1));
+    Cut.PassThrough = Owner->ActorHasTag(TEXT("Prophecy.Spear.PassThrough"));
+    if (Cut.PassThrough)
+    {
+        // The spear Blueprint rejects slashes before hit cancellation/effects.
+        // Also reject malformed callers here rather than installing a slash joint.
+        auto* Mesh = Cast<UStaticMeshComponent>(Sword);
+        FVector Min, Max;
+        const double Thickness = SwordCuts::Number(SwordCuts::Field(Owner->GetClass(), TEXT("Pike Target Thickness Cm")), Owner, 15.);
+        if (Cut.Type != 0 || !Mesh || !Mesh->GetStaticMesh() || Sword->GetComponentScale().Z <= 0
+            || !FMath::IsFinite(Thickness) || Thickness <= 0)
+        {
+            SwordCuts::Release(Owner, Component, Cut.Id);
+            return false;
+        }
+        Mesh->GetLocalBounds(Min, Max);
+        Cut.ForwardExitZ = ProphecySpearCut::ForwardExit(Min.Z, Sword->GetComponentScale().Z, Hilt, Thickness);
+    }
     auto* DampingProperty = FindFProperty<FStructProperty>(Owner->GetClass(), TEXT("velocity cut dampings"));
     if (!(Cut.Length > 0 && Cut.HalfWidth > 0) || !DampingProperty || DampingProperty->Struct != TBaseStructure<FVector>::Get()) return false;
     const FVector Dampings = *DampingProperty->ContainerPtrToValuePtr<FVector>(Owner);
@@ -385,7 +403,7 @@ bool StartOptimisedSwordCut(AActor* Owner, UPhysicsConstraintComponent* Componen
     // which edge entered. Preserve the accepted hit's signed classification.
     Cut.Side = Cut.Type < 0 ? -1 : 1;
     Cut.SideStop = -Cut.HalfWidth;
-    Cut.StepsToCap = Cut.Matter == 0 ? 5 : 0;
+    Cut.StepsToCap = Cut.Matter == 0 && !Cut.PassThrough ? 5 : 0;
     Cut.LastFrame = GFrameCounter;
     auto& Binding = Registry->Bindings.FindOrAdd(Component);
     if (Binding.SwordCut) return true; // Already adopted, never restart its deadline.
@@ -438,8 +456,8 @@ bool StartOptimisedSwordCut(AActor* Owner, UPhysicsConstraintComponent* Componen
     Component->SetLinearDriveParams(0, FMath::Max(0., Dampings[FMath::Clamp(Cut.Matter, 0, 2)]), 0);
     Binding.SwordCut = Cut;
     Binding.bCaptured = false;
-    UE_LOG(LogTemp, Log, TEXT("Optimised sword cut admitted: %s type=%d matter=%d length=%.3f width=%.3f capFrames=%d"),
-        *Component->GetName(), Cut.Type, Cut.Matter, Cut.Length, Cut.HalfWidth * 2, Cut.StepsToCap);
+    UE_LOG(LogTemp, Log, TEXT("Optimised sword cut admitted: %s type=%d matter=%d length=%.3f width=%.3f capFrames=%d passThrough=%d exitZ=%.3f"),
+        *Component->GetName(), Cut.Type, Cut.Matter, Cut.Length, Cut.HalfWidth * 2, Cut.StepsToCap, Cut.PassThrough, Cut.ForwardExitZ);
     return true;
 }
 
@@ -469,7 +487,7 @@ void Finish(UWorld* World)
                 const FVector Travel = FA.InverseTransformPosition(FB.GetLocation());
                 // Only two projections and comparisons per active cut, after the
                 // normal shared solve. No traces, Blueprint calls or pose writes.
-                const bool Out = Travel.Z > Cut.Length + .05
+                const bool Out = ProphecySpearCut::Cleared(Travel.Z, Cut.Length, Cut.PassThrough, Cut.ForwardExitZ)
                     || (Cut.Type != 0 && Cut.Side * Travel.Y > Cut.HalfWidth + .05);
                 const double Depth = FMath::Clamp(1. - Travel.Z / Cut.Length, 0., 1.);
                 if (Cut.Type == 0 && Cut.Matter == 2 && (Depth >= 1. && Cut.LastStain < 1. || Depth > Cut.LastStain + 1. / 1024.))

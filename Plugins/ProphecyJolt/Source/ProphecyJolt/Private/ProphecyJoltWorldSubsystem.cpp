@@ -1,4 +1,5 @@
 #include "ProphecyJoltWorldSubsystem.h"
+#include "ProphecyJoltRobot.h"
 #include "ProphecyExplosionLibrary.h"
 #include "ProphecyJoltAttackCollisionLibrary.h"
 #include "ProphecyJoltBodyDriveLibrary.h"
@@ -7,6 +8,8 @@
 #include "ProphecyJoltHitImpactLibrary.h"
 
 #include "Components/PrimitiveComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "HAL/PlatformTime.h"
@@ -25,6 +28,7 @@
 #include "ProphecyJoltMaterial.h"
 #include "ProphecyJoltVelocityServo.h"
 #include "ProphecyJoltArmMotors.h"
+#include "ProphecyJoltSphericalLimit.h"
 #include "ProphecyJoltPHATSweeps.h"
 #include "Templates/UnrealTemplate.h"
 #include "UObject/WeakObjectPtr.h"
@@ -62,6 +66,7 @@ THIRD_PARTY_INCLUDES_END
 #include "ProphecyJoltSpeculativeJoint.h"
 #include "ProphecyJoltRadialJoint.h"
 #include "ProphecyJoltGrabJoint.h"
+#include "ProphecyJoltOil.h"
 #include "ProphecyJoltJointDamping.h"
 #include "ProphecyJoltFootExtension.h"
 #include "ProphecyJoltBodyConversion.h"
@@ -448,6 +453,7 @@ struct FRigRecord
     TArray<int32> KinematicLimbJoints;
 };
 
+#include "ProphecyJoltRobotState.inl"
 // Sparse sidecar rather than changing the layout of retained live rig records.
 static TMap<const FRigRecord*,TArray<ProphecyJolt::FootExtension::FJoint>> FootExtensions,WristExtensions;
 // Sparse event state: no rig layout change, per-tick poll, or contact-time lookup.
@@ -596,6 +602,7 @@ public:
     // Registry mutations occur only on GT outside Update. Workers read native/plain data only.
     TArray<int32> NativeBodySlots;
     int32 HitEnabledBodies = 0;
+    ProphecyJolt::Oil::FRegistry Oil;
     FCriticalSection HitMutex;
     TArray<FProphecyJoltPendingHit> PendingHits;
     TMap<ProphecyJolt::HitImpact::FKey,ProphecyJolt::HitImpact::FSample> IncomingHits;
@@ -684,10 +691,10 @@ public:
         FScopeLock Lock(&HitMutex);
         IncomingHits.Add(ProphecyJolt::HitImpact::Key(A.GetID(),Manifold.mSubShapeID1,B.GetID(),Manifold.mSubShapeID2),Sample);
     }
-    void OnContactAdded(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold,JPH::ContactSettings&) override
-    { CaptureIncoming(A,B,Manifold); }
-    void OnContactPersisted(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold,JPH::ContactSettings&) override
-    { CaptureIncoming(A,B,Manifold); }
+    void OnContactAdded(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold,JPH::ContactSettings& Contact) override
+    { ProphecyJolt::WorldPrivate::RobotContact(Physics,A,B,Manifold,Contact); Oil.Apply(A,B,Manifold,Contact); CaptureIncoming(A,B,Manifold); }
+    void OnContactPersisted(const JPH::Body& A,const JPH::Body& B,const JPH::ContactManifold& Manifold,JPH::ContactSettings& Contact) override
+    { ProphecyJolt::WorldPrivate::RobotContact(Physics,A,B,Manifold,Contact); Oil.Apply(A,B,Manifold,Contact); CaptureIncoming(A,B,Manifold); }
     void OnContactRemoved(const JPH::SubShapeIDPair& Pair) override
     {
         FScopeLock Lock(&HitMutex);
@@ -1237,7 +1244,9 @@ public:
         auto& Slot = Slots[Index];
         if (Slot.Body.IsInvalid()) return;
         ProphecyJolt::ArmMotors::Set(Physics, Slot.Body, false);
+        Oil.Forget(Slot.Body.GetIndexAndSequenceNumber());
         ProphecyJolt::ScopedContacts::ForgetBody(*this,Index,Slot.Generation);
+        ProphecyJolt::ScopedContacts::Refresh(*this);
         if (auto* Followers = ProphecyJolt::DriveFollowers::Bindings.Find(this))
         {
             for (auto It = Followers->CreateIterator(); It; ++It)
@@ -1281,6 +1290,7 @@ public:
         FlatTargets.Reset();
         ServoRanges.Reset();
         auto& Rig = *Rigs[Index].Record;
+        ProphecyJolt::WorldPrivate::RemoveRobotRig(Physics,&Rig);
         ProphecyJolt::WorldPrivate::AttackSelfCollisionSuppressed.Remove(&Rig);
         ProphecyJolt::WorldPrivate::FootColliderOriginals.Remove(&Rig);
         RemoveFootExtensions(Physics,&Rig);
@@ -2860,11 +2870,43 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::PublishRigVelocityTargets(
         if(Parent)
         { NativeTarget.Parent=Parent->Body;NativeTarget.ParentStart=Target.ParentStart;NativeTarget.ParentTarget=Target.ParentTarget; }
         NativeTarget.WorldAlpha=Target.WorldAlpha;
+        NativeTarget.bFiniteJointCarry=Target.bFiniteJointCarry;
+        if(Target.bFiniteJointCarry)
+        {
+            if(Target.LinearStrength!=1.f || Target.AngularStrength!=1.f ||
+                (Target.WorldAlpha!=0.f && Target.WorldAlpha!=1.f))
+                return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Finite joint carry requires full velocity drive and a root or local-child frame."));
+            if(Parent)
+            {
+                // Read the instantiated PHAT joint, including native body-order
+                // reversal and current shape COM offsets. No skeleton inference.
+                bool Found=false;
+                for(const auto& Constraint:Rig->Constraints)
+                {
+                    const bool Forward=Constraint->GetBody1()->GetID()==Parent->Body && Constraint->GetBody2()->GetID()==Slot->Body;
+                    const bool Reverse=Constraint->GetBody2()->GetID()==Parent->Body && Constraint->GetBody1()->GetID()==Slot->Body;
+                    if(!Forward && !Reverse)continue;
+                    const auto Frame1=Constraint->GetConstraintToBody1Matrix();
+                    const auto Frame2=Constraint->GetConstraintToBody2Matrix();
+                    NativeTarget.ParentAnchorCOMCm=ProphecyJolt::Conversions::FromJoltPosition(JPH::RVec3((Forward?Frame1:Frame2).GetTranslation()));
+                    NativeTarget.ChildAnchorCOMCm=ProphecyJolt::Conversions::FromJoltPosition(JPH::RVec3((Forward?Frame2:Frame1).GetTranslation()));
+                    Found=true;break;
+                }
+                if(!Found)
+                    return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Finite joint carry requires the captured native parent/child joint."));
+                const bool KinematicParent=Native->Physics.GetBodyInterface().GetMotionType(Parent->Body)==JPH::EMotionType::Kinematic;
+                if(!KinematicParent && !Targets.ContainsByPredicate([&](const auto& Candidate){return SameBody(Candidate.Handle,Target.Parent)
+                    && Candidate.bFiniteJointCarry;}))
+                    return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Finite joint carry requires its dynamic parent's command in the same packet."));
+            }
+        }
         NativeTarget.TargetPositionCm = Target.TargetPositionCm;
         NativeTarget.TargetRotation = Target.TargetRotation;
         NativeTarget.LinearStrength = Target.LinearStrength;
         NativeTarget.AngularStrength = Target.AngularStrength;
         NativeTarget.GravityCompensationCmPerSecondSquared = Target.GravityCompensationCmPerSecondSquared;
+        if(Target.bFiniteJointCarry)
+            NativeTarget.GravityCompensationCmPerSecondSquared=-ProphecyJolt::Conversions::FromJoltLinearVelocity(Native->Physics.GetGravity()).Z;
         NativeTarget.DenominatorSeconds = Denominator;
         NativeTarget.StartPositionCm = Target.StartPositionCm;
         NativeTarget.StartRotation = Target.StartRotation;
@@ -3008,7 +3050,7 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadBody(const FProphecyJo
 }
 
 FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::RayCast(const FVector& StartCm, const FVector& EndCm,
-    FProphecyJoltRayHit& OutHit, bool& bOutHit) const
+    FProphecyJoltRayHit& OutHit, bool& bOutHit, FName IgnoreActorTag) const
 {
     using namespace ProphecyJolt::WorldPrivate;
     using namespace ProphecyJolt::Conversions;
@@ -3027,7 +3069,31 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::RayCast(const FVector& Sta
     const JPH::RRayCast Ray(ToJoltPosition(StartCm), Direction);
     JPH::RayCastResult Hit;
     // Default query filters admit every fixture layer; simulation pair policy does not filter this query.
-    if (!Native->Physics.GetNarrowPhaseQuery().CastRay(Ray, Hit)) return {};
+    bool bFound=false;
+    if(IgnoreActorTag.IsNone())bFound=Native->Physics.GetNarrowPhaseQuery().CastRay(Ray,Hit);
+    else
+    {
+        // Query-only exclusion of short-lived cosmetic debris. Physical contacts
+        // and ordinary rays retain their existing behavior. No extra segment casts.
+        const auto Accept=[&](const JPH::BodyID& ID)
+        {
+            const uint32 Index=ID.GetIndex();
+            const int32 Slot=Index<uint32(Native->NativeBodySlots.Num())?Native->NativeBodySlots[Index]:INDEX_NONE;
+            if(!Native->Slots.IsValidIndex(Slot) || Native->Slots[Slot].Body!=ID)return true;
+            const UObject* Object=Native->Slots[Slot].AssociatedObject.Get();
+            const auto* Component=Cast<UActorComponent>(Object);
+            const auto* Actor=Component?Component->GetOwner():Cast<AActor>(Object);
+            return !Actor || !Actor->ActorHasTag(IgnoreActorTag);
+        };
+        struct FTaggedBodyFilter final : JPH::BodyFilter
+        {
+            TFunctionRef<bool(const JPH::BodyID&)> Predicate;
+            explicit FTaggedBodyFilter(TFunctionRef<bool(const JPH::BodyID&)> In):Predicate(In){}
+            virtual bool ShouldCollide(const JPH::BodyID& ID) const override{return Predicate(ID);}
+        } Filter(Accept);
+        bFound=Native->Physics.GetNarrowPhaseQuery().CastRay(Ray,Hit,{},{},Filter);
+    }
+    if(!bFound)return {};
     // The admission/removal registry already maintains this index for contact delivery.
     // Validate the complete BodyID (including its sequence), not only its reusable index.
     const uint32 BodyIndex=Hit.mBodyID.GetIndex();
@@ -3727,22 +3793,28 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetBodyKinematic(const FPr
     return {};
 }
 
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ValidateKinematicBodyMove(const FProphecyJoltBodyHandle& Handle,
+    const FTransform& TargetBodyOrigin, float DeltaSeconds) const
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    const auto* Slot=Native->Find(Handle);
+    if(!Slot)return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Invalid kinematic body."));
+    if(!RigidJointFrame(TargetBodyOrigin)||!FMath::IsFinite(DeltaSeconds)||DeltaSeconds<=0)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Kinematic target and step duration must be valid."));
+    if(Native->Physics.GetBodyInterface().GetMotionType(Slot->Body)!=JPH::EMotionType::Kinematic)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("MoveKinematic requires a kinematic body; native motion type is unchanged."));
+    return {};
+}
+
 FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::MoveKinematicBody(const FProphecyJoltBodyHandle& Handle,
     const FTransform& TargetBodyOrigin, float DeltaSeconds)
 {
-    using namespace ProphecyJolt::WorldPrivate;
     using namespace ProphecyJolt::Conversions;
-    const auto Ready = ValidateReady();
-    if (!Ready.IsSuccess()) return Ready;
-    const auto* Slot = Native->Find(Handle);
-    if (!Slot) return Fail(EProphecyJoltWorldResult::InvalidHandle, TEXT("Invalid kinematic body."));
-    if (!RigidJointFrame(TargetBodyOrigin) || !FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0)
-        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("Kinematic target and step duration must be valid."));
-    auto& Bodies = Native->Physics.GetBodyInterface();
-    if (Bodies.GetMotionType(Slot->Body) != JPH::EMotionType::Kinematic)
-        return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("MoveKinematic requires a kinematic body."));
-    Bodies.MoveKinematic(Slot->Body, ToJoltPosition(TargetBodyOrigin.GetLocation()),
-        ToJoltRotation(TargetBodyOrigin.GetRotation()), DeltaSeconds);
+    const auto Ready=ValidateKinematicBodyMove(Handle,TargetBodyOrigin,DeltaSeconds);
+    if(!Ready.IsSuccess())return Ready;
+    Native->Physics.GetBodyInterface().MoveKinematic(Native->Find(Handle)->Body,
+        ToJoltPosition(TargetBodyOrigin.GetLocation()),ToJoltRotation(TargetBodyOrigin.GetRotation()),DeltaSeconds);
     return {};
 }
 
@@ -3756,6 +3828,42 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetBodyDynamic(const FProp
     if (Bodies.GetMotionType(Slot->Body) == JPH::EMotionType::Static)
         return Fail(EProphecyJoltWorldResult::InvalidArgument, TEXT("A static collider must be recaptured with dynamic mass first."));
     Bodies.SetMotionType(Slot->Body, JPH::EMotionType::Dynamic, JPH::EActivation::Activate);
+    return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetBodyGyroscopic(const FProphecyJoltBodyHandle& Handle,bool Enabled)
+{
+    using namespace ProphecyJolt::WorldPrivate;
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    const auto* Slot=Native->Find(Handle);
+    if(!Slot||Slot->OwnerRig.IsSet())return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Gyro requires an independent body."));
+    JPH::BodyLockWrite Lock(Native->Physics.GetBodyLockInterface(),Slot->Body);
+    if(!Lock.Succeeded()||Lock.GetBody().IsStatic())return Fail(EProphecyJoltWorldResult::InvalidHandle,TEXT("Gyro body has no motion."));
+    Lock.GetBody().SetApplyGyroscopicForce(Enabled);return {};
+}
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::RestoreBodyState(const FProphecyJoltBodyHandle& Handle,
+    const FProphecyJoltBodyState& State,bool bPaused)
+{
+    using namespace ProphecyJolt::WorldPrivate;using namespace ProphecyJolt::Conversions;
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    const auto* Slot=Native->Find(Handle);const FTransform Pose(State.Rotation,State.PositionCm);
+    if(!Slot||Slot->OwnerRig.IsSet()||!RigidJointFrame(Pose)
+        ||!FitsFloatVector(State.CenterOfMassVelocityCmPerSecond,CentimetersToMeters)
+        ||!FitsFloatVector(State.AngularVelocityRadiansPerSecond,1.0))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Invalid independent-body replay state."));
+    auto& Bodies=Native->Physics.GetBodyInterface();
+    if(Bodies.GetMotionType(Slot->Body)==JPH::EMotionType::Static)
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("A static body cannot restore a dynamic replay state."));
+    const auto Linear=ToJoltLinearVelocity(State.CenterOfMassVelocityCmPerSecond),Angular=ToJoltAngularVelocity(State.AngularVelocityRadiansPerSecond);
+    if(!FMath::IsFinite(Linear.LengthSq())||!FMath::IsFinite(Angular.LengthSq()))
+        return Fail(EProphecyJoltWorldResult::InvalidArgument,TEXT("Replay velocity exceeds finite native arithmetic."));
+    Bodies.SetMotionType(Slot->Body,JPH::EMotionType::Dynamic,JPH::EActivation::DontActivate);
+    Bodies.SetPositionAndRotation(Slot->Body,ToJoltPosition(State.PositionCm),ToJoltRotation(State.Rotation),JPH::EActivation::DontActivate);
+    Bodies.SetLinearAndAngularVelocity(Slot->Body,Linear,Angular);
+    {JPH::BodyLockWrite Lock(Native->Physics.GetBodyLockInterface(),Slot->Body);if(Lock.Succeeded()){Lock.GetBody().ResetForce();Lock.GetBody().ResetTorque();}}
+    if(bPaused){Bodies.SetMotionType(Slot->Body,JPH::EMotionType::Kinematic,JPH::EActivation::DontActivate);Bodies.SetLinearAndAngularVelocity(Slot->Body,JPH::Vec3::sZero(),JPH::Vec3::sZero());}
+    if(!bPaused&&State.bActive)Bodies.ActivateBody(Slot->Body);else Bodies.DeactivateBody(Slot->Body);
     return {};
 }
 
@@ -4026,6 +4134,8 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetRigHitEvents(
     {
         auto& Slot = Native->Slots[Body.Slot];
         Slot.AssociatedObject = Receiver;
+        if(const auto* Mesh=Cast<USkeletalMeshComponent>(Receiver))
+            if(const auto* Asset=Mesh->GetPhysicsAsset())Slot.HitBodyIndex=Asset->FindBodyIndex(Slot.HitBone);
         Native->SetHitEnabled(Slot, bEnabled);
     }
     ProphecyJolt::ArmMotorSettings::Apply(*Native, *Rig, Receiver->GetOwner());
@@ -4170,7 +4280,7 @@ void UProphecyJoltWorldSubsystem::RefreshDiagnostics()
     Diagnostics.TempAllocationCount = Native->Temp.AllocationCount;
 }
 
-FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, int32 CollisionSteps)
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, int32 CollisionSteps,const FProphecyJoltStepSchedule* Schedule)
 {
     using namespace ProphecyJolt::WorldPrivate;
     const FProphecyJoltWorldStatus Ready = ValidateReady();
@@ -4239,7 +4349,50 @@ FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::Step(float DeltaSeconds, i
     }
     else ProphecyJolt::PHATSweeps::Forget(&Native->Physics);
     const uint64 PreviousServoInvocations = Native->Servo.GetInvocationCount();
-    const JPH::EPhysicsUpdateError Result = Native->Physics.Update(DeltaSeconds, CollisionSteps, &Native->Temp, Native->Jobs.Get());
+    JPH::EPhysicsUpdateError Result=JPH::EPhysicsUpdateError::None;
+    if(!Schedule)Result=Native->Physics.Update(DeltaSeconds,CollisionSteps,&Native->Temp,Native->Jobs.Get());
+    else
+    {
+        // Opt-in fractional releases share this public step, its servo packet and
+        // its hit publication. Preserve forces applied by unrelated clients:
+        // native Update clears accumulators after every internal interval.
+        struct FLoad{JPH::BodyID ID;JPH::Vec3 Force,Torque;};TArray<FLoad> Loads;
+        for(const auto& Slot:Native->Slots)if(!Slot.Body.IsInvalid())
+        {JPH::BodyLockRead Lock(Native->Physics.GetBodyLockInterface(),Slot.Body);if(Lock.Succeeded()&&Lock.GetBody().IsDynamic()){const auto& B=Lock.GetBody();Loads.Add({Slot.Body,B.GetAccumulatedForce(),B.GetAccumulatedTorque()});}}
+        // Release instants are mandatory boundaries. Subdivide each resulting
+        // span evenly, rather than inserting a release beside a uniform cut:
+        // two almost coincident cuts otherwise produce a tiny servo interval.
+        // This preserves exact releases and the requested maximum step size.
+        TArray<double> Releases{0.,1.};
+        for(double F:Schedule->Fractions)if(FMath::IsFinite(F)&&F>1.e-10&&F<1.-1.e-10)Releases.Add(F);
+        Releases.Sort();
+        for(int I=Releases.Num()-1;I>0;--I)if(Releases[I]-Releases[I-1]<1.e-10)Releases.RemoveAt(I);
+        TArray<double> Cuts{0.};
+        for(int I=0;I+1<Releases.Num();++I)
+        {
+            const double Span=Releases[I+1]-Releases[I];
+            const int32 Steps=FMath::Max(1,FMath::CeilToInt(Span*CollisionSteps));
+            for(int J=1;J<Steps;++J)Cuts.Add(Releases[I]+Span*double(J)/Steps);
+            Cuts.Add(Releases[I+1]);
+        }
+        auto Callback=[&](double Fraction,double Dt)
+        {TGuardValue<bool> Idle(bStepInProgress,false);return Schedule->Before?Schedule->Before(Fraction,Dt):FProphecyJoltWorldStatus{};};
+        for(int I=0;I+1<Cuts.Num();I++)
+        {
+            const float Dt=float((Cuts[I+1]-Cuts[I])*DeltaSeconds);
+            if(I)for(const auto& Load:Loads){JPH::BodyLockWrite Lock(Native->Physics.GetBodyLockInterface(),Load.ID);if(Lock.Succeeded()&&Lock.GetBody().IsDynamic()){Lock.GetBody().AddForce(Load.Force);Lock.GetBody().AddTorque(Load.Torque);}}
+            const auto Before=Callback(Cuts[I],Dt);if(!Before.IsSuccess()){Diagnostics.bFaulted=true;Diagnostics.Failure=Before.Message;return Before;}
+            // Each Update can put bodies to sleep. The next interval needs its
+            // own activation preflight, using its actual length and the retained
+            // trajectory clock, before Jolt snapshots the active bodies again.
+            if(!Native->Servo.PrepareActivation(Native->Physics,ActivationError,Native->bNoLockIdleBodyReads,Dt))
+            {Diagnostics.bFaulted=true;Diagnostics.Failure=ActivationError;return {EProphecyJoltWorldResult::PhysicsFailure,ActivationError};}
+            Result=Native->Physics.Update(Dt,1,&Native->Temp,Native->Jobs.Get());
+            if(Result!=JPH::EPhysicsUpdateError::None)break;
+            if(Schedule->After){TGuardValue<bool> Idle(bStepInProgress,false);Schedule->After(Cuts[I+1]);}
+        }
+        if(Result==JPH::EPhysicsUpdateError::None){const auto End=Callback(1.,0.);if(!End.IsSuccess()){Diagnostics.bFaulted=true;Diagnostics.Failure=End.Message;return End;}if(Schedule->After){TGuardValue<bool> Idle(bStepInProgress,false);Schedule->After(1.);}}
+    }
     const double UpdatedAt = FPlatformTime::Seconds();
     Diagnostics.LastPhysicsUpdateWallSeconds = UpdatedAt - ActivatedAt;
     // A numerical fault is contained inside Jolt before invalid transforms are
@@ -4322,3 +4475,51 @@ int32 UProphecyJoltWorldSubsystem::GetLiveSimulationCount()
 {
     return ProphecyJolt::WorldPrivate::LiveSimulations.load(std::memory_order_relaxed);
 }
+
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::AddOilPatch(const FProphecyJoltBodyHandle& Surface,
+    const FVector& Point,const FVector& Normal,float Radius,float Strength,uint64& OutId)
+{
+    OutId=0;const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    const auto* Slot=Native->Find(Surface);
+    if(!Slot)return {EProphecyJoltWorldResult::InvalidHandle,TEXT("Oil requires a live Jolt surface.")};
+    if(Point.ContainsNaN() || Normal.ContainsNaN() || !Normal.IsNormalized() || !FMath::IsFinite(Radius) || Radius<1 || Radius>300
+        || !FMath::IsFinite(Strength) || Strength<0 || Strength>1)
+        return {EProphecyJoltWorldResult::InvalidArgument,TEXT("Oil needs finite point/unit normal, radius1..300cm and strength0..1.")};
+    if(Native->Oil.Patches.Num()>=ProphecyJolt::Oil::MaxPatches)
+        return {EProphecyJoltWorldResult::CapacityExceeded,TEXT("Oil patch capacity reached.")};
+    const auto Transform=Native->Physics.GetBodyInterface().GetWorldTransform(Slot->Body).InversedRotationTranslation();
+    const auto P=Transform*ProphecyJolt::Conversions::ToJoltPosition(Point);
+    const auto N=Transform.Multiply3x3(ProphecyJolt::Conversions::ToJoltDirection(Normal));
+    OutId=Native->Oil.Add(Slot->Body.GetIndexAndSequenceNumber(),FVector(P.GetX(),P.GetY(),P.GetZ())*100.,
+        FVector(N.GetX(),N.GetY(),N.GetZ()),Radius,Strength);
+    ProphecyJolt::ScopedContacts::Refresh(*Native);
+    TSet<ProphecyJolt::WorldPrivate::FBodyIdentity> Changed;Changed.Add({Surface.Slot,Surface.Generation});
+    Native->PublishSuppression(Changed);
+    const auto Min=ProphecyJolt::Conversions::ToJoltPosition(Point-FVector(Radius+10));
+    const auto Max=ProphecyJolt::Conversions::ToJoltPosition(Point+FVector(Radius+10));
+    Native->Physics.GetBodyInterface().ActivateBodiesInAABox(JPH::AABox(JPH::Vec3(Min),JPH::Vec3(Max)),JPH::BroadPhaseLayerFilter(),JPH::ObjectLayerFilter());
+    return {};
+}
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::SetOilStrength(uint64 Id,float Strength)
+{
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    if(!FMath::IsFinite(Strength) || Strength<0 || Strength>1)return {EProphecyJoltWorldResult::InvalidArgument,TEXT("Invalid oil strength.")};
+    auto* Patch=Native->Oil.Patches.Find(Id);if(!Patch)return {EProphecyJoltWorldResult::InvalidHandle,TEXT("Oil patch expired.")};
+    Patch->Strength=Strength;return {};
+}
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::RemoveOilPatch(uint64 Id)
+{
+    const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    Native->Oil.Remove(Id);ProphecyJolt::ScopedContacts::Refresh(*Native);return {};
+}
+FProphecyJoltWorldStatus UProphecyJoltWorldSubsystem::ReadOilCoverage(const FProphecyJoltBodyHandle& Surface,
+    const FVector& Point,const FVector& Normal,float& Out) const
+{
+    Out=0;const auto Ready=ValidateReady();if(!Ready.IsSuccess())return Ready;
+    const auto* Slot=Native->Find(Surface);if(!Slot)return {EProphecyJoltWorldResult::InvalidHandle,TEXT("Surface expired.")};
+    const auto T=Native->Physics.GetBodyInterface().GetWorldTransform(Slot->Body).InversedRotationTranslation();
+    const auto P=T*ProphecyJolt::Conversions::ToJoltPosition(Point);const auto N=T.Multiply3x3(ProphecyJolt::Conversions::ToJoltDirection(Normal));
+    Out=Native->Oil.Coverage(Slot->Body.GetIndexAndSequenceNumber(),FVector(P.GetX(),P.GetY(),P.GetZ())*100.,FVector(N.GetX(),N.GetY(),N.GetZ()));return {};
+}
+int32 UProphecyJoltWorldSubsystem::GetOilPatchCount() const {return Native?Native->Oil.Patches.Num():0;}
+#include "ProphecyJoltRobot.inl"

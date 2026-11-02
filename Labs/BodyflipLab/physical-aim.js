@@ -7,7 +7,7 @@ function create(rawSource,physicalOptions,{track,clip,settings,project=null,worl
  const rig=M.model(names,parents,reference),rawCache=new Map(),originalSource=rawSource;
  rawSource=t=>{const key=Math.round(t*1e9);if(rawCache.has(key))return rawCache.get(key);const frame=originalSource(t);rawCache.set(key,frame);if(rawCache.size>1024)rawCache.delete(rawCache.keys().next().value);return frame;};
  const statistics={evaluations:0},neutral=P.create(rawSource,physicalOptions);
- let plan=null,physical=null,prediction=null,pending=null,best=null,previous=null,neutralHit=null,predictionTrack=neutral,throwAimOrigin=null;
+ let pikeJob=null,plan=null,physical=null,prediction=null,pending=null,best=null,previous=null,neutralHit=null,predictionTrack=neutral,throwAimOrigin=null;
  // A point-targeted spear must fit the final release after momentum response.
  // Rotating a predicted pose and then applying that world turn before the
  // carrier rotation is not equivalent: those two rotations do not commute.
@@ -15,12 +15,25 @@ function create(rawSource,physicalOptions,{track,clip,settings,project=null,worl
  const pointThrow=track.isThrow&&track.kind==='spear'&&!track.throwDirection,candidates=new Map();let pointContext=null;
  function candidate(delta,context){
   const key=JSON.stringify(delta.throwAngles||delta.throwTurn||delta);if(candidates.has(key))return candidates.get(key);
-  const pelvis=names.indexOf('pelvis'),basis=rawSource(hitTime).pose.q[pelvis],localYaw=t=>R.qm(R.qm(R.qinv(basis),context.deltaAt(delta,t).yaw),basis);
+  const moving=t=>{
+   if(!delta.stroke)return delta;
+   const span=hitTime-track.start-track.duration;
+   // Preserve the outgoing steering velocity, then settle on the selected
+   // heading when Undo rotation is off. Ordinary returns use their own fade.
+   let time=t;
+   if(!undo&&t>track.end){const d=track.returnEnd-track.end,u=Math.min(1,(t-track.end)/d);time=track.end+d*(u-u*u+u*u*u/3);}
+   const u=(time-track.start-track.duration)/span,p=delta.stroke;
+   const value=j=>{const a=p[j],b=4*p[j+2]-3*a-p[j+4],c=2*(a-2*p[j+2]+p[j+4]);return u<0?a+b*u:u>1?p[j+4]+(b+2*c)*(u-1):a+b*u+c*u*u;};
+   return {...delta,heading:value(0),pitch:value(1)};
+  };
+  const pelvis=names.indexOf('pelvis'),basis=rawSource(hitTime).pose.q[pelvis],localYaw=t=>R.qm(R.qm(R.qinv(basis),context.deltaAt(moving(t),t).yaw),basis);
   // Air attack yaw is an intentional carrier turn, just like commanded spin.
   // Its angular velocity must enter the command budget; treating it as an
   // internal joint motion makes balance cancel the requested heading.
   const angularCommand=track.isThrow?null:(t,pose,dt)=>R.rotate(pose.q[pelvis],R.mul(R.qlog(R.qm(localYaw(t),R.qinv(localYaw(t-dt)))),1/dt));
-  const path=P.create(t=>{const f=rawSource(t);return {...f,pose:finish(context.applyDeltaAt(f.pose,t,delta))};},{...physicalOptions,angularCommand});
+  const source=t=>{const f=rawSource(t);if(!delta.stroke||context.weight(t,undo)<=0)return {...f,pose:finish(context.applyDeltaAt(f.pose,t,delta))};
+   const turn=R.qm(f.spin?.rotation||[0,0,0,1],R.qinv(rawSource(hitTime).spin?.rotation||[0,0,0,1])),unspun=M.rotateAboutCOM(f.pose,R.qinv(turn),rig),posed=context.applyDeltaAt(unspun,t,moving(t));return {...f,pose:finish(M.rotateAboutCOM(posed,turn,rig))};};
+  const path=P.create(source,{...physicalOptions,angularCommand});
   candidates.set(key,path);if(candidates.size>4)candidates.delete(candidates.keys().next().value);statistics.evaluations++;return path;
  }
  function preparePointThrow(){
@@ -56,11 +69,107 @@ function create(rawSource,physicalOptions,{track,clip,settings,project=null,worl
   }
   const solved=plan.solution(target);physical=candidate(solved.state,pointContext);statistics.error=solved.error;candidates.clear();
  }
+ // Pike aims the authored thrust at Armed, mid-stroke and Hit. Heading is
+ // still a carrier command; elevation is still shared by the five spines.
+ // The arm animation and free roll about the thrust direction remain intact.
+ // One smooth angle curve is prepared ahead of playback, with the full
+ // momentum response in each evaluation. There is no world-locked chest.
+ function preparePike(){
+  if(!pikeJob){
+   prepareMelee();
+   const armed=track.start+track.duration,mid=(armed+hitTime)/2,top=names.indexOf('spine_05'),base={...plan.solution(target).state},baseline=physical;
+   const spinAt=t=>rawSource(t).spin?.rotation||[0,0,0,1],hitSpin=spinAt(hitTime);
+   // With no carrier turn during the thrust, retain the accepted static aim.
+   if([armed,mid].every(t=>R.length(R.qlog(R.qm(spinAt(t),R.qinv(hitSpin))))<1e-8))return;
+   base.heading=Math.atan2(Math.sin(base.heading),Math.cos(base.heading));
+   const rawHit=rawSource(hitTime),hitRay=R.rotate(R.qinv(hitSpin),R.sub(plan.point(rawHit.pose),M.center(rawHit.pose,rig))),times=[armed,mid,hitTime];
+   const tops=times.map(t=>{const f=rawSource(t);return R.qm(R.qinv(spinAt(t)),f.pose.q[top]);});
+   const evaluate=p=>{
+    const path=candidate({...base,stroke:p},pointContext),residual=[];
+    for(let i=0;i<times.length;i++){
+     const t=times[i],pose=finish(worldPose(path.sample(t).pose,t)),center=M.center(pose,rig);
+     // Before impact, preserve the source's changing arm pose and aim its
+     // eventual thrust direction. The retracted tip is not the hit point.
+     const ray=i===2?R.unit(R.sub(plan.point(pose),center)):R.unit(R.rotate(R.qm(pose.q[top],R.qinv(tops[i])),hitRay));
+     residual.push(...R.sub(ray,R.unit(R.sub(target,center))));
+    }
+    return {path,residual};
+   };
+   const solve=(matrix,rhs)=>{
+    const a=matrix.map((row,i)=>[...row,rhs[i]]),n=rhs.length;
+    for(let i=0;i<n;i++){
+     let k=i;for(let j=i+1;j<n;j++)if(Math.abs(a[j][i])>Math.abs(a[k][i]))k=j;
+     [a[i],a[k]]=[a[k],a[i]];const d=a[i][i];if(Math.abs(d)<1e-15)return rhs.map(()=>0);
+     for(let j=i;j<=n;j++)a[i][j]/=d;
+     for(let k=0;k<n;k++)if(k!==i){const d=a[k][i];for(let j=i;j<=n;j++)a[k][j]-=d*a[i][j];}
+    }
+    return a.map(row=>row[n]);
+   };
+   function* fit(){
+    let best=null;
+    // The predicted-frame seed handles rear targets whose entry follows a
+    // different heading branch from the final contact. No extra body roll.
+    const aimBasis=R.qm(rawHit.pose.q[names.indexOf('pelvis')],R.qinv(reference.q[names.indexOf('pelvis')]));
+    for(const predicted of [false,true]){
+     let prior=base.heading;
+     let p=times.flatMap(t=>{
+      if(!predicted)return [base.heading,base.pitch];
+      const spin=spinAt(t),frame=baseline.sample(t),basis=R.qm(R.qm(spin,R.qinv(hitSpin)),aimBasis),ray=R.unit(R.rotate(R.qinv(basis),R.rotate(spin,hitRay))),goal=R.unit(R.rotate(R.qinv(R.qm(frame.physical.rotation,basis)),R.sub(target,M.center(frame.pose,rig))));
+      let yaw=Math.atan2(goal[0],goal[2])-Math.atan2(ray[0],ray[2]);yaw+=2*Math.PI*Math.round((prior-yaw)/(2*Math.PI));prior=yaw;
+      return [yaw,Math.asin(ray[1])-Math.asin(goal[1])];
+     });
+     let value=yield p,error=R.length(value.residual);
+     for(let n=0;n<24&&error>1e-6;n++){
+      const h=1e-3,columns=[];
+      for(let i=0;i<p.length;i++){const v=p.slice();v[i]+=h;const probe=yield v;columns.push(R.mul(R.sub(probe.residual,value.residual),1/h));}
+      const damping=1e-5*Math.max(1,...columns.map(c=>R.dot(c,c))),matrix=columns.map((a,i)=>columns.map((b,j)=>R.dot(a,b)+(i===j?damping:0)));
+      let step=solve(matrix,columns.map(c=>-R.dot(c,value.residual))),size=R.length(step);if(size>.8)step=R.mul(step,.8/size);
+      let accepted=false;
+      for(let scale=1;scale>=1/32;scale*=.5){const next=p.map((v,i)=>v+step[i]*scale);if(Math.abs(next[0])>Math.PI)continue;const candidate=yield next,e=R.length(candidate.residual);if(e<error){p=next;value=candidate;error=e;accepted=true;break;}}
+      if(!accepted)break;
+     }
+     if(!best||error<best.error)best={...value,p,error};if(error<=1e-6)break;
+    }
+    return best;
+   }
+   // Keep preparation resumable. A target edit must not block the UI while
+   // planning, or lose a completed trial when the shared work budget yields.
+   pikeJob={iterator:fit(),evaluate,step:null,value:undefined,baseline,baselineError:statistics.error};physical=null;
+  }
+  for(;;){
+   pikeJob.step ||= pikeJob.iterator.next(pikeJob.value);
+   if(pikeJob.step.done){
+    const solved=pikeJob.step.value,accepted=solved.error<1e-5;
+    physical=accepted?solved.path:pikeJob.baseline;
+    statistics.error=accepted?R.length(solved.residual.slice(6)):pikeJob.baselineError;
+    statistics.pikeRejected=!accepted;statistics.strokeError=R.length(solved.residual.slice(0,6));statistics.strokeAngles=accepted?solved.p.map(v=>v*180/Math.PI):null;
+    candidates.clear();pikeJob=null;return;
+   }
+   pikeJob.value=pikeJob.evaluate(pikeJob.step.value);pikeJob.step=null;Work.checkpoint();
+  }
+ }
+ // A sweep aims the complete already-compensated body, so its COM is
+ // unchanged and the target direction can be solved directly. This prescribed
+ // rigid turn must not be fed back as an internal articulation to cancel.
+ function prepareSweep(){
+  const sampleHit=t=>finish(worldPose(neutral.sample(t).pose,t));
+  plan=A.create({clip,track,names,parents,reference,sampleHit,project});
+  const solved=plan.solution(target);statistics.evaluations=1;statistics.error=solved.error;
+  const H=node?require('./momentum.js'):root.BodyflipMomentum,dt=1/240;
+  physical={sample(t){
+   const frame=neutral.sample(t);if(t<=start||(undo&&t>=track.aimRecoveryEnd))return frame;
+   const delta=plan.rotation(t,target,amount,undo),q=delta.yaw,pose=plan.applyRotation(frame.pose,delta),before=neutral.sample(Math.max(start,t-dt)),elapsed=t-Math.max(start,t-dt),prior=plan.rotation(Math.max(start,t-dt),target,amount,undo),previous=plan.applyRotation(before.pose,prior);
+   const omega=R.mul(R.qlog(R.qm(q,R.qinv(prior.yaw))),1/elapsed),momentum=H.momentum(previous,pose,rig,elapsed),command=R.add(R.rotate(q,frame.physical.target),M.product(M.tensor(pose,rig),omega)),residual=R.sub(momentum,command),axis=frame.physical.axis&&R.rotate(q,frame.physical.axis);
+   const spin=frame.spin?{...frame.spin,q:R.qm(q,frame.spin.q),rotation:R.qm(q,frame.spin.rotation),omega:R.add(R.rotate(q,frame.spin.omega),omega)}:frame.spin;
+   return {...frame,pose,spin,physical:{...frame.physical,rotation:R.qm(q,frame.physical.rotation),momentum,target:command,axis,error:axis?Math.abs(R.dot(residual,axis)):R.length(residual),fullResidual:R.length(residual),aimCommand:omega}};
+  }};
+ }
  function prepare(){
   if(physical)return;
   if(!aim||amount<=0){physical=neutral;return;}
   if(pointThrow){preparePointThrow();return;}
-  if(!track.isThrow){prepareMelee();return;}
+  if(track.sweepPlane){prepareSweep();return;}
+  if(!track.isThrow){if(settings.pikeSpineAbsorb&&clip?.meta.name==='pike')preparePike();else prepareMelee();return;}
   if(track.isThrow&&!throwAimOrigin){const time=Number.isFinite(track.aimReferenceTime)?track.aimReferenceTime:track.start;throwAimOrigin=worldPose(rawSource(time).pose,time).points[names.indexOf('pelvis')].slice();}
   neutralHit ||= neutral.sample(hitTime);
   prediction ||= neutralHit.physical.rotation;

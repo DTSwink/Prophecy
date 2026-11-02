@@ -1,0 +1,75 @@
+{
+  "status": "irregular wood structure generated",
+  "backup": "C:\\Users\\singerie\\Documents\\Unreal Projects\\Prophecy\\Saved\\Diagnostics\\ImperialSpear\\BeforeWoodStructure_v1",
+  "original_files": {
+    "T_ImperialSpear_BaseColor.png": "78124dadbf4851568c43f4f4133e9269f48d9f101d67fb61a49a7c018f6543f9",
+    "T_ImperialSpear_ORM.png": "1ba19dfbf813084037680e8ec8e709dec654d4170e4ec8c5e36576bed20d7b04",
+    "T_ImperialSpear_NormalGL.png": "a39251648ce82dda87a1f09d554aa78fd70f410adc628c9c1cdfa083744dbacd",
+    "T_ImperialSpear_NormalDX.png": "1329a6af98f033d0c866c284ceb237c981dd3936385bbb55205d04868e99be50"
+  },
+  "region": [
+    0,
+    2048,
+    2048,
+    4096
+  ],
+  "seed": 27102712,
+  "circumference_mm": 100.0,
+  "axial_span_mm": 1570.0,
+  "major_fibres": 32,
+  "fibre_width_mm": [
+    0.8,
+    1.8
+  ],
+  "fibre_depth_mm": 0.055,
+  "albedo_contrast": 1.7,
+  "mean_tone_preserved": true,
+  "pore_width_mm": [
+    0.3,
+    0.8
+  ],
+  "pore_depth_mm": 0.105,
+  "max_depth_mm": 0.12,
+  "fibre_width_at_reference_resolution_px": [
+    0.8333333333333334,
+    1.8750000000000002
+  ],
+  "protected_pixels": {
+    "T_ImperialSpear_BaseColor.png": {
+      "before_sha256": "0793ceaeb33997f1268e28cae0651817998f7eab97e6d4a2ecadacac293c7a4c",
+      "after_sha256": "0793ceaeb33997f1268e28cae0651817998f7eab97e6d4a2ecadacac293c7a4c",
+      "unchanged": true
+    },
+    "T_ImperialSpear_ORM.png": {
+      "before_sha256": "affdb1227350f3548fc92622ec179b400fa39c22f254c4b53c55c29574a4a20c",
+      "after_sha256": "affdb1227350f3548fc92622ec179b400fa39c22f254c4b53c55c29574a4a20c",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalGL.png": {
+      "before_sha256": "46fa702a7f65e310488126c29bb8627ef363efc3715d77f776f0ea6d03048990",
+      "after_sha256": "46fa702a7f65e310488126c29bb8627ef363efc3715d77f776f0ea6d03048990",
+      "unchanged": true
+    },
+    "T_ImperialSpear_NormalDX.png": {
+      "before_sha256": "ee753f1762f9dcd5a944ad271ffb1b92422337ec274051f050211e1585bcc0b3",
+      "after_sha256": "ee753f1762f9dcd5a944ad271ffb1b92422337ec274051f050211e1585bcc0b3",
+      "unchanged": true
+    }
+  },
+  "base_median_srgb": [
+    54.0,
+    21.0,
+    21.0
+  ],
+  "roughness_min_mean_max": [
+    0.7387568950653076,
+    0.7837821841239929,
+    0.8500000238418579
+  ],
+  "physical_height_min_max_mm": [
+    -0.11999999731779099,
+    0.007717647589743137
+  ],
+  "normal_lateral_slope_limit": 0.45,
+  "wood_ao_metal_specular_preserved": true
+}

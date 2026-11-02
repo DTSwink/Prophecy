@@ -115,7 +115,7 @@ function create(source,{start,settings,names,parents,reference,gravity=9.81,cap=
   return elapsed<1e-10?frames[index]:advance(frames[index],t,elapsed);
  }
  function state(t){initialize();return t<=start?frames[0].physical:sample(t).physical;}
- const follow=articulation?.({sample,source});
+ const follow=articulation?.({sample,source,start,step:tick});
  return {sample,state,rig,start,step:tick,get ticks(){return Math.max(0,frames.length-1);}};
 }
 const api={create,command};if(node)module.exports=api;else root.BodyflipPhysicalFlight=api;

@@ -5,6 +5,7 @@
 #include "Engine/World.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "ProphecyJoltStepTiming.h"
+#include "ProphecyRobotLocomotion.h"
 
 namespace ProphecyJolt::StepTiming
 {
@@ -12,7 +13,7 @@ static TMap<TWeakObjectPtr<const UWorld>, int32> Overrides;
 int32 MinimumSubsteps(const UWorld* World)
 {
     const auto* Value = Overrides.IsEmpty() ? nullptr : Overrides.Find(World);
-    return Value ? *Value : 1;
+    return FMath::Max(Value ? *Value : 1,ProphecyRobot::HasRobot(World)?4:1);
 }
 void RemoveOverride(const UWorld* World) { Overrides.Remove(World); }
 }

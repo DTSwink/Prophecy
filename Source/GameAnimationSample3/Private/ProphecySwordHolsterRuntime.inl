@@ -1,4 +1,5 @@
 // Included by the sword controller; new state leaves retained controller layouts unchanged.
+#include "ProphecyBodyflipRuntime.h"
 namespace ProphecySwordHolster
 {
 struct FProfile {
@@ -106,6 +107,7 @@ static void EnsureCleanup()
     });
 }
 bool InHolster(const AProphecyAgent* A){const auto* S=States.Find(A);return S && S->Attached;}
+bool HasPendingAction(const AProphecyAgent* A){return A && Pending.Contains(A);}
 bool BeforeModeChange(AProphecyAgent* A,bool Kinematic)
 {
     // Release old physics handles without removing the live pose or its clocks.
@@ -517,7 +519,7 @@ bool UProphecySwordComponent::StartHolster(bool Sheathe,float Reach,float Rotati
 {
     using namespace ProphecySwordHolster;
     auto* A=Agent();const auto* Reference=References.Find(A);auto* Existing=States.Find(A);
-    if(!A || !Reference || !Reference->Holster.IsValid() || !IsValid(Sword) || !IsValid(Blade)
+    if(!A || ProphecyBodyflip::Active(A) || !Reference || !Reference->Holster.IsValid() || !IsValid(Sword) || !IsValid(Blade)
         || bDropPending || PendingJoltBindId.IsValid() || bBinding)return false;
     const bool Kinematic=A->GetSimulationMode()==EProphecyAgentSimulationMode::Kinematic;
     if(!Kinematic&&!A->IsJoltPhysicalAnimationEnabled())
@@ -729,3 +731,51 @@ bool UProphecySwordHolsterLibrary::SetSwordHolsterLabProfile(AProphecyAgent* A,c
  const auto& V=P->Profile;
  ProphecySwordHolster::Profiles.Add(A,{float(V.Shrink),float(V.Unshrink),float(V.Stabilization),float(V.HolsterReturnDuration),float(V.ShrinkDuration),float(V.AttachedSpeed),float(V.AttachedRotation),float(V.TipTolerance),V.LeewayPhase});ProphecySwordHolster::EnsureCleanup();return true;
 }
+
+// Append inside the holster implementation TU (after its normal definitions).
+// Fixture-side declaration, under WITH_DEV_AUTOMATION_TESTS:
+// namespace ProphecySwordHolster { bool CheckBodyflipPendingAdmission(FAutomationTestBase&,AProphecyAgent*); }
+// Call once before the existing registered fixture agent's normal Bodyflip Start.
+#if WITH_DEV_AUTOMATION_TESTS
+#include "ProphecyBodyflipLibrary.h"
+#include "Misc/AutomationTest.h"
+namespace ProphecySwordHolster
+{
+bool CheckBodyflipPendingAdmission(FAutomationTestBase& Test,AProphecyAgent* Agent)
+{
+    if(!Test.TestTrue(TEXT("Pending admission fixture is registered and unowned"),
+        IsValid(Agent)&&Agent->HasValidAgentHandle()&&!ProphecyBodyflip::Active(Agent)
+        &&!HasPendingAction(Agent)))return false;
+    const int32 PriorCount=Pending.Num(),PriorSlot=ProphecySwordHolsterSchedule::Slot(Agent);
+    const FTransform PriorActor=Agent->GetActorTransform();
+    FRequest Request{true,123,234,345};Request.SampleTick=456;
+    Request.Before.Names.Add(TEXT("pelvis"));
+    Request.Before.Pose.Add(FTransform(FQuat::Identity,FVector(1,2,3)));
+    Pending.Add(Agent,Request);
+    ON_SCOPE_EXIT
+    {
+        Pending.Remove(Agent);
+        if(ProphecyBodyflip::Active(Agent))UProphecyBodyflipLibrary::StopBodyflip(Agent);
+    };
+    bool Ok=Test.TestTrue(TEXT("Pending query sees this agent"),HasPendingAction(Agent));
+    Ok&=Test.TestFalse(TEXT("Pending query excludes null agents"),HasPendingAction(nullptr));
+    FString Error;
+    // Invalid settings make a missing ownership guard fail safely at parsing,
+    // before rig/model/projectile setup. The expected owner error distinguishes
+    // this from that fallback and proves the request was seen before mutation.
+    Ok&=Test.TestFalse(TEXT("Bodyflip refuses a pending sword action"),
+        UProphecyBodyflipLibrary::StartBodyflip(Agent,TEXT("not-json"),TEXT(""),Error));
+    Ok&=Test.TestTrue(TEXT("Bodyflip reports the pending owner"),Error.Contains(TEXT("sword")));
+    const auto* Kept=Pending.Find(Agent);
+    Ok&=Test.TestTrue(TEXT("Rejected start preserves the pending request"),Kept&&Kept->Sheathe==Request.Sheathe
+        &&Kept->Reach==Request.Reach&&Kept->Rotation==Request.Rotation&&Kept->Sliding==Request.Sliding
+        &&Kept->SampleTick==Request.SampleTick&&Kept->Before.Names==Request.Before.Names
+        &&Kept->Before.Pose.Num()==1&&Kept->Before.Pose[0].Equals(Request.Before.Pose[0],0));
+    Ok&=Test.TestEqual(TEXT("Other pending requests are untouched"),Pending.Num(),PriorCount+1);
+    Ok&=Test.TestEqual(TEXT("Rejected start preserves the schedule"),ProphecySwordHolsterSchedule::Slot(Agent),PriorSlot);
+    Ok&=Test.TestFalse(TEXT("Rejected start creates no Bodyflip state"),ProphecyBodyflip::Active(Agent));
+    Ok&=Test.TestTrue(TEXT("Rejected start preserves the carrier"),Agent->GetActorTransform().Equals(PriorActor,0));
+    return Ok;
+}
+}
+#endif

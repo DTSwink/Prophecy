@@ -126,6 +126,8 @@ int32 AProphecyNNLocomotionManager::RestoreInitialAgentResetState(FString& Error
         // checkpoint pose or rebuilding the pelvis/holster constraint frames.
         // RestoreEquipment recreates the captured sword after the rig is ready.
         Actor->HideSword();
+        ProphecyFootIK::Remove(Actor);
+        ProphecyFootIKLive::Remove(Actor);
         ProphecyAgentResetPhysics::CancelBlends(Actor);
         ProphecyGetUp::Cancel(Actor);
         ProphecyBreathing::Reset(Actor);

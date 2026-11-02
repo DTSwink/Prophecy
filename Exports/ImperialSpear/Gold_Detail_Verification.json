@@ -1,0 +1,259 @@
+{
+  "revision": 4,
+  "protected_objects": 75,
+  "protected_geometry_sha256": {
+    "01 \u2022 rosewood shaft.001": "b2b4b83501abd82c8480066e826eee682e32175831deec9bc78266b2367f9471",
+    "02 \u2022 tapered gold pommel.001": "2bef903efd420385ea01a80851df44280bbada7b975ba8164eb28e68a50894b6",
+    "Pommel \u2022 fine rim.003": "1b14addd5686161a8a68b852c80a8702ce8ea043768c2cc7d2b451060bf5442a",
+    "Pommel \u2022 fine rim.004": "4dd669d17d00e5dfdd1662f0db41eb8b0291d10d5b427c0d14f7d84935170cb1",
+    "Pommel \u2022 fine rim.005": "d6d7ff0dc8fa7812828be4d526fc278e87fbd0b081437e47e761db74f1f47db3",
+    "Pommel \u2022 chased longitudinal rail.012": "4f74ac4cf677fa44e33171f040608c8fce5814abe8fc3e38d969d90644716fe0",
+    "Pommel \u2022 chased longitudinal rail.013": "9ac249b1beeee0bd47f221f2f21c7dba6b6390d5fd392768e74400b3cdb5fd1f",
+    "Pommel \u2022 chased longitudinal rail.014": "7a2fa15e11d2581611006fe611ab2495a25bbbe3140bdadb2c403814ba512b28",
+    "Pommel \u2022 chased longitudinal rail.015": "97434dc55f77ecc091de47665487e88fc45d83b9834077844e9a2f89821648c0",
+    "Pommel \u2022 chased longitudinal rail.016": "674b6e3021038c15c3a2c0006b96b62bf97d00dbfb01e555502df7495f810c10",
+    "Pommel \u2022 chased longitudinal rail.017": "6142938efb3025340aa5643a69165c213c281df684e79a79a58d8fdd92b153ae",
+    "Pommel \u2022 chased longitudinal rail.018": "c675e51820feae0a0c93696e6de50ac4e37930562bb3b6c8570f6bfd50a032dd",
+    "Pommel \u2022 chased longitudinal rail.019": "8b2b415f0a63e1f58d82cf6e7d932491caf5fd1e1abd44a2d23f97b4f1dc3175",
+    "Pommel \u2022 chased longitudinal rail.020": "c38961d05df6f54de74f7a0ee75c80372cb24297dc16a029dae4e0460190a7e7",
+    "Pommel \u2022 chased longitudinal rail.021": "54ed5aee533865c8d926e0269f501194d2aef0a1e40522844556a1839d1d6908",
+    "Pommel \u2022 chased longitudinal rail.022": "51e7ea599b934d1f9704495954adcc6c0e51347873951397120417ee0e9e82bc",
+    "Pommel \u2022 chased longitudinal rail.023": "598ac315d8457f48c70f153e7ac25b3744f2ad3df3c02d7cdfbdf0b6c1e49ce3",
+    "03 \u2022 leather grip underlay.001": "ecf19dd54c1722f0876623179116a216269536f7dcd924eaf78290daa894a109",
+    "04 \u2022 overlapping leather winding.001": "3d19d18be880299408597558b786410e73830c477748c665c151ba863bb7045d",
+    "Grip \u2022 gold keeper.002": "f142f8769e412952edb977dc2162052d0954cf32a2ee1764e0ba553518c16f8f",
+    "Grip \u2022 keeper wire.004": "fbf2ad37160759a086ded6b065e5d5d3fe88f134472fb3b7aa083354b313442e",
+    "Grip \u2022 keeper wire.005": "9bda25fae00e4966c2c8b75422499f993e277a9840ab0fe276f18c5aa62f738c",
+    "Grip \u2022 gold keeper.003": "7ac1219a2dd9c2c7d2f9f1af7064049f72452c2b883227a98cc9fc7217a9862d",
+    "Grip \u2022 keeper wire.006": "b99b76985e35b4a8ad2590b121d8eb43a14f545b66a199b7bb22327a4d4245fd",
+    "Grip \u2022 keeper wire.007": "9aca48f2e4f2e98e551c6c55c44c50fc73a8153287c70a09211b8911a1a905bd",
+    "06 \u2022 forged leaf blade": "80e6c7ed43c272dfb2052a78f2fc092a457d2a1968b372d9c4435a0aae209b8b",
+    "07 \u2022 gold palmette socket plate": "37ceb3ae4421cf18a8913ffe4c068c77f9c002150d5bc908b214317780af7ae3",
+    "08 \u2022 tassel eye": "3f28d9db585163f46068c222e6203cbacf159a51bfe1ce81085d4bf962a148d9",
+    "Tassel \u2022 burgundy suspension cord": "7609d754a8d686bda92f0de2b479b4e70a46dd1e3b8c80d6ba60d4136b72991b",
+    "Tassel \u2022 bound neck": "2841eda6edc32b1ca09ed24390201b0382aab9dae2b225fd40ebfc2b81fee42a",
+    "Tassel \u2022 silk strand 00": "f84430299ab6f42b8431d3c990a5da8419a77398f04b6e9c30a74d01fb07275a",
+    "Tassel \u2022 silk strand 01": "71b55513153064ae908c0a8e15f9da8ab141d66e60e8548c769bd9b0576de658",
+    "Tassel \u2022 silk strand 02": "3c517ed9931fcb1e4385dc4fbcdc664a0d4c22234cf5c7e16ceb7579b31edfbf",
+    "Tassel \u2022 silk strand 03": "dd216f6ff670fbed97286ab35dbd981c42196ae5874563b80622cfa8a735b8e5",
+    "Tassel \u2022 silk strand 04": "573a5e1362a835554b4787d363bc8966c9accdd96fd4b55ec6265f1de6e1e01d",
+    "Tassel \u2022 silk strand 05": "d85e1cd7e6e673b0aa1b90fb0853498a65bb5a714a7223be19bcaf3fd6b6abee",
+    "Tassel \u2022 silk strand 06": "9b5998c41cf36406bf99a63d9a0dc8e29358b0f6a3d76591963f9836d82ec82f",
+    "Tassel \u2022 silk strand 07": "085376fbef37f9cc29b9c07177a6e7c2177e032051beb8e622d03bcc83483ced",
+    "Tassel \u2022 silk strand 08": "6575baedeaae8fa57705c6aca9d12dd5f9a9fa5c15024ea95cda028040c250cf",
+    "Tassel \u2022 silk strand 09": "5ef0a694e9b09620487d9263d65e0590beb67db446b0c8418883b411fbcd8425",
+    "Tassel \u2022 silk strand 10": "0972a785bf1515da2908d4d59342def76087739d5612a0ff2bfabc842eaab211",
+    "Tassel \u2022 silk strand 11": "bc011cd88f688c0768b69e348829f0c2cb7015c92f5e567adb4b33a4c301705b",
+    "Tassel \u2022 silk strand 12": "6c7c994ff05d3c9186ed198bff0489611c6f9f61a832302177247bf2797494c5",
+    "Tassel \u2022 silk strand 13": "9954020be3bcb153039b122975e03a4f08dfb8c33fac35e5d46c3be50d5cba4e",
+    "Tassel \u2022 silk strand 14": "213626db4236da3bcd70214ef7a8a2088ca21e201d0a794ec51fc980ed423421",
+    "Tassel \u2022 silk strand 15": "e09cd06154c1c5993b7229fe4cde96484fda01077c8b4be9ebcdf48a144989b7",
+    "Tassel \u2022 silk strand 16": "6521413972042232225de4f2d04f1a94cff3699937845d0f48bfb926ea048dce",
+    "Tassel \u2022 silk strand 17": "d541c433403241acfba4ac3c161c15a11e096ae7bb41e81eee496f9df456fe9b",
+    "Tassel \u2022 silk strand 18": "0c587b4ac1602e46adb224a6d75aa05eecfee852dcd4622e6d059669f9c7058d",
+    "Tassel \u2022 silk strand 19": "95664bf27a8d6253207733d2ce0dffa353f22eee8ff788852ced056ac4f077fc",
+    "Tassel \u2022 silk strand 20": "160d68e06210d008b12abf5b6d014532ab831fb1f67913616d92cc572822bcaa",
+    "Tassel \u2022 silk strand 21": "5b3c767a1693d24430a42e57c41862711a6124be814216b986acbaa9998ccd01",
+    "Tassel \u2022 silk strand 22": "4739d4d85f7de275ce3466741a8a0f1ea5828dd4703a2954e27f3842b7da5a08",
+    "Tassel \u2022 silk strand 23": "2d38843e94d74b54e7447457abdae6761094df9344edfaa3a36513ce72d4b5a3",
+    "Tassel \u2022 silk strand 24": "cf99c6a6fd0a066a7bcb5ba700bd75e6e5b5211b691387d284783ec16d0b292e",
+    "Tassel \u2022 silk strand 25": "e0fc41943a364aa2b6f32a75fe2ab2ef772ad53fca6ffd07edaf36dde96f73d2",
+    "Tassel \u2022 silk strand 26": "b475adb11821419cc21eac5578a2919c878a899f4a8b0d1924b9f606836f0113",
+    "Tassel \u2022 silk strand 27": "cb08cb9ec48e59db999e5c605cfebfc2c32e10967af52042becd0c0119cad1eb",
+    "Tassel \u2022 silk strand 28": "d408be8116bad0ef55ddc84e83808bf5984e310ac4407457ce95ab6f8114bb22",
+    "Tassel \u2022 silk strand 29": "fcfed06ae7a9061bb3e5345a7f2a609a221fec161f736890eb23eb3d2ffe5439",
+    "Tassel \u2022 silk strand 30": "12c1b522eb8b4a428008db5bba79ee083231cfb7d9da4766950e65ba20c44dd4",
+    "Tassel \u2022 silk strand 31": "057ad22aa18457a8f4fe10b559baa7310f281017e9fb412e233280b0e4999350",
+    "Tassel \u2022 silk strand 32": "09eec8447a79cd0e79fa14e91617c29a20acddb04883a6f1b3eb02e8da3d1d08",
+    "Tassel \u2022 silk strand 33": "7169726338ac70d1910229c725dd2f34cf3dcd70b3145b960b384cf1aa67f5a7",
+    "Tassel \u2022 silk strand 34": "e1260721bd6ebda43b0b500ccb20aa022f394a90949394400ee977e1eb1f4608",
+    "Tassel \u2022 silk strand 35": "7edba1e627ea5f656d1cd49a54fa415c10deaffeff3906faac8255c1186c957d",
+    "Tassel \u2022 silk strand 36": "0a400acb83c794b5313d1a0e6909b3079ca192372d0213dcab8e82d3445d3473",
+    "Tassel \u2022 silk strand 37": "37158e6bb31379f93c173817a9185457eaff934863c82ad06b3d0dee5cd7e4eb",
+    "Tassel \u2022 silk strand 38": "bfd3ec4b09f74cf65d0cec3dfbd271104e9573a2494a11e9811b1165f89ff854",
+    "Tassel \u2022 silk strand 39": "e4f87680b436c904c33e924a996764d3f4702a5d28858cc749e2f5796eb727d8",
+    "Tassel \u2022 silk strand 40": "4b00ce276234c95d1a28467cd2e8625d9e68eb6b3d34712cb7d48be00098a584",
+    "Tassel \u2022 silk strand 41": "72588bcb0990c8b5ba2b3eef813a12dab7680d430bb8d823f86bd555cfc43169",
+    "Tassel \u2022 woven silk fan": "98b62c5d20ecbe1a9f3406b75fef803b517cf335f8ed7dd1ac902e3bf0a58ca6",
+    "Tassel \u2022 smooth red lacquer bead small": "7d64cfe8a45dfbbfc64fd7ef1a4e5905b0faabb9227eea6144aaefb98552e446",
+    "Tassel \u2022 smooth red lacquer bead oval": "d80210cc126750cd8b71422482e9e4dcc44f066c916d99b7e3df0e7fff330ec8"
+  },
+  "blade_and_recess_geometry_unchanged": true,
+  "cast_relief": [
+    {
+      "name": "Socket \u2022 raised S cast volute \u2022 seated",
+      "stations": 37,
+      "min_width_mm": 0.85,
+      "max_width_mm": 8.089436713895834,
+      "max_height_mm": 2.0223591784739585,
+      "closed": true
+    },
+    {
+      "name": "Socket \u2022 sweeping lower cast scroll \u2022 seated",
+      "stations": 30,
+      "min_width_mm": 0.9,
+      "max_width_mm": 8.198286256960237,
+      "max_height_mm": 2.0495715642400594,
+      "closed": true
+    },
+    {
+      "name": "Blade \u2022 crown cast scroll \u2022 seated",
+      "stations": 49,
+      "min_width_mm": 0.75,
+      "max_width_mm": 8.979478814926114,
+      "max_height_mm": 2.2,
+      "closed": true
+    },
+    {
+      "name": "Socket \u2022 raised S cast volute.001 \u2022 seated",
+      "stations": 37,
+      "min_width_mm": 0.85,
+      "max_width_mm": 8.089436272458544,
+      "max_height_mm": 2.022359068114636,
+      "closed": true
+    },
+    {
+      "name": "Socket \u2022 sweeping lower cast scroll.001 \u2022 seated",
+      "stations": 30,
+      "min_width_mm": 0.9,
+      "max_width_mm": 8.198286277869672,
+      "max_height_mm": 2.049571569467418,
+      "closed": true
+    },
+    {
+      "name": "Blade \u2022 crown cast scroll.001 \u2022 seated",
+      "stations": 49,
+      "min_width_mm": 0.75,
+      "max_width_mm": 8.979478814926114,
+      "max_height_mm": 2.2,
+      "closed": true
+    }
+  ],
+  "seated_back_faces": true,
+  "ring_specs": [
+    {
+      "name": "lower",
+      "centre_m": 1.617,
+      "axial_width_mm": 22.999999999999908,
+      "foot_radius_mm": 15.7,
+      "crown_radius_mm": 25.2
+    },
+    {
+      "name": "upper",
+      "centre_m": 1.695,
+      "axial_width_mm": 18.999999999999908,
+      "foot_radius_mm": 19.5,
+      "crown_radius_mm": 26.200000000000003
+    }
+  ],
+  "floating_sleeve_strands_removed": true,
+  "texture_based_socket_engraving": true,
+  "ring_profiles_m": {
+    "lower": [
+      [
+        1.603,
+        0.0157
+      ],
+      [
+        1.605,
+        0.0175
+      ],
+      [
+        1.608,
+        0.0205
+      ],
+      [
+        1.611,
+        0.0231
+      ],
+      [
+        1.614,
+        0.0247
+      ],
+      [
+        1.617,
+        0.0252
+      ],
+      [
+        1.62,
+        0.0249
+      ],
+      [
+        1.6225,
+        0.0234
+      ],
+      [
+        1.6245,
+        0.0213
+      ],
+      [
+        1.626,
+        0.0195
+      ]
+    ],
+    "upper": [
+      [
+        1.6855,
+        0.0195
+      ],
+      [
+        1.687,
+        0.0215
+      ],
+      [
+        1.689,
+        0.024
+      ],
+      [
+        1.692,
+        0.0257
+      ],
+      [
+        1.695,
+        0.0262
+      ],
+      [
+        1.698,
+        0.0259
+      ],
+      [
+        1.701,
+        0.0244
+      ],
+      [
+        1.703,
+        0.022
+      ],
+      [
+        1.7045,
+        0.0195
+      ]
+    ]
+  },
+  "lower_ring_tapers_into_shaft": true,
+  "separate_ring_shoulder_strips_removed": true,
+  "collar_weighted_normals_only": false,
+  "hero_scroll_curve_finish": [
+    {
+      "name": "Blade \u2022 crown cast scroll \u2022 seated",
+      "stations": 97,
+      "vertices": 873,
+      "closed": true,
+      "back_seated": true
+    },
+    {
+      "name": "Blade \u2022 crown cast scroll.001 \u2022 seated",
+      "stations": 97,
+      "vertices": 873,
+      "closed": true,
+      "back_seated": true
+    }
+  ],
+  "collar_original_soft_edge_normals_retained": true,
+  "final_saved_geometry_check": {
+    "protected_components": 75,
+    "all_unchanged": true,
+    "collision_hulls": 11,
+    "texture_paths_exist": true
+  }
+}

@@ -447,7 +447,7 @@ bool AProphecyNNLocomotionManager::TriggerAgentNNAttack(FProphecyAgentHandle Han
 	if (!bHalf && CVarHalfTestUpperSource.GetValueOnGameThread() >= 0) return false;
 #endif
 	AProphecyAgent* Actor = ResolveAgent(Handle);
-	if (!Actor || !Actor->bNNInferenceEnabled || TargetWorld.ContainsNaN() || !InitializeSlashNNE()) return false;
+	if (!Actor || ProphecyBodyflip::Active(Actor) || !Actor->bNNInferenceEnabled || TargetWorld.ContainsNaN() || !InitializeSlashNNE()) return false;
 	const TArray<float>* Labels = Impl->SlashLabels.Find(Attack);
 	if (!Labels) return false;
 	FImpl::FAgent& Agent = Impl->Agents[Handle.Index];
@@ -982,9 +982,9 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 {
 	ProphecyAttackPerf::FScope Perf(ProphecyAttackPerf::EStage::Attack);
 	if (!Impl->bSlashInitialized) return;
-	TArray<int32, TInlineAllocator<BatchSize>> Active,AlternativeActive,Refresh2Active,September20Active,CachedActive;
+	TArray<int32, TInlineAllocator<LocomotionBatchSize>> Active,AlternativeActive,Refresh2Active,September20Active,CachedActive;
 #if !UE_BUILD_SHIPPING
-	TArray<int32,TInlineAllocator<BatchSize>> AuditActive;
+	TArray<int32,TInlineAllocator<LocomotionBatchSize>> AuditActive;
 #endif
 	auto* Comparison=ProphecyAttackCheckpoint::Find(this);
 	auto* Refresh2Comparison=ProphecyAttackCheckpoint::Find(this,2);
@@ -1070,11 +1070,11 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	if (!Impl->PreviousPoseDebugAgents.IsEmpty()) UpdatePreviousPoseDebug(true);
 	// Keep recurrent histories and phase latches on agents; only inference batches
 	// split by the checkpoint latched at attack entry. Empty groups do no work.
-	auto RunGroup=[&](const TArray<int32,TInlineAllocator<BatchSize>>& Active,FSlashNative& Model,
+	auto RunGroup=[&](const TArray<int32,TInlineAllocator<LocomotionBatchSize>>& Active,FSlashNative& Model,
 		const FVector3f& NativePosition,const FMat3f& NativeRotation,bool bAudit=false,FAttackEndPrediction* Cached=nullptr)
 	{
 	if (Active.IsEmpty()) return;
-	const int32 Width = FMath::Min(BatchSize,Active.Num());
+	const int32 Width = FMath::Min(LocomotionBatchSize,Active.Num());
 	// Odd trims can defer the real step until the next tick. A changed target or
 	// recurrent state invalidates the cached prediction; keep using the real target.
 	FSlashNative::FHalfReach CachedReach;
@@ -1102,11 +1102,11 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 	for (int32 Start = 0; Start < Active.Num(); Start += Width)
 	{
 		const int32 Count = FMath::Min(Width, Active.Num() - Start);
-		TArray<FSlashNative::FStepSettings, TInlineAllocator<BatchSize>> Settings;
+		TArray<FSlashNative::FStepSettings, TInlineAllocator<LocomotionBatchSize>> Settings;
 		// Construct contexts only for active inertia; inline capacity keeps pointers
 		// stable through this call and avoids per-step heap allocation.
-		TArray<FPelvisInertiaStepContext, TInlineAllocator<BatchSize>> InertiaContexts;
-		TArray<FSlashNative::FHalfReach,TInlineAllocator<BatchSize>> ReachContexts;
+		TArray<FPelvisInertiaStepContext, TInlineAllocator<LocomotionBatchSize>> InertiaContexts;
+		TArray<FSlashNative::FHalfReach,TInlineAllocator<LocomotionBatchSize>> ReachContexts;
 		Settings.SetNum(Width);
 		for (int32 Lane = 0; Lane < Width; ++Lane)
 		{
@@ -1145,7 +1145,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		// Compact only opted-in full attacks. Their ordinary attack history is the
 		// ghost; accepted real legs get a second LOWER-only prediction. Both use
 		// the same actual previous/current pelvis, target and checkpoint.
-		TArray<int32,TInlineAllocator<BatchSize>> RealLanes;
+		TArray<int32,TInlineAllocator<LocomotionBatchSize>> RealLanes;
 		for(int32 Lane=0;Lane<Count;++Lane)
 			if(!Impl->Agents[Active[Start+Lane]].Slash.bHalf && ProphecyAttackFootLocomotion::FindGhost(AgentActors[Active[Start+Lane]]))RealLanes.Add(Lane);
 		bool bRealRan=true;
@@ -1154,7 +1154,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 			// Game-thread scratch shared by batches/managers; no steady-state heap
 			// allocation and no extra model instance or per-agent full-body buffer.
 			static TArray<float> RealInput,RealOutput;
-			TArray<FSlashNative::FStepSettings,TInlineAllocator<BatchSize>> RealSettings;
+			TArray<FSlashNative::FStepSettings,TInlineAllocator<LocomotionBatchSize>> RealSettings;
 			RealInput.SetNumUninitialized(RealLanes.Num()*SlashInputDim);RealSettings.SetNum(RealLanes.Num());
 			for(int32 R=0;R<RealLanes.Num();++R)
 			{
@@ -1305,7 +1305,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		if (!Impl->Agents[Index].Slash.bHalf) if (const auto* Frame=SlashTrainFrame::Find(Actor))
 		{ Position=Frame->Position;Rotation=Frame->Rotation;Audit=true; }
 #endif
-		TArray<int32,TInlineAllocator<BatchSize>> Single;Single.Add(Index);
+		TArray<int32,TInlineAllocator<LocomotionBatchSize>> Single;Single.Add(Index);
 		RunGroup(Single,*Model,Position,Rotation,Audit,Cached);
 		if (auto* Used=AttackEndPredictions.Find(Actor)) { Used->Input.Reset();Used->Output.Reset(); }
 	}
@@ -1317,7 +1317,7 @@ void AProphecyNNLocomotionManager::AdvanceSlashAttacks()
 		if (September20Comparison && September20Comparison->Active.Contains(AgentActors[Index])) Model=September20Comparison->Model.Get();
 		else if (Refresh2Comparison && Refresh2Comparison->Active.Contains(AgentActors[Index])) Model=Refresh2Comparison->Model.Get();
 		else if (Comparison && Comparison->Active.Contains(AgentActors[Index])) Model=Comparison->Model.Get();
-		TArray<int32,TInlineAllocator<BatchSize>> Single;Single.Add(Index);
+		TArray<int32,TInlineAllocator<LocomotionBatchSize>> Single;Single.Add(Index);
 		RunGroup(Single,*Model,Frame->Position,Frame->Rotation,true);
 	}
 #endif

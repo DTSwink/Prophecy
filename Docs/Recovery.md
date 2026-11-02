@@ -1,5 +1,24 @@
 # Restoring Prophecy
 
+## November 2 complete workspace checkpoint and Bodyflip port
+
+The user requested all current repository work, including the accepted Bodyflip
+lab and its new Unreal port. The explicit backup includes current source/tools,
+lab profiles, authored exports and assets, the current PoseAgent Blueprint and
+TestNN map, and the Bodyflip/FootIK runtime payloads, NN graphs and pinned V8 DLL
+with its license. `Exports/Bodyflip/PikeFinal` preserves the exact pike_final FBX.
+The snapshot manifest verifies the committed file list and bytes.
+
+This is a repository checkpoint, not a full laptop or Unreal Content backup.
+Ignored engine build caches, Saved diagnostics, external training runs and other
+bulk Content remain local. Unrelated systems are backed up without claiming they
+were behavior-tested by the Bodyflip port. A concurrent, unfinished Bumblebee
+AddShot header edit remains local: this checkpoint keeps the preceding matching
+two-argument declaration and definition instead of introducing a compile mismatch. Bodyflip validation and remaining
+floor-contact limits are in `Docs/BodyflipNative.md` and the compact receipts in
+`Tools/Recovery/Receipts20261102Bodyflip`.
+
+
 ## November 1 accepted Bodyflip target-point aiming
 
 User confirmed the target-point spear throw works and requested this checkpoint.
@@ -10,6 +29,9 @@ native integration/performance validation remains separate. See Bodyflip THROWS.
 
 ## November 1 accepted Bodyflip throw checkpoint
 
+Pushed as `5b2a2da6` on `origin/codex/standalone-sim`; remote HEAD matched and
+the recovery manifest verified. The accepted point-target follow-up is above.
+
 Accepted standalone motion before target-point aiming experiments: FinalNoAim
 throw sources, shared spine transfer/return, distance-weighted return duration,
 attack joint-limit exemption and playback intent preservation. Includes current
@@ -17,6 +39,44 @@ saved-profile.json (snapshot of live state; live state itself is not changed),
 final source exports/import tools and focused checks. 16,918 final-source,
 157 return checks and the actual-app playback/retarget harness pass.
 Unreal, native packaging and other tasks are outside this checkpoint.
+
+## October 26 storage cleanup and historical diagnostic retrieval
+
+The user requested a broad careful cleanup to Windows Recycle Bin.1,445 files
+totaling11,607,151,778bytes were recycled and every bin payload SHA256-verified.
+No permanent deletion or bin emptying. This is separate from the earlier1.94GB
+obsolete Live Coding patch cleanup.
+
+Old large diagnostic JSON/JSONL/text/log/T3D files dated before October19, excluding
+tracked files, current/recent work, code-referenced fixtures and named performance
+material, were losslessly archived before recycling. The1,126 files retain their
+project-relative paths in
+`Saved/DiagnosticArchives/HistoricalBulkBefore20261019.zip` (2,653,710,038bytes).
+All archive members were independently read back and SHA256-verified. To recover
+an old journal reference, extract only its exact member into the project root;
+do not overwrite a newer existing file or bulk-restore the archive. Scripts,
+small summaries and current fixtures remain in their original locations.
+
+Other recycled files: byte-identical old asset backups (one verified copy kept),
+the unused `unreal_collision.next.json`, redundant `runtime-cache-local.tar.gz`
+(required startup-diagnosis copy retained), pre-October19 crash dumps/rotated logs,
+old pip download/unpack caches, and the optional old generated project DDC pack.
+Current assets, autosaves, model weights/handoffs, training data/environments,
+normal binaries, current camera patches, C++ incremental caches, local Zen cache,
+all benchmark folders and Jolt migration evidence remain.39,735 protected files
+matched their original sizes/mtimes after cleanup, with none missing/changed.
+
+Deleting `DerivedDataCache/Compressed.ddp` does not remove source assets; missing
+derived data can regenerate on use, so the next launch may perform cache work.
+The separate outstanding camera normal-build requirement still applies before
+any cold editor launch. No editor, lab or training process was stopped/restarted.
+
+Exact paths, SHA256, duplicate `kept_copy` replacements, bin metadata/payload paths
+and verification are in `Saved/Diagnostics/StorageCleanup20261026/`:
+`recycle-manifest.json`, `receipt.json`, and `summary.json`.
+The archive is an external local recovery artifact, not a pushed Git backup.
+Net space reclaimable after emptying the bin, accounting for the retained archive,
+is8,953,441,740bytes (about8.95GB). Loose Diagnostics shrank14.43→6.21GB.
 
 ## October 25 Bodyflip motion checkpoint
 

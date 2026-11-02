@@ -2,7 +2,7 @@
 'use strict';
 class JumpTrack {
  constructor(api){
-  this.api=api;this.selected=null;this.open=false;this.drag=null;this.pending=null;this.serial=0;
+  this.api=api;this.selected=null;this.open=false;this.pinned=false;this.drag=null;this.pending=null;this.serial=0;
   const el=id=>document.getElementById(id);this.el=el;
   this.fields={jumpThrowCharge:'throwCharge',jumpThrowSpeed:'throwSpeed',jumpInstantSpin:'instantSpin',jumpPushWith:'pushWith',jumpPercent:'jumpPercent',jumpAttack:'attack',jumpAttackDelay:'attackDelay',jumpAttackIn:'attackIn',jumpFlip:'flip',jumpTwist:'twist',jumpDelay:'turnDelay',jumpDuration:'turnDuration',jumpTurnIn:'turnIn',jumpTurnOut:'turnOut',jumpPoseOut:'poseOut',jumpAxis:'turnAxis',jumpPose:'pose'};
   for(const [id,key] of Object.entries(this.fields))el(id).onchange=()=>{
@@ -17,9 +17,10 @@ class JumpTrack {
   Object.entries(BodyflipJumpAttack.labels).forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;el('jumpAttack').append(option);});
   BodyflipCore.dirs.forEach((name,index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=name;el('jumpAxis').append(option);});
   el('jumpHere').onclick=()=>this.add(api.get().time);
+  el('jumpPin').onclick=()=>{this.pinned=!this.pinned;this.sync();};
   el('jumpRemove').onclick=()=>this.commit(api.get().events.filter(e=>e.id!==this.selected));
   el('jumpTime').onchange=()=>{const value=el('jumpTime').value;if(value.trim()&&Number.isFinite(+value))this.change({time:+value});else {el('jumpTime').value=api.get().events.find(e=>e.id===this.selected)?.time.toFixed(3)||'';}};
-  document.addEventListener('pointerdown',e=>{if(!el('jumpEditor').contains(e.target)&&e.target!==el('jumpHere')){if(!el('minorOptions').contains(e.target))this.commitFocused();this.open=false;this.sync();}});
+  document.addEventListener('pointerdown',e=>{if(!el('jumpEditor').contains(e.target)&&e.target!==el('jumpHere')){if(!el('minorOptions').contains(e.target))this.commitFocused();if(!this.pinned)this.open=false;this.sync();}});
   document.addEventListener('keydown',e=>{if(e.code==='Escape')this.close();});
   el('jumpLane').onpointerdown=e=>{
    if(e.button!==0)return;const marker=e.target.closest('.jump-marker');
@@ -39,7 +40,7 @@ class JumpTrack {
   el('jumpLane').onpointerup=end;el('jumpLane').onpointercancel=end;el('jumpLane').onlostpointercapture=end;
  }
  commitFocused(){const focused=document.activeElement;if(focused===this.el('jumpTime')||Object.keys(this.fields).some(id=>focused===this.el(id))){focused.onchange?.();focused.blur?.();}}
- close(){this.commitFocused();this.open=false;this.sync();}
+ close(){this.commitFocused();if(!this.pinned)this.open=false;this.sync();}
  flush(){if(this.pending){const events=this.pending;this.pending=null;this.commit(events);}}
  commit(events){
   const before=BodyflipCore.sanitize({jumpEvents:this.api.get().events}).jumpEvents,after=BodyflipCore.sanitize({jumpEvents:events}).jumpEvents;
@@ -54,6 +55,7 @@ class JumpTrack {
   el('jumpEditor').hidden=el('jumpHere').hidden=false;
   if(!events.some(e=>e.id===this.selected))this.selected=null;
   const selected=events.find(e=>e.id===this.selected),index=events.indexOf(selected),result=selected?.enabled===false?{status:'Disabled',reason:'Unchecked'}:results.find(e=>e.id===this.selected);
+  el('jumpPin').textContent=this.pinned?'Pinned':'Pin';el('jumpPin').setAttribute('aria-pressed',String(this.pinned));el('jumpPin').classList.toggle('active',this.pinned);el('jumpPin').title=this.pinned?'Unpin jump window':'Keep jump window open';
   el('jumpHere').disabled=events.length>=32;el('jumpPopover').hidden=!selected||!this.open;
   for(const id of ['jumpTime','jumpRemove'])el(id).disabled=!selected;
   if(document.activeElement!==el('jumpTime'))el('jumpTime').value=selected?selected.time.toFixed(3):'';

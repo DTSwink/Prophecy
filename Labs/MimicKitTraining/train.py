@@ -71,6 +71,8 @@ def main():
         help='Allow prepared linear/angular velocity weights to differ from the checkpoint by this explicit factor')
     parser.add_argument('--resume-position-leeway',action='store_true',
         help='Explicitly adopt prepared position MSE allowances while retaining learned state')
+    parser.add_argument('--resume-custom-physics',action='store_true',
+        help='Explicitly restore the Jolt-style contact/motor solver from a native MuJoCo checkpoint')
     parser.add_argument('--resume-recovery-curriculum', action='store_true',
                         help='Explicitly return from perturbed training to the ordinary recovery curriculum')
     parser.add_argument('--resume-perturbed-motion', action='store_true',
@@ -282,6 +284,8 @@ def main():
             from recovery_omni import RecoveryOmniEnv as OmniWalkEnv
         if config.get('perturbed_motion'):
             from perturbed_omni import PerturbedOmniEnv as OmniWalkEnv
+        if config.get('slow_loco_disabled_curriculum'):
+            from slow_loco_disabled import DisabledSlowLocoEnv as OmniWalkEnv
         env=OmniWalkEnv(config,yaml.safe_load(Path(engine_file).read_text()),a.worlds,'cuda:0',False)
     elif a.absolute_walk:
         from absolute_walk import AbsoluteWalkEnv
@@ -397,6 +401,12 @@ def main():
                             for key in ('uefn_native_profile','uefn_bounded_velocity_motors','uefn_jolt_contact_profile','transfer_floor_aware_projection'):
                                 old[key]=new[key]
                         else:
+                            if a.resume_custom_physics:
+                                assert old.get('uefn_native_profile') in (None,'native_runlr_soft_contact_20261018')
+                                old.pop('uefn_native_profile',None)
+                                assert new.get('transfer_floor_aware_projection') is True
+                                old['transfer_solver_profile']=new.get('transfer_solver_profile','legacy_100_50_20')
+                                new.setdefault('transfer_solver_profile','legacy_100_50_20')
                             assert new['uefn_bounded_velocity_motors'] is True
                             old['uefn_bounded_velocity_motors']=True
                             assert new['uefn_jolt_contact_profile'] is True
@@ -405,6 +415,31 @@ def main():
                         old['uefn_zero_joint_armature']=True
                     if name=='engine_config.yaml' and a.zero_joint_armature:
                         old['uefn_zero_joint_armature']=True
+                    if name=='env_config.yaml' and a.equipment_omni and new.get('slow_loco_task'):
+                        # Explicit temporary limp-only curriculum; keep all weights,
+                        # optimizer state, motion IDs and other settings unchanged.
+                        if new.get('slow_loco_signed_limp_idles'):
+                            assert new['slow_loco_signed_limp_idles'] is True
+                            assert old.get('idle_row_fraction') in (.5,.6) and new['idle_row_fraction']==.6
+                            old['slow_loco_signed_limp_idles']=True
+                            old['idle_row_fraction']=.6
+                        key='slow_loco_motion_subset'
+                        assert new.get(key) in (None, ['limpL','limpR'])
+                        old.pop(key,None)
+                        if key in new:old[key]=new[key]
+                    if name=='env_config.yaml' and a.equipment_omni and new.get('slow_loco_task'):
+                        key='slow_loco_disabled_curriculum'
+                        if key in new:
+                            assert new[key]['version']==1 and new[key]['fractions']==[.1,.3,.3,.3]
+                            assert new[key]['crawl_mixed_rule']=='slower_factor'
+                            old[key]=new[key]
+                        key='slow_loco_failure_penalty'
+                        assert new.get(key,0.) in (0.,100.)
+                        old.pop(key,None)
+                        if key in new:old[key]=new[key]
+                    if name=='agent_config.yaml' and config.get('slow_loco_disabled_curriculum'):
+                        assert new['critic_optimizer']['grad_clip']==100.
+                        old['critic_optimizer']['grad_clip']=100.
                     assert old==new,f'Run LR resume config mismatch: {name}'
                     continue
                 if name=='env_config.yaml' and a.absolute_walk:
@@ -440,6 +475,9 @@ def main():
                 if name=='agent_config.yaml':old['test_episodes']=new['test_episodes']
                 assert old==new,f'Resume config mismatch: {name}'
     resumed=restore(agent,a.resume,add_height_records=add_height_records) if a.resume else dict(prior_samples=0,iteration_offset=0)
+    if a.resume and config.get('slow_loco_disabled_curriculum'):
+        from disabled_limb_rules import migrate_disabled_arm_flags
+        resumed['disabled_arm_flag_normalization']=migrate_disabled_arm_flags(agent)
     if a.action_noise is not None and not a.per_agent_noise:
         from resume import override_fixed_action_noise
         resumed['action_noise_override']=override_fixed_action_noise(agent,a.action_noise)
@@ -507,10 +545,18 @@ def main():
                 perturbed_getups=int(env._perturbed_getup.sum()),
                 perturbed_random_frame=int((env._perturbed_getup & env._recovery_random_start_rows).sum()),
                 prior_rows=len(env._prior_ids)))
+    if hasattr(env,'head_height_strength'):
+        atomic_json(directory/'actuation_controller.json',env.head_height_strength)
     if hasattr(env._engine,'torque_envelope_report'):
         atomic_json(directory/'torque_envelope.json',env._engine.torque_envelope_report)
     if hasattr(env._engine,'native_profile_report'):
         atomic_json(directory/'native_physics.json',env._engine.native_profile_report)
+    if a.resume_custom_physics:
+        assert type(env._engine).__name__=='ContactTransferEngine'
+        assert env._engine.transfer_floor_guard is not None
+        atomic_json(directory/'custom_physics.json',dict(engine=type(env._engine).__name__,
+            floor_guard=True,physics_hz=engine_config['sim_freq'],policy_hz=engine_config['control_freq'],
+            solver=env._engine.transfer_profile_report))
     if a.valid_reset_pose_pool:
         atomic_json(directory/'reset_pose_pool.json',env.reset_pose_pool_report)
     noise_metadata=dict(training_action_noise_std=float(agent_config['model']['action_std']))
@@ -585,6 +631,14 @@ def main():
             if a.per_agent_noise:
                 z.write(Path(__file__).with_name('agent_noise.py'),'agent_noise.py')
                 z.write(directory/'agent_noise.json','agent_noise.json')
+            if hasattr(env,'head_height_strength'):
+                z.write(directory/'actuation_controller.json','actuation_controller.json')
+                for controller_source in ('head_strength.py','slow_loco_env.py'):
+                    z.write(Path(__file__).with_name(controller_source),controller_source)
+            if hasattr(env,'disabled_curriculum'):
+                for src in ('slow_loco_disabled.py','disabled_limb_rules.py'):
+                    z.write(Path(__file__).with_name(src),src)
+                z.write(Path(config['motion_file']).parent/config['slow_loco_disabled_curriculum']['init_bank'],'disabled_inits.npz')
             for name in ['model.pt','resume_state.pt','engine_config.yaml','env_config.yaml','agent_config.yaml','provenance.json']:
                 z.write(directory/name,name)
             z.write(ROOT/'runtime-freeze.txt','runtime-freeze.txt')
@@ -787,7 +841,8 @@ def main():
             for tag,key in [('solver_roundoff_warnings','roundoff_total'),('solver_convergence_warnings','convergence_total'),
                             ('solver_motor_residual_nm','maximum_motor_residual_nm'),
                             ('solver_contact_limit_velocity_residual','maximum_contact_limit_velocity_residual')]:
-                agent._logger._writer.add_scalar('health/'+tag,detail[key],agent._sample_count)
+                if key in detail:
+                    agent._logger._writer.add_scalar('health/'+tag,detail[key],agent._sample_count)
             agent._logger._writer.flush()
     install_guard(agent,report_failure,report_solver_warning)
     agent._train_iter=iteration

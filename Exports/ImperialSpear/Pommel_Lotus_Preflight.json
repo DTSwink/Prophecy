@@ -1,0 +1,484 @@
+{
+  "status": "LOTUS_SOURCE_PREFLIGHT_PASSED",
+  "concept": "04 \u2014 Lotus bud",
+  "unreal_import_cooking_and_physics_validated": false,
+  "wood_joint": {
+    "status": "PASS",
+    "method": "actual shaft face sections; BVH parity with double-precision closed-surface solid-angle winding for stalled, ambiguous or negative votes",
+    "continuous_surface_proof": false,
+    "source_z_span_m": [
+      0.09000000357627869,
+      0.12809999287128448
+    ],
+    "axial_sections": 127,
+    "maximum_axial_step_m": 0.001,
+    "maximum_cross_section_step_m": 0.0005,
+    "boundary_tolerance_m": 2e-06,
+    "samples": 24980,
+    "outside_samples": 0,
+    "ray_vote_disagreements": 388,
+    "winding_fallback": {
+      "checks": 388,
+      "disagreement_checks": 388,
+      "negative_parity_checks": 2,
+      "corrected_false_negatives": 2,
+      "corrected_false_positives": 0,
+      "stalled_parity_rays": 0,
+      "stalled_parity_queries": 0,
+      "confirmed_outside": 0,
+      "maximum_integer_residual": 3.3306690738754696e-15,
+      "examples": [
+        {
+          "position_m": [
+            -0.012934313155710697,
+            0.005357568152248859,
+            0.09000000357627869
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0009515374549664557
+        },
+        {
+          "position_m": [
+            -0.010770034976303577,
+            -0.00883873924612999,
+            0.09000000357627869
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.000588364724535495
+        },
+        {
+          "position_m": [
+            -2.571758291167179e-18,
+            -0.014000000432133675,
+            0.09000000357627869
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.003268518717959523
+        },
+        {
+          "position_m": [
+            0.012296732515096664,
+            0.006572740618139505,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0008570529171265662
+        },
+        {
+          "position_m": [
+            -0.000455554953077808,
+            0.013965715654194355,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0030052759684622288
+        },
+        {
+          "position_m": [
+            -0.012296732515096664,
+            -0.006572740618139505,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0008570529171265662
+        },
+        {
+          "position_m": [
+            -0.0018222195794805884,
+            -0.01383110973984003,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.00233579077757895
+        },
+        {
+          "position_m": [
+            0.008845420554280281,
+            -0.010778176598250866,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0006477515562437475
+        },
+        {
+          "position_m": [
+            0.010197378695011139,
+            -0.009553126990795135,
+            0.09048847109079361
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0005954981897957623
+        },
+        {
+          "position_m": [
+            0.012953868135809898,
+            0.0053656683303415775,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0010240318952128291
+        },
+        {
+          "position_m": [
+            -0.004927289206534624,
+            0.013086848892271519,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0011416943743824959
+        },
+        {
+          "position_m": [
+            -0.008143862709403038,
+            0.011367554776370525,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0007156081264838576
+        },
+        {
+          "position_m": [
+            -0.011367554776370525,
+            -0.008143862709403038,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0007156081264838576
+        },
+        {
+          "position_m": [
+            -0.005769680719822645,
+            -0.012737919576466084,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0009923934703692794
+        },
+        {
+          "position_m": [
+            -0.003612152300775051,
+            -0.01348579116165638,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0014675435377284884
+        },
+        {
+          "position_m": [
+            0.010205081664025784,
+            -0.009560342878103256,
+            0.09097692370414734
+          ],
+          "parity_votes": [
+            true,
+            false,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0006549063255079091
+        },
+        {
+          "position_m": [
+            -0.011367757804691792,
+            -0.008144007995724678,
+            0.09098846465349197
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0007168772863224149
+        },
+        {
+          "position_m": [
+            0.013353048823773861,
+            -0.00405060313642025,
+            0.09098846465349197
+          ],
+          "parity_votes": [
+            false,
+            true,
+            true
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0013617051299661398
+        },
+        {
+          "position_m": [
+            0.01252241712063551,
+            0.006173913367092609,
+            0.09099999815225601
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0009516567806713283
+        },
+        {
+          "position_m": [
+            -0.0009118304005824029,
+            0.013931859284639359,
+            0.09099999815225601
+          ],
+          "parity_votes": [
+            true,
+            true,
+            false
+          ],
+          "parity_inside": true,
+          "winding_number": 1.0,
+          "stalled_ray_indices": [],
+          "winding_inside": true,
+          "nearest_surface_distance_m": 0.0027399566024541855
+        }
+      ]
+    },
+    "containing_component_sample_counts": {
+      "02 \u2022 carved lotus pommel body": 11932,
+      "Pommel \u2022 rolled socket and straight barrel": 13048,
+      "Pommel \u2022 stepped lotus seat": 0,
+      "Pommel \u2022 six carved lotus petals": 0
+    },
+    "minimum_accepted_nearest_surface_distance_m": 0.0,
+    "outside_examples": []
+  },
+  "parts": {
+    "02 \u2022 carved lotus pommel body": {
+      "vertices": 4098,
+      "triangles": 8192,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 7.147499013207854e-05,
+      "minimum_face_area_m2": 1.736436558985588e-07,
+      "minimum_edge_length_m": 6.939901504665613e-05,
+      "bounds_m": {
+        "min": [
+          -0.02449999935925007,
+          -0.02449999935925007,
+          0.012500000186264515
+        ],
+        "max": [
+          0.02449999935925007,
+          0.02449999935925007,
+          0.10849999636411667
+        ]
+      },
+      "minimum_triangle_area_m2": 6.967847130528089e-08,
+      "minimum_normal_dot": 0.8063770271837711,
+      "minimum_UV_triangle_area": 4.1463707667332983e-07
+    },
+    "Pommel \u2022 rolled socket and straight barrel": {
+      "vertices": 720,
+      "triangles": 1436,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 2.282402619265445e-05,
+      "minimum_face_area_m2": 2.1082337298139464e-06,
+      "minimum_edge_length_m": 0.0007615742506459355,
+      "bounds_m": {
+        "min": [
+          -0.01899999938905239,
+          -0.01899999938905239,
+          0.10499999672174454
+        ],
+        "max": [
+          0.01899999938905239,
+          0.01899999938905239,
+          0.12809999287128448
+        ]
+      },
+      "minimum_triangle_area_m2": 5.566057470383355e-07,
+      "minimum_normal_dot": 0.9561249502003193,
+      "minimum_UV_triangle_area": 1.146547194963432e-06
+    },
+    "Pommel \u2022 stepped lotus seat": {
+      "vertices": 880,
+      "triangles": 1756,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 1.1340390132668065e-05,
+      "minimum_face_area_m2": 5.525450319510128e-07,
+      "minimum_edge_length_m": 0.00021213134459685534,
+      "bounds_m": {
+        "min": [
+          -0.017500000074505806,
+          -0.017500000074505806,
+          0.0010000000474974513
+        ],
+        "max": [
+          0.017500000074505806,
+          0.017500000074505806,
+          0.014499999582767487
+        ]
+      },
+      "minimum_triangle_area_m2": 2.7502789546435467e-07,
+      "minimum_normal_dot": 0.948755043605523,
+      "minimum_UV_triangle_area": 1.071737946389817e-06
+    },
+    "Pommel \u2022 six carved lotus petals": {
+      "vertices": 1802,
+      "triangles": 3600,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "loose_vertices": 0,
+      "volume_m3": 1.4832712959391226e-05,
+      "minimum_face_area_m2": 1.1696598134491865e-09,
+      "minimum_edge_length_m": 4.398164946906036e-06,
+      "bounds_m": {
+        "min": [
+          -0.016095571219921112,
+          -0.01563718356192112,
+          -0.03099999949336052
+        ],
+        "max": [
+          0.016095571219921112,
+          0.01563718356192112,
+          0.003000000026077032
+        ]
+      },
+      "minimum_triangle_area_m2": 1.169731049853288e-09,
+      "minimum_normal_dot": 0.32112225890159607,
+      "minimum_UV_triangle_area": 2.91675803509861e-08
+    }
+  }
+}
