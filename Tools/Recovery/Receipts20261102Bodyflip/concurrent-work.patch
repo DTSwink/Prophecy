@@ -1,0 +1,68 @@
+diff --git a/Docs/MimicKitTraining.md b/Docs/MimicKitTraining.md
+index 2015911c..df657d33 100644
+--- a/Docs/MimicKitTraining.md
++++ b/Docs/MimicKitTraining.md
+@@ -1,5 +1,13 @@
+ # MimicKit humanoid trial
+ 
++**November 2 crawl experiment replacement — ALLOCATED, SETUP IN PROGRESS.**
++Owned pod9snbu59mla2xcd, Secure RTX4000Ada,$0.28/h, allocated20:26UTC.
++Do NOT allocate another GPU. Reconcile this pod and existing setup receipt/process.
++Local setup guard60192, runtime deadline1793652407.7522922 (20minute bound).
++Previous vpv6saq7zyooak and5xs589fdlcb7nr remain stopped and must stay untouched.
++Continue documented setup/upload_resume/preflight/stage/launch/audit/verify.
++No verified experiment launch yet; main checkpoint20414 remains rollback-only.
++
+ **November 2 isolated crawl trial — NOT RUNNING; awaiting authorized replacement capacity.**
+ Capacity automation ACTIVE: launch-isolated-crawl-experiment-on-rtx-4000-ada,
+ every60seconds, explicitly authorized after replacement unavailability. Follow
+diff --git a/Labs/RoboticMotionAE/SlowLocoPolicy.md b/Labs/RoboticMotionAE/SlowLocoPolicy.md
+index 59a75dae..34129545 100644
+--- a/Labs/RoboticMotionAE/SlowLocoPolicy.md
++++ b/Labs/RoboticMotionAE/SlowLocoPolicy.md
+@@ -1,5 +1,13 @@
+ # Slow loco policy — November 1, ten motions with signed limp-idle commands
+ 
++**November 2 crawl experiment replacement — ALLOCATED, SETUP IN PROGRESS.**
++Owned pod9snbu59mla2xcd, Secure RTX4000Ada,$0.28/h, allocated20:26UTC.
++Do NOT allocate another GPU. Reconcile this pod and existing setup receipt/process.
++Local setup guard60192, runtime deadline1793652407.7522922 (20minute bound).
++Previous vpv6saq7zyooak and5xs589fdlcb7nr remain stopped and must stay untouched.
++Continue documented setup/upload_resume/preflight/stage/launch/audit/verify.
++No verified experiment launch yet; main checkpoint20414 remains rollback-only.
++
+ **November 2 isolated crawl trial — NOT RUNNING; awaiting authorized replacement capacity.**
+ Capacity automation ACTIVE: launch-isolated-crawl-experiment-on-rtx-4000-ada,
+ every60seconds, explicitly authorized after replacement unavailability. Follow
+diff --git a/ProjectJournal.md b/ProjectJournal.md
+index 920e7e61..8dfabed7 100644
+--- a/ProjectJournal.md
++++ b/ProjectJournal.md
+@@ -228,6 +228,14 @@ Handoff updated **November 2, 2026**. This file and the current sections of link
+ 
+ ## Resume here
+ 
++**November 2 crawl experiment replacement — ALLOCATED, SETUP IN PROGRESS.**
++Owned pod9snbu59mla2xcd, Secure RTX4000Ada,$0.28/h, allocated20:26UTC.
++Do NOT allocate another GPU. Reconcile this pod and existing setup receipt/process.
++Local setup guard60192, runtime deadline1793652407.7522922 (20minute bound).
++Previous vpv6saq7zyooak and5xs589fdlcb7nr remain stopped and must stay untouched.
++Continue documented setup/upload_resume/preflight/stage/launch/audit/verify.
++No verified experiment launch yet; main checkpoint20414 remains rollback-only.
++
+ **November 2 isolated crawl trial — NOT RUNNING; awaiting authorized replacement capacity.**
+ Capacity automation ACTIVE: launch-isolated-crawl-experiment-on-rtx-4000-ada,
+ every60seconds, explicitly authorized after replacement unavailability. Follow
+diff --git a/Source/ProphecyAmbient/Private/BumblebeeTestDirector.h b/Source/ProphecyAmbient/Private/BumblebeeTestDirector.h
+index b8788493..100019ce 100644
+--- a/Source/ProphecyAmbient/Private/BumblebeeTestDirector.h
++++ b/Source/ProphecyAmbient/Private/BumblebeeTestDirector.h
+@@ -61,7 +61,7 @@ private:
+ 	// step factories
+ 	void AddWaitShaders(float MinSeconds);
+ 	void AddWait(float Seconds);
+-	void AddShot(const FString& Name, float Settle = 0.6f);
++	void AddShot(const FString& Name, float Settle = 0.6f, bool bStream = true);
+ 	void AddCall(TFunction<void()> Fn);
+ 
+ 	void BuildModelScene();

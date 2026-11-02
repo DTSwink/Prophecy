@@ -14,7 +14,10 @@ Ignored engine build caches, Saved diagnostics, external training runs and other
 bulk Content remain local. Unrelated systems are backed up without claiming they
 were behavior-tested by the Bodyflip port. A concurrent, unfinished Bumblebee
 AddShot header edit remains local: this checkpoint keeps the preceding matching
-two-argument declaration and definition instead of introducing a compile mismatch. Bodyflip validation and remaining
+two-argument declaration and definition instead of introducing a compile mismatch. The concurrent
+working-copy changes are also backed up, unapplied, in
+`Tools/Recovery/Receipts20261102Bodyflip/concurrent-work.patch`, with their base
+commit and capture receipt alongside it. Bodyflip validation and remaining
 floor-contact limits are in `Docs/BodyflipNative.md` and the compact receipts in
 `Tools/Recovery/Receipts20261102Bodyflip`.
 

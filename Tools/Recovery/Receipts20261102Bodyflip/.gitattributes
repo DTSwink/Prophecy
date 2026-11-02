@@ -1,0 +1,2 @@
+# Keep the recovery patch byte-for-byte identical on Windows checkouts.
+concurrent-work.patch -text

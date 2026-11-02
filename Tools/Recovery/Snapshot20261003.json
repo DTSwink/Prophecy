@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 11132,
-  "bytes": 2036659123,
+  "file_count": 11135,
+  "bytes": 2036663769,
   "files": [
     {
       "path": ".gitattributes",
@@ -15829,9 +15829,9 @@
     },
     {
       "path": "Docs/Recovery.md",
-      "git_blob": "630a56c492a22936f17aca186103f3d2bdc38389",
-      "bytes": 16977,
-      "sha256": "e331d3ac6a13fda7a0461df0ea78d1f4d9bcc3058276faa4981c1960ca9bb089"
+      "git_blob": "d13410eaf8565c98f0a61bfbdbd72cec84c2b630",
+      "bytes": 17169,
+      "sha256": "52710c988e567c9f34e3ca04c83ac036ea7ef78f1f00f2c7e1adb197009b9466"
     },
     {
       "path": "Docs/RegionalSpecialRecovery.md",
@@ -64758,10 +64758,28 @@
       "sha256": "b45f382301327fe58ad4624b389ec3b8d4de8bdf2143ade0a03e1600738de055"
     },
     {
+      "path": "Tools/Recovery/Receipts20261102Bodyflip/.gitattributes",
+      "git_blob": "22fd60d6e1f6153d1bfeaaa802fb44d7bba4c673",
+      "bytes": 100,
+      "sha256": "3af7d390ed267939ef136c2e7d0a115984fd8609e8bc86f637d1666be3f7c61d"
+    },
+    {
       "path": "Tools/Recovery/Receipts20261102Bodyflip/accepted-pike-motion.json",
       "git_blob": "91a92d9c3ab99b24c93795cb0edf604c7ef3f850",
       "bytes": 10394,
       "sha256": "09d3b9e113e468e607798409caff415c2b4cc505b7bb08b9ef760d47b3129ec1"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261102Bodyflip/concurrent-work.json",
+      "git_blob": "ac54457bdf7a5ea5e2b3ba69654829ebbf03cebc",
+      "bytes": 546,
+      "sha256": "e0cf262a2fd7ac46126efe15351b788d5d4a2a13dfa7ef679280b0864bf6218c"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261102Bodyflip/concurrent-work.patch",
+      "git_blob": "8c7193d108c9268caf2ec09bf32638bfa3b0a067",
+      "bytes": 3808,
+      "sha256": "85e227a72d488eccd5a90fae4b4e09a69b8cb512c4004b97bdcbf4b861b50c8e"
     },
     {
       "path": "Tools/Recovery/Receipts20261102Bodyflip/native-port-verification.json",

@@ -1,0 +1,12 @@
+{
+  "capturedUtc": "2026-11-02T20:29:22.764346+00:00",
+  "baseCommit": "dbc4401e96a68145275ee6cf182e32901db012af",
+  "sha256": "85e227a72d488eccd5a90fae4b4e09a69b8cb512c4004b97bdcbf4b861b50c8e",
+  "paths": [
+    "Docs/MimicKitTraining.md",
+    "Labs/RoboticMotionAE/SlowLocoPolicy.md",
+    "ProjectJournal.md",
+    "Source/ProphecyAmbient/Private/BumblebeeTestDirector.h"
+  ],
+  "note": "Unapplied concurrent working-copy edits; includes an unfinished Bumblebee declaration. Preserved as recovery data, not applied to the compiled checkpoint."
+}
