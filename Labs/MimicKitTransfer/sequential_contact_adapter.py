@@ -111,6 +111,18 @@ def contacts(p: ContactProblem, capacity: int, sparse: bool, nacon: wp.array(dty
 
 
 @wp.kernel(enable_backward=False)
+def scale_ground_grip(n: wp.array(dtype=int), ids: wp.array2d(dtype=int),
+                      geom: wp.array(dtype=wp.vec2i), body: wp.array(dtype=int),
+                      mu: wp.array2d(dtype=float), factors: wp.array(dtype=float)):
+    w,c=wp.tid()
+    if c<n[w]:
+        pair=geom[ids[w,c]]
+        a=body[pair[0]];b=body[pair[1]]
+        if a==0:mu[w,c]*=factors[b]
+        elif b==0:mu[w,c]*=factors[a]
+
+
+@wp.kernel(enable_backward=False)
 def bound_counts(p: ContactProblem, capacity: int):
     w=wp.tid()
     p.ncontact[w]=wp.min(p.ncontact[w],capacity)
@@ -196,6 +208,7 @@ class SequentialContactAdapter:
             self.fallback_kernel=make_tiled_iteration(nv,p.nmotor,fallback=True)
             from coupled_contact_gpu import allocate
             self.coupled_problem,self.coupled_kernel,self.coupled_slots=allocate(p)
+        self.ground_friction_factors=None
         self.installed=False
 
     def solve(self,m,d):
@@ -221,6 +234,9 @@ class SequentialContactAdapter:
             d.contact.worldid,d.contact.dim,d.contact.type,d.contact.dist,d.contact.includemargin,d.contact.efc_address,d.efc.J,d.efc.J_rownnz,d.efc.J_rowadr,d.efc.J_colind,
             d.contact.friction,self.rowmap,self.error,self.contactids],device=dev)
         wp.launch(bound_counts,dim=d.nworld,inputs=[p,self.capacity],device=dev)
+        if self.ground_friction_factors is not None:
+            wp.launch(scale_ground_grip,dim=(d.nworld,self.capacity),inputs=[p.ncontact,self.contactids,
+                d.contact.geom,m.geom_bodyid,p.friction,self.ground_friction_factors],device=dev)
         wp.launch(prepare_response,dim=(d.nworld,self.capacity,3,p.nv),inputs=[p],device=dev)
         wp.launch(prepare_diagonal,dim=(d.nworld,self.capacity,3),inputs=[p],device=dev)
         if p.manifold.enabled:

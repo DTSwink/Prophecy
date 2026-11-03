@@ -290,8 +290,9 @@ def test_qt_end_to_end(source,tmp_path,monkeypatch):
         protected=window.wave.processed['peak']
         window.protect.setChecked(False)
         settle()
-        assert window.wave.processed['peak'] > protected*1.5
-        assert window.result[2]['export_blocked']
+        assert window.wave.processed['peak'] == pytest.approx(protected,abs=.0001)
+        assert not window.result[2]['export_blocked'] and window.result[2]['automatic_protection']
+        assert 'prevent clipping' in window.status.text()
         window.protect.setChecked(True)
         settle()
         assert window.wave.processed['peak'] < .9
@@ -311,7 +312,8 @@ def test_qt_end_to_end(source,tmp_path,monkeypatch):
             window.controls['gain_db'].set_value(-6)
             settle()
             assert window.result_settings.gain_db == -6
-            assert abs(window.wave.processed['peak']-.2*10**(-6/20)) < .0001
+            mono_peak=np.max(np.abs(source.samples.mean(axis=1)))
+            assert abs(window.wave.processed['peak']-mono_peak*10**(-6/20)) < .0001
         window.controls['gain_db'].set_value(0)
         # The graph's mouse path moves the nearest band and updates the actual render.
         graph=window.wave
@@ -353,9 +355,10 @@ def test_qt_end_to_end(source,tmp_path,monkeypatch):
         assert settings.pitch==0 and settings.speed==1 and settings.eq==(0,0,0,0,0)
         assert settings.reverb==0 and settings.polish==0 and settings.start==0 and settings.compression==0
         assert window.controls['compression'].spin.text()=='Off'
-        assert settings.subtype=='SOURCE' and not settings.protect and not settings.normalize
+        assert settings.subtype=='PCM_16' and settings.channels=='Mono' and settings.auto_protect
+        assert not settings.protect and not settings.normalize
         assert settings.fade_in_ms == settings.fade_out_ms == 0
-        assert settings.sample_rate == 0 and window.loop.isChecked()
+        assert settings.sample_rate == 48000 and window.loop.isChecked()
         assert window.wave.zoom == 64 and window.player.volume == 1
         assert settings.end==window.audio.duration
         assert window.output_name.text() == 'Game impact é_mix'
@@ -435,7 +438,7 @@ def test_transport_focus_live_edits_and_loop(source,tmp_path):
         assert window.player.paused and not window.timer.isActive()
         # These keys win even after text fields, sliders, lists, combo boxes and buttons have focus.
         for control in [window.eq_sliders[2],window.pitch_spin.lineEdit(),window.output_name,
-                        window.source.list,window.rate,window.normalize,window.generate_button]:
+                        window.source.list,window.creative.curve,window.normalize,window.generate_button]:
             control.setFocus()
             window.player.seek(.5)
             settings=window.current_settings();name=window.output_name.text();selected=window.source.list.currentRow()
@@ -459,7 +462,7 @@ def test_transport_focus_live_edits_and_loop(source,tmp_path):
         window.details.hide()
         window.toggle_play()
         stream=window.player.stream
-        # All changes use the same running stream, including sample-rate and channel changes.
+        # Effects use the same running stream; export format is now fixed mono/48k.
         window.eq_freqs[2].setValue(440);window.eq_spins[2].setValue(-10)
         assert window.player.stream is stream and not window.player.paused
         settle();QTest.qWait(250)
@@ -467,7 +470,7 @@ def test_transport_focus_live_edits_and_loop(source,tmp_path):
         assert window.result_settings.eq[2]==-10
         assert window.player.samples is window.result[0]
         assert window.wave.playback is not None and window.wave.cursor is not None
-        window.rate.setCurrentIndex(window.rate.findData(44100));window.channel_mode.setCurrentText('Mono')
+        window.controls['compression'].set_value(30)
         settle();QTest.qWait(200)
         assert window.player.stream is stream and not window.player.paused
         assert window.player.samples.shape[1]==1 and window.player.rate==48000
@@ -600,7 +603,7 @@ def test_all_eq_sliders_reach_cut_and_reset(source,tmp_path):
             assert window.eq_spins[index].value()==0
             assert window.wave.settings.eq[index]==0
         settle()
-        assert np.array_equal(window.result[0],source.samples)
+        assert np.array_equal(window.result[0],render(source,window.current_settings())[0])
         assert not errors,errors
     finally:
         window.close();settle();app.processEvents()
@@ -723,7 +726,7 @@ def test_single_play_button_original_bypasses_without_losing_edit(source,tmp_pat
         window.play_original_check.click();QTest.qWait(200)
         assert window.player.stream is stream and window.play_mode=='processed'
         assert window.player.samples is window.result[0]
-        # Space still wins over a focused checkbox; it pauses instead of toggling bypass.
+        # Space still wins over the purple toggle; it pauses instead of toggling bypass.
         window.play_original_check.setFocus()
         QTest.keyClick(window.play_original_check,Qt.Key.Key_Space)
         assert window.player.paused and not window.play_original_check.isChecked()
@@ -848,7 +851,7 @@ def test_preview_updates_during_drag_and_curve_never_rolls_back(source,tmp_path,
             assert w.player.paused and abs(w.player.position()-position)<1/source.rate
             QTest.mouseDClick(slider,Qt.MouseButton.LeftButton);settle()
             assert w.current_settings().compression==0
-            assert np.array_equal(w.result[0],source.samples)
+            assert np.array_equal(w.result[0],render(source,w.current_settings())[0])
         assert not errors,errors
     finally:
         w.close()

@@ -64,7 +64,7 @@ const copyPose=pose=>({...pose,points:pose.points.map(v=>Array.from(v)),q:pose.q
 // Per-hand planner payloads contain their own pose and contact arrays. Keep
 // those private too, while retaining the shared rig/surface-query objects.
 const copyHand=hand=>Object.fromEntries(Object.entries(hand).map(([key,value])=>[key,key==='pose'&&value?copyPose(value):key==='rotation'&&value?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,Array.isArray(v)?v.slice():v])):Array.isArray(value)?value.slice():value]));
-function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',correctPose=p=>p,resume=null,horizon=12,decorate=null,exactSource=false,cacheResolvedPose=false,body=null,landingBlend=0,parents=null,bodyDuringSupport=false,supportAirborne=false,forceSource=false,excludeBody=()=>[],breakTimes=[],initialYaw=0,headingAt=()=>[0,0,0,1],rootMotion=null}){
+function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',correctPose=p=>p,resume=null,horizon=12,decorate=null,exactSource=false,cacheResolvedPose=false,body=null,landingBlend=0,parents=null,bodyDuringSupport=false,supportAirborne=false,forceSource=false,excludeBody=()=>[],breakTimes=[],initialYaw=0,headingAt=()=>[0,0,0,1],rootMotion=null,landingRoot=null}){
  // Retain the source curve between collision ticks. Interpolating its absolute
  // root instead can move a pinned wrist just before its release handoff.
  breakTimes=breakTimes.filter(t=>Number.isFinite(t)&&t>start).sort((a,b)=>a-b);
@@ -123,7 +123,7 @@ function track(source,{start=0,surfaces,speed,gait,fallPose,cap=20,phase='RUN',c
     const airborne=raw.airTime>0||raw.phase.includes('FALL')||bodyDuringSupport&&supportAirborne;
     if(airborne&&delta[1]<0&&up){
      next.mode='loco';next.normal=up.normal;next.vy=0;next.bias=[0,0,0];next.landed=true;
-     if(posed){next.bodyRoot=next.root.slice();next.root=move(next.root,[0,0,0],surfaces).root;}
+     if(posed){next.bodyRoot=next.root.slice();next.root=move(landingRoot?landingRoot(translatedPose(raw,next.root),up.surface):next.root,[0,0,0],surfaces).root;}
     }else if(airborne&&resolved.contacts.length){
      if(posed){let velocity=mul(delta,1/h);for(const c of resolved.contacts)velocity=sub(velocity,mul(c.normal,Math.min(0,dot(velocity,c.normal))));next.bias=add(prev.bias,sub(velocity,mul(delta,1/h)));}
      else next.bias=add(prev.bias,mul(sub(sub(next.root,prev.root),delta),1/h));

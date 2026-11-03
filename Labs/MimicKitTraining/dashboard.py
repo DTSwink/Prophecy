@@ -1,9 +1,18 @@
 """Readable local TensorBoard comparison; original event files remain untouched."""
+
+# These local I/O/viewer services do not need numerical worker pools.
+# Set before NumPy/SciPy/TensorBoard imports: otherwise each process reserves
+# hundreds of MB for threads on Windows. This does not change GPU training.
+import os
+for _thread_variable in ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS'):
+    os.environ[_thread_variable] = '1'
+
 import argparse
 import json
 import math
 import time
 from pathlib import Path
+from local_process import ServiceLock, is_current_run
 from runtime_deadline import RuntimeDeadline
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from tensorboard.summary.writer.event_file_writer import EventFileWriter
@@ -59,6 +68,8 @@ class Dashboard:
             if run['objective'] in ('absolute_walk_mse','uefn_omni_absolute_walk','uefn_crawl_idle_mse'):
                 mapping.update({('loss/'+key):('loss/'+key,1) for key in ('position_mse','linear_velocity_mse','rotation_mse','angular_velocity_mse','flat_com_velocity','pelvis_velocity_extra','motion_prior','extremity_speed_excess','walking_airborne','walking_height_excess','feet_target_velocity','feet_idle_local_rotation','pelvis_horizontal_speed_excess','auto_phase','body_total','total')})
                 mapping['motion_prior/raw_cost']=('motion_prior/raw_cost',1)
+                for key in ('raw','weighted','detected_fraction'):
+                    mapping['policy/action_jiggle_'+key]=('policy/action_jiggle_'+key,1)
                 mapping['loss/com2_velocity']=('loss/com2_velocity',1)
                 mapping['loss/head_reversal']=('loss/head_reversal',1)
                 mapping['loss/idle_wobble']=('loss/idle_wobble',1)
@@ -68,7 +79,9 @@ class Dashboard:
                 mapping['loss/getup_head_height']=('loss/getup_head_height',1)
                 mapping['reward/getup_head_height']=('reward/getup_head_height',1)
                 mapping['reward/total']=('reward/total',1)
-                for key in ('crawl_forward','crawl_pose','crawl_forward_speed_m_s','crawl_target_speed_m_s'):
+                for key in ('crawl_forward','crawl_pose','crawl_forward_speed_m_s','crawl_target_speed_m_s',
+                            'crawl_jiggle_penalty','crawl_linear_cancellation_m_s','crawl_angular_cancellation_rad_s',
+                            'crawl_jiggle_termination_per_1000_ticks','crawl_jiggle_new_failure_per_1000_ticks'):
                     mapping['reward/'+key]=('reward/'+key,1)
                 mapping.update({'Misc/Auto_Phase_Mse':('auto_phase/mse',1),'Misc/Auto_Phase_Weighted':('auto_phase/weighted_loss',1)})
             composite=run['objective']=='timed_best_pose_tail'
@@ -188,20 +201,36 @@ class Dashboard:
         for writer in self.writers.values():writer.close()
 
 
-def main():
-    parser=argparse.ArgumentParser();parser.add_argument('manifest',type=Path)
-    parser.add_argument('--until',type=float,default=0);args=parser.parse_args()
-    dashboard=Dashboard(json.loads(args.manifest.read_text()))
+def run_dashboard(args, manifest):
+    dashboard=Dashboard(manifest)
     live=dashboard.manifest.get('runtime_control')
     deadline=RuntimeDeadline(live['path'],live['pod_id'],args.until-180,reserve=-180) if live else None
     try:
         while True:
+            if live and manifest.get('owner_run'):
+                if not is_current_run(Path(live['path']).parent,manifest['owner_run']):
+                    print('Dashboard superseded by another run',flush=True)
+                    break
             count=dashboard.update()
             if count:print(f'Published {count} comparison points',flush=True)
+            sources=[Path(s) for run in manifest['runs'] for s in run['sources']]
+            if sources and all((p/'finished.json').exists() or (p/'failure.json').exists() for p in sources):
+                print('All source runs finished; dashboard publisher exiting',flush=True)
+                break
             until=deadline.read() if deadline else args.until
             if time.time()>=until:break
             time.sleep(min(15,max(0,until-time.time())))
     finally:dashboard.close()
+
+
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument('manifest',type=Path)
+    parser.add_argument('--until',type=float,default=0);args=parser.parse_args()
+    manifest=json.loads(args.manifest.read_text())
+    live=manifest.get('runtime_control')
+    scope=Path(live['path']).parent if live else args.manifest.resolve().parent/args.manifest.stem
+    with ServiceLock(scope/'dashboard.lock'):
+        run_dashboard(args,manifest)
 
 
 if __name__=='__main__':main()

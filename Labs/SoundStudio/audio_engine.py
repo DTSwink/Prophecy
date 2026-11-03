@@ -1,7 +1,7 @@
 """Local, non-destructive WAV processing for Prophecy Sound Studio."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +22,8 @@ import soundfile as sf
 from scipy.signal import resample_poly, sosfilt
 from scipy.fft import rfft, irfft, rfftfreq, next_fast_len
 from pedalboard import Pedalboard, Reverb, Compressor, LowShelfFilter, HighShelfFilter, PeakFilter, time_stretch
+from creative_audio import (trim_samples,validate_curve,volume_envelope,pitch_envelope,granular_synthesis)
+from clean_audio import clean_source
 
 HERE = Path(__file__).resolve().parent
 APP_ID = 'Prophecy.SoundStudio.Desktop.1'
@@ -191,7 +193,7 @@ def atomic_json(path, value):
 @dataclass(frozen=True)
 class Settings:
     start: float = 0.0
-    end: float = 0.0  # zero means full source length
+    end: float | None = None  # None means full source; zero is an actual wrap endpoint
     fade_in_ms: float = 0.0
     fade_out_ms: float = 0.0
     pitch: float = 0.0
@@ -204,12 +206,28 @@ class Settings:
     room: float = 0.35
     polish: float = 0.0
     compression: float = 0.0
+    clean: bool = False
+    clean_amount: float = 1.0
+    volume_curve: tuple = ((0.,1.),(.25,1.),(.5,1.),(.75,1.),(1.,1.))
+    pitch_curve: tuple = ((0.,0.),(.25,0.),(.5,0.),(.75,0.),(1.,0.))
+    granular: bool = False
+    grain_ms: float = 80.0
+    grain_density: float = 4.0
+    grain_position: float = 0.0
+    grain_scatter: float = .25
+    grain_pitch: float = 0.0
+    grain_width: float = 0.0
+    grain_reverse: float = 0.0
+    grain_length: float = 1.0
+    grain_freeze: bool = False
+    grain_seed: int = 1
     denoise: float = 0.0
     noise_floor: float = -60.0
     gain_db: float = 0.0
     normalize: bool = False
     normalize_db: float = -3.0
     protect: bool = False
+    auto_protect: bool = False  # Studio output safety; leave sub-full-scale material alone.
     sample_rate: int = 0  # zero means source rate
     subtype: str = 'SOURCE'
     channels: str = 'Keep source'
@@ -224,6 +242,8 @@ class Audio:
     rate: int
     subtype: str
     sha256: str
+    sources: tuple = ()
+    assembly: dict | None = None
 
     @property
     def duration(self):
@@ -280,6 +300,7 @@ def ffmpeg_filter(samples, rate, filters, cancel=None, output_rate=None):
         command += ['-y', str(dst)]
         with open(Path(work) / 'error.txt', 'w+b') as errors:
             process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=errors,
+                                       cwd=work,
                                        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             started = time.monotonic()
             try:
@@ -326,12 +347,21 @@ def statistics(samples, rate):
 
 def validate(settings, audio):
     s = settings
-    scalars = [s.start, s.end, s.fade_in_ms, s.fade_out_ms, s.pitch, s.speed, *s.eq, *s.eq_frequencies, *s.eq_q,
-               s.highpass, s.reverb, s.room, s.polish, s.compression, s.denoise, s.noise_floor, s.gain_db, s.normalize_db]
+    scalars = [s.start, audio.duration if s.end is None else s.end, s.fade_in_ms, s.fade_out_ms, s.pitch, s.speed, *s.eq, *s.eq_frequencies, *s.eq_q,
+               s.highpass, s.reverb, s.room, s.polish, s.compression, s.clean_amount, s.denoise, s.noise_floor, s.gain_db, s.normalize_db]
     if not all(math.isfinite(float(x)) for x in scalars):
         raise ValueError('All audio controls must be finite numbers.')
-    if not (0 <= s.start < (s.end or audio.duration) <= audio.duration + 1e-6):
-        raise ValueError('Trim end must be after trim start and inside the source.')
+    if not (0<=s.start<=audio.duration+1e-6 and (s.end is None or 0<=s.end<=audio.duration+1e-6)):
+        raise ValueError('Trim handles must stay inside the source.')
+    validate_curve(s.volume_curve,0,2)
+    validate_curve(s.pitch_curve,-24,24)
+    grain_ranges=((s.grain_ms,10,250),(s.grain_density,1,12),(s.grain_position,0,1),
+                  (s.grain_scatter,0,1),(s.grain_pitch,0,12),(s.grain_width,0,1),
+                  (s.grain_reverse,0,1),(s.grain_length,.25,4))
+    if any(not math.isfinite(x) or not low<=x<=high for x,low,high in grain_ranges):
+        raise ValueError('Invalid granular settings.')
+    if not isinstance(s.grain_seed,int) or not 0<=s.grain_seed<2**31:
+        raise ValueError('Invalid grain seed.')
     if not (-12 <= s.pitch <= 12 and .5 <= s.speed <= 2):
         raise ValueError('Pitch must be within ±12 semitones; speed within 50–200%.')
     if len(s.eq) != 5 or any(not EQ_CUT <= x <= 12 for x in s.eq):
@@ -344,6 +374,8 @@ def validate(settings, audio):
         raise ValueError('Invalid reverb or polish amount.')
     if not 0 <= s.compression <= 1:
         raise ValueError('Compression must be between 0 and 100%.')
+    if not 0 <= s.clean_amount <= 1:
+        raise ValueError('Clean amount must be between 0 and 100%.')
     if not (0 <= s.denoise <= 12 and -80 <= s.noise_floor <= -20):
         raise ValueError('Invalid noise reduction setting.')
     if not (0 <= s.fade_in_ms <= 10000 and 0 <= s.fade_out_ms <= 10000 and 0 <= s.highpass <= 500):
@@ -361,10 +393,10 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
     s = settings
     check_cancel(cancel)
     progress('Trimming and preparing audio…')
-    a, b = round(s.start * audio.rate), round((s.end or audio.duration) * audio.rate)
-    if b <= a:
-        raise ValueError('The trim must contain at least one sample.')
-    prefix_key = ('prepared',s.start,s.end,s.reverse,s.channels,s.pitch,s.speed,s.formants,s.denoise,s.noise_floor)
+    prefix_key = ('prepared',s.start,s.end,s.reverse,s.channels,s.pitch,s.speed,s.formants,s.denoise,s.noise_floor,
+                  s.clean,s.clean_amount if s.clean else 0,
+                  s.granular,s.grain_ms,s.grain_density,s.grain_position,s.grain_scatter,s.grain_pitch,
+                  s.grain_width,s.grain_reverse,s.grain_length,s.grain_freeze,s.grain_seed)
     wet_key = ('wet',prefix_key,s.highpass,tuple(s.eq),tuple(s.eq_frequencies),tuple(s.eq_q),
                s.polish,s.fade_in_ms,s.fade_out_ms,s.reverb,s.room)
     if cache is not None:
@@ -378,9 +410,19 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
         if cached_prepared is not None:
             x,notes = cached_prepared
         else:
-            x = audio.samples[a:b].copy()
+            x = trim_samples(audio,s)
             rate = audio.rate
             notes = []
+            if s.clean and s.clean_amount:
+                clean_key=('clear-strong-v1',)
+                cleaned=cache.get(clean_key) if cache is not None else None
+                if cleaned is None:
+                    progress('Cleaning with Clear strong…')
+                    cleaned=clean_source(audio.samples,audio.rate,cancel)
+                    if cache is not None:cache.put(clean_key,*cleaned)
+                wet=trim_samples(replace(audio,samples=cleaned[0]),s)
+                x=wet if s.clean_amount==1 else x+np.float32(s.clean_amount)*(wet-x)
+                notes.extend(cleaned[1]);notes.append(f'Clean blend: {s.clean_amount*100:g}%.')
             if s.reverse:
                 x = x[::-1].copy()
             if s.channels == 'Mono' and x.shape[1] == 2:
@@ -388,6 +430,10 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
                 notes.append('Stereo averaged to mono; check phase cancellation by ear.')
             elif s.channels == 'Stereo' and x.shape[1] == 1:
                 x = np.repeat(x, 2, axis=1)
+            if s.granular:
+                progress('Building the grain cloud…')
+                x=granular_synthesis(x,rate,s,cancel)
+                notes.append(f'Granular: {s.grain_ms:g} ms Hann grains, {s.grain_density:g}× density, seed {s.grain_seed}.')
             filters = []
             if s.pitch or s.speed != 1:
                 progress('Changing pitch / speed with offline Rubber Band R3…')
@@ -452,6 +498,15 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
         if cache is not None:
             cache.put(wet_key,x,notes)
     check_cancel(cancel)
+    if any(point[1]!=0 for point in s.pitch_curve):
+        key=('pitch-envelope',wet_key,tuple(tuple(p) for p in s.pitch_curve),s.formants)
+        automated=cache.get(key) if cache is not None else None
+        if automated is not None:x,notes=automated
+        else:
+            progress('Rendering the pitch envelope…')
+            x=pitch_envelope(x,rate,s.pitch_curve,s.formants,cancel)
+            notes.append('Pitch envelope: continuous linked-channel Rubber Band R3, fixed duration.')
+            if cache is not None:cache.put(key,x,notes)
     # Outside the wet cache: compression drags reuse pitch, EQ, polish and reverb.
     if s.compression:
         progress('Applying compression…')
@@ -460,6 +515,7 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
                      f'{1+7*s.compression:.2f}:1 ratio, threshold {30*s.compression:.1f} dB below clip peak, '
                      '10 ms attack / 120 ms release; no makeup gain.')
     check_cancel(cancel)
+    x=volume_envelope(x,s.volume_curve)
     x *= np.float32(10 ** (s.gain_db / 20))
     final_rate = s.sample_rate or rate
     if final_rate != rate:
@@ -475,17 +531,17 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
     check_cancel(cancel)
     progress('Checking peaks and preparing WAV…')
     reduction = 0.0
-    if s.protect:
+    if s.protect or s.auto_protect:
         peak = true_peak(x)
         # 0.05 dB margin for dither/quantization and estimator rounding.
         ceiling = 10 ** (-1.05/20)
-        if peak > ceiling:
+        if peak > ceiling and (s.protect or peak >= 1):
             reduction = db(ceiling / peak)
             x *= np.float32(ceiling / peak)
             notes.append(f'Peak protection applied {reduction:.2f} dB globally to preserve dynamics.')
     export_blocked = None
     subtype = output_subtype(audio, s)
-    unchanged = rate == audio.rate and subtype == audio.subtype and np.array_equal(x, audio.samples[a:b])
+    unchanged = rate == audio.rate and subtype == audio.subtype and np.array_equal(x, trim_samples(audio,s))
     if subtype.startswith('PCM_') and not unchanged:
         bits = {'PCM_U8':8, 'PCM_16':16, 'PCM_24':24, 'PCM_32':32}[subtype]
         scale = 2 ** (bits-1)
@@ -502,6 +558,7 @@ def render(audio, settings, cancel=None, progress=lambda text: None, allow_clipp
             x = (np.clip(out, -scale, scale-1) / scale).astype(np.float32)
     metrics = statistics(x, rate)
     metrics['protection_gain_db'] = reduction
+    metrics['automatic_protection'] = bool(reduction and s.auto_protect and not s.protect)
     metrics['notes'] = notes
     metrics['export_blocked'] = export_blocked
     check_cancel(cancel)
@@ -533,8 +590,10 @@ def save_render(audio, settings, result, target, name, cancel=None):
     if not target.is_dir():
         raise ValueError('The target folder is unavailable. Choose an existing folder.')
     check_cancel(cancel)
-    if not audio.path.exists() or file_hash(audio.path) != audio.sha256:
-        raise ValueError('The source file changed or moved after loading. Select it again before generating.')
+    sources=audio.sources or ((str(audio.path),audio.sha256),)
+    for path,digest in sources:
+        if not Path(path).exists() or file_hash(path)!=digest:
+            raise ValueError('The source file changed or moved after loading. Select it again before generating.')
     x, rate, metrics = result
     if metrics.get('export_blocked'):
         raise ValueError(metrics['export_blocked'])
@@ -562,11 +621,14 @@ def save_render(audio, settings, result, target, name, cancel=None):
                 continue
         if destination is None:
             raise RuntimeError('Too many files with this name. Choose another name.')
-        recipe = {'studio_version': 1, 'created_utc': datetime.now(timezone.utc).isoformat(),
+        recipe = {'studio_version': 2, 'created_utc': datetime.now(timezone.utc).isoformat(),
                   'source': str(audio.path), 'source_sha256': audio.sha256,
                   'source_sample_rate': audio.rate, 'source_subtype': audio.subtype,
                   'settings': asdict(settings), 'output': destination.name,
                   'output_sha256': file_hash(destination), 'metrics': metrics}
+        if audio.assembly:
+            recipe['assembly']=audio.assembly
+            recipe['sources']=list(sources)
         try:
             atomic_json(destination.with_suffix('.recipe.json'), recipe)
         except Exception:

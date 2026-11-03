@@ -18,6 +18,8 @@ foreach ($studioFilter in @('rubberband', 'afftdn', 'equalizer', 'aresample')) {
 }
 $studioConfig = @{ffmpeg=$studioFFmpeg; python=$studioPython; pythonw=$studioPythonw} | ConvertTo-Json
 [IO.File]::WriteAllText((Join-Path $studioRoot 'runtime.json'), $studioConfig, [Text.UTF8Encoding]::new($false))
+& $studioPython (Join-Path $studioRoot 'install_audio_tools.py')
+if ($LASTEXITCODE -ne 0) { throw 'Sound Studio pitch-envelope tools installation failed.' }
 & $studioPython (Join-Path $studioRoot 'create_icon.py')
 if ($LASTEXITCODE -ne 0) { throw 'Sound Studio icon generation failed.' }
 $studioDesktop = [Environment]::GetFolderPath('Desktop')

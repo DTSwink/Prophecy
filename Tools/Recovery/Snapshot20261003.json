@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 11135,
-  "bytes": 2036663769,
+  "file_count": 11362,
+  "bytes": 2118249055,
   "files": [
     {
       "path": ".gitattributes",
@@ -25,9 +25,9 @@
     },
     {
       "path": "AGENTS.md",
-      "git_blob": "1e9bf543a87f3417a557ac7c38c68c9adb422685",
-      "bytes": 703,
-      "sha256": "ad469f011e7d830dd3c63a2fdfbd108c0e9dd3c7cf368e7bb31dded37e53411f"
+      "git_blob": "410f77f57ebd8b4d9885338e90a3815c538f3bf6",
+      "bytes": 1161,
+      "sha256": "97dc3ebdd336aa95ad3aaba33761169ec2adb60d8ab5c84abc094d6b7dc228d0"
     },
     {
       "path": "Config/DefaultDeviceProfiles.ini",
@@ -1225,9 +1225,9 @@
     },
     {
       "path": "Content/BodyflipLab/LabSettings.json",
-      "git_blob": "c3d0957c96e274800c2babcb1c3ae267e8eb1570",
-      "bytes": 6921,
-      "sha256": "2e24fe8b66ad96f556a9314a1653dfd9982bdc44ab21b3b47919326f80d46cd9"
+      "git_blob": "f641d549aac7cfca0715c2754e85a503316512e9",
+      "bytes": 5631,
+      "sha256": "29b9dfe9b393dc2a782d77ac601894290dc040207d55453ee973eb8fa156265b"
     },
     {
       "path": "Content/BodyflipLab/M_ProjectileVertexColor.uasset",
@@ -1321,15 +1321,15 @@
     },
     {
       "path": "Content/BodyflipLab/Receipt.json",
-      "git_blob": "9153948d955bafef6e6ed257d3169911d3c1d0dd",
-      "bytes": 9540,
-      "sha256": "c5822756c9995292304764479848147934c4bdface25ee29f5cffac7fdd3f2f6"
+      "git_blob": "66e7daec774ef534c9c9f2803d999f5409b3a2ce",
+      "bytes": 9548,
+      "sha256": "3de67013c42edd183e84c251c76e2ee2617300b8ddb7f4b9398c5c3ceb3573ef"
     },
     {
       "path": "Content/BodyflipLab/Runtime.js",
-      "git_blob": "1e2905d20d357bb28d3b9ab89e66bb0fe05af845",
-      "bytes": 1011860,
-      "sha256": "f55a6813a5365e1c61e9e00d3d5f8155d255da6bd19e853c6b35c9a1103654be"
+      "git_blob": "d0b59217dee71aa2b50c81053b119900b9caf9f1",
+      "bytes": 1012558,
+      "sha256": "f22adbd2309a090f7327fcdf91f50233eee788785a11f31d0e50061f9076224c"
     },
     {
       "path": "Content/Cabin/Blueprints/BP_LogCabin1.uasset",
@@ -5059,15 +5059,15 @@
     },
     {
       "path": "Content/Fab/Megascans/Plants/Matted_Pratia_uegjcflia/Medium/uegjcflia_tier_2/Materials/MI_uegjcflia.uasset",
-      "git_blob": "77967220a28c3a0460acde8b12728708408a057c",
-      "bytes": 86495,
-      "sha256": "0fe7671327aa9b9ac2f831615ef91bb563ccd03706b713954a8b44a2cd462292"
+      "git_blob": "73c94f7334d112401aa6d0f60ea2c8ce6cae1e8a",
+      "bytes": 77101,
+      "sha256": "b19ae761bdbb56e68171cf0c295df82428720a8fb973e3708645997fbf93049b"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Matted_Pratia_uegjcflia/Medium/uegjcflia_tier_2/Materials/MI_uegjcflia_Billboard.uasset",
-      "git_blob": "84341be07022cdb925399f714af4bf9e01391c7c",
-      "bytes": 71336,
-      "sha256": "88f60297019cc8b503d645bb80f8401ed667bc77fd492363f057e273c7c9c6c0"
+      "git_blob": "80e032d3dd72f402367f71bbadc3b24a16a7f6d0",
+      "bytes": 73989,
+      "sha256": "82a6719dd06bd142c7cfaee4c97e8f5b917357a22da24c299da07551edc83c26"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Ribbon_Grass_tbdpec3r/Medium/FoliageTypes/FT_tbdpec3r_VarA.uasset",
@@ -5173,15 +5173,15 @@
     },
     {
       "path": "Content/Fab/Megascans/Plants/Thatching_Grass_uddmcgbia/Medium/uddmcgbia_tier_2/Materials/MI_uddmcgbia.uasset",
-      "git_blob": "a2f6d96ec82688f28ef1e90fe17891f17dc3602a",
-      "bytes": 82068,
-      "sha256": "55ca0fc31314f6b5dd722de76d62eed045de4ab0d87755591cf9762ea7171bfc"
+      "git_blob": "41e7f681543d985be822862fbab1d2013c1ccea2",
+      "bytes": 84432,
+      "sha256": "336ed299fa9c4e1729a27a2aa2d3eaff4a2ff60a4ca74f6242f057620d081a69"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Thatching_Grass_uddmcgbia/Medium/uddmcgbia_tier_2/Materials/MI_uddmcgbia_Billboard.uasset",
-      "git_blob": "81b9d88b1b0ab1ad7513bf011cc2c62a8e515338",
-      "bytes": 74259,
-      "sha256": "a70a3ffb1e99521138f806250c2d7ba105257eb32edbafc69a942fc6df9b02a7"
+      "git_blob": "08e9b7ec6570c61761551d361d7a658bf6f8f091",
+      "bytes": 76912,
+      "sha256": "4044efd9fa1487bed982fd4fccdf97aa2642d8baef8356fc187d4f6c0bfcc046"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Thatching_Grass_uddmcgbia/Medium/uddmcgbia_tier_2/StaticMeshes/SM_uddmcgbia_VarA.uasset",
@@ -5239,15 +5239,15 @@
     },
     {
       "path": "Content/Fab/Megascans/Plants/Violet_Wood_Sorrel_uchkajuia/Medium/uchkajuia_tier_2/Materials/MI_uchkajuia.uasset",
-      "git_blob": "d0798de63a6417e5889f69b220125766e975d5b4",
-      "bytes": 77831,
-      "sha256": "3ef737ecc18851b118f37a33f464b9618dbd44301f8b7176042266e4aafe7ddc"
+      "git_blob": "7da7e129c1a8d41ab011753c6ea95fd08268e42a",
+      "bytes": 80195,
+      "sha256": "41565868cf2cbf88390e1bf7c8075346272ff1cf6f54bc169f63bb4dbdee9ec4"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Violet_Wood_Sorrel_uchkajuia/Medium/uchkajuia_tier_2/Materials/MI_uchkajuia_Billboard.uasset",
-      "git_blob": "d22dce91b9487d9a8e9a08df4926e55224548972",
-      "bytes": 80682,
-      "sha256": "5fbb3185a258f37233a91497c2ca90a15af8aee51d8b2c9f19730629716441fd"
+      "git_blob": "e5acb7f70b8dbc7d62c4ad328152bd6424d227fb",
+      "bytes": 83335,
+      "sha256": "168f6ee935824143d63b82c189d0302acb4cba622df5da9f023fe55e2ee05e98"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Wild_Grass_vlkhcbxia/High/FoliageTypes/FT_vlkhcbxia_VarA.uasset",
@@ -5299,15 +5299,15 @@
     },
     {
       "path": "Content/Fab/Megascans/Plants/Wild_Grass_vlkhcbxia/High/vlkhcbxia_tier_1/Materials/MI_vlkhcbxia.uasset",
-      "git_blob": "2eb286cc4f96e2f69d8af45c28691a1ba83ba147",
-      "bytes": 84120,
-      "sha256": "e5d679cf16361dc6c415b7950a3810d62defc0d598f50f214394c95f6ec6895d"
+      "git_blob": "e0def7d0a1b795d7cf2f472d74824b90f3aff806",
+      "bytes": 78917,
+      "sha256": "f17d7e65dd0b1ecfe6c8d433463159607910563bee45e778e25f7b7900a2a5aa"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Wild_Grass_vlkhcbxia/High/vlkhcbxia_tier_1/Materials/MI_vlkhcbxia_Billboard.uasset",
-      "git_blob": "629c84dbe0377126ef56382b8265a700eb0d357b",
-      "bytes": 79054,
-      "sha256": "d7e02ea537e79edbcd55f692b14b23c5d5edfbba86999c833efbe882eca3e52b"
+      "git_blob": "af8dfda45d95606595c9af3e3220b550469867b9",
+      "bytes": 73488,
+      "sha256": "6d5ab7fc3ccb64bdc9db2dfdf7cb4d72099367dc877fd42421427d2307bcf237"
     },
     {
       "path": "Content/Fab/Megascans/Plants/Wild_Grass_vlkhcbxia/High/vlkhcbxia_tier_1/StaticMeshes/wildgrass1.uasset",
@@ -8791,15 +8791,15 @@
     },
     {
       "path": "Content/Megaplant_Library/Tree_Hornbeam/Materials/MI_Tree_Hornbeam_01_Bark.uasset",
-      "git_blob": "55c70c78e4e5e3189e533d2074a957140c98a0fd",
-      "bytes": 14850,
-      "sha256": "ef8047028585d3cfcc8b81341192d41028f32b98fd88ccc716a67bf2564f7453"
+      "git_blob": "33feb74b8e9fa383af0896cfcd077df801ddf414",
+      "bytes": 15480,
+      "sha256": "6453b2361af46886a38e472c8bff267ca862cfc6003056e8ce827b6bb63313ad"
     },
     {
       "path": "Content/Megaplant_Library/Tree_Hornbeam/Materials/MI_Tree_Hornbeam_01_Foliage.uasset",
-      "git_blob": "3ca53b38f2a8e8be7709b90dd03f101c1386a0de",
-      "bytes": 16961,
-      "sha256": "dfd1cd1d1571c0724a0894213968ae5e55fda300df31b99e316c4871071dff50"
+      "git_blob": "9fc2a39df5e760e52aa70261d39e01631442d74f",
+      "bytes": 18181,
+      "sha256": "8dab72d7cf1078833b9c9dd66f0e21811f9e2ac839c3ea5c7132fdd2ae042061"
     },
     {
       "path": "Content/Megaplant_Library/Tree_Hornbeam/Tree_Hornbeam_01/PVE_Tree_Hornbeam_01.uasset",
@@ -10404,6 +10404,126 @@
       "sha256": "a78a6957190eaad8e1868a20c03e925e3b3b8158f641ec486931f82d0aba69c6"
     },
     {
+      "path": "Content/Prophecy/Ambient/Leaves/MI_Leaf_Hornbeam.uasset",
+      "git_blob": "fb99730d74e3b86995bd87e28a41fbe575d79a64",
+      "bytes": 2792,
+      "sha256": "5a8eb874706c60520561b88b585a27a40514c05fe1b6d79b3074bb8955a9da27"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/M_Leaf.uasset",
+      "git_blob": "5738901e7169a0e4744dd479032ee615fd7d78ef",
+      "bytes": 18418,
+      "sha256": "57ba2e86935073db302db3857f35893e65e28ee4e3a09c2b099c9751065ee3d6"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/SM_Leaf_Cupped.uasset",
+      "git_blob": "055d7728796508dfaab465227157eaf2c42e5db2",
+      "bytes": 21537,
+      "sha256": "6efacc0a9d2f6abd987dba836811fa5f6d20fa511e6b8c98e92fc6c215e95206"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/SM_Leaf_Flat.uasset",
+      "git_blob": "58306eecc89268e854cf64f58ec06a5ccab4f790",
+      "bytes": 21250,
+      "sha256": "11b7d03d8faa22ffc45b581564f2f0d6e85373513e52f92e170b6cab5fd00ac4"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/SM_Leaf_Rolled.uasset",
+      "git_blob": "1819afcc06d6060310ef9481c03da8df35dc06a4",
+      "bytes": 21585,
+      "sha256": "dcae3fff1e6e36b743a85753382e0f3bb478037079a1abab0b30de1c08133bfe"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/SM_Leaf_Twisted.uasset",
+      "git_blob": "0d7e700217d8611ae2ea95d753f6556a41efde16",
+      "bytes": 21409,
+      "sha256": "00fdabf7df9a2fc6c388683117e8f4c2285f90603943d6103bf0f55b5934ed3e"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/SM_Leaf_Wavy.uasset",
+      "git_blob": "29b3de0a0ed520d4472ef7d7618763a8457bdc8d",
+      "bytes": 21229,
+      "sha256": "81e104aa8e89bcbdd880f99fad17b4dff47f1ab0697fdd89fb4fa68d5e5c6fa2"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/SM_Leaf_Wet.uasset",
+      "git_blob": "d0c692cc1508036ee391c683fbef993448e24039",
+      "bytes": 20802,
+      "sha256": "874629b99367e456ebfb6de217a59202ac581dba9b3879a042265a1acf743380"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/Textures/T_Leaves_BC.uasset",
+      "git_blob": "3182f20cfab83372465ed021840ae6fb8e432c47",
+      "bytes": 1446063,
+      "sha256": "23ea0bd58ce8bfae989caf339dd5909bc2df27d0f05ee0447621e90bb23d43e6"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/Textures/T_Leaves_M.uasset",
+      "git_blob": "0b91d3fd3ffee3d7a975ad794e6815e97a72ecdf",
+      "bytes": 2198292,
+      "sha256": "56d240a675abe15d90e8778c798fe84f4ffdf27a94b065e2b8f31dea64eab0da"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Leaves/Textures/T_Leaves_N.uasset",
+      "git_blob": "f6278d9c78660873fff5623f36f9623fd5d0ecf0",
+      "bytes": 1135797,
+      "sha256": "a5e5f915209f7a7bd2c92363a8a7f36bc13f68f7c24c1cefb12f14e6e0136f6c"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/MF_WindBurst.uasset",
+      "git_blob": "86ef0a7d1f17f627a6d919aa8870c9bcb7686fb9",
+      "bytes": 34633,
+      "sha256": "0c2e815c04b76513a95bf8eea0d5f896966b61f70af45515881e1735c77064a4"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/MPC_GlobalWind.uasset",
+      "git_blob": "2a03a0abf1f969cbfd62010f6e47eb8257a25389",
+      "bytes": 4500,
+      "sha256": "8033bc9bb95ba0149a4dc8a1e3ad8dae697b97705b3474af2d3ee5337ef78ed2"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/M_WindFieldCopy.uasset",
+      "git_blob": "c4f4c073706143286aafbb83b0eef8292594fb6c",
+      "bytes": 9081,
+      "sha256": "97f1c97bf7001c871a1522e2adb6d03d00b9a39052322c4f8751babe330c8ed8"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/M_WindFieldGen.uasset",
+      "git_blob": "5741a31c47efb2e3593368ff8dc4b629442df101",
+      "bytes": 25635,
+      "sha256": "e6bf64ef06f17c412c3770d1166fdda6bfcfe6a5d65d8f928e116e966db089bd"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/Masters/MA_Foliage_Trees_Wind4.uasset",
+      "git_blob": "81661688050cebb63fe7baedf7a1e7754cc98a9d",
+      "bytes": 38567,
+      "sha256": "08d051ea1499fb0e07e5f15e5554773845b24c897d698d04c346fd0e38a51d6c"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/Masters/M_MS_Billboard_Wind4.uasset",
+      "git_blob": "a9353d5f663d3c0cd549528670993e4bb9f359dd",
+      "bytes": 92242,
+      "sha256": "bdf24585ca0647b1849a90f196b56a51309e041b6eac25d2a642ebddfb6eac06"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/Masters/M_MS_Foliage_Wind4.uasset",
+      "git_blob": "410263c031ad4dc19835667bd6ffc1e7f0c47360",
+      "bytes": 71027,
+      "sha256": "c1ba721ed3e6e5c9f1e15cff27e5299f0a91130dd5d279bb2afc06b204e694d6"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/RT_WindField.uasset",
+      "git_blob": "61c1c6aeb1506391dd2f0bb7dbd63bf38f0f12ad",
+      "bytes": 4051,
+      "sha256": "f0c83771848d356e51e23156ad19de54126d75f89de14d4e4406af3e565d587d"
+    },
+    {
+      "path": "Content/Prophecy/Ambient/Wind/RT_WindFieldPrev.uasset",
+      "git_blob": "885db3437e628a08f5356629ac05382fc68d608f",
+      "bytes": 4071,
+      "sha256": "6eb121a915d63f8263b598d9a49395999535c135c64fd37513ba118fccd4d633"
+    },
+    {
       "path": "Content/Prophecy/BloodExperiments/BP_BloodExperimentManager.uasset",
       "git_blob": "a9b7bf2af24c8f13af76665676d34d58d54bab80",
       "bytes": 345972,
@@ -10522,6 +10642,330 @@
       "git_blob": "8e61596f33db90035a9a313c6099354984965a19",
       "bytes": 1265583,
       "sha256": "1a442f69a2624c629ba9ddff104dbb3115fa47ce038b9cb1014cdc0b9bed5c0b"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/A_Gull_Flap.uasset",
+      "git_blob": "301976b749a7054115c80fd2e862720f73f2076e",
+      "bytes": 314792,
+      "sha256": "44cb3330cc31bdd08a9668f88f3b2b89928eb7b97da3fd74cfd010b4e6956f96"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/A_Gull_Glide.uasset",
+      "git_blob": "a2d4cda7c03f2e07864c950164b75c2bf50dcf47",
+      "bytes": 70764,
+      "sha256": "736b5bde37e5d7c60efeb6c4ac4d7d3b394d60911f4d7f1157442660c348db17"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/A_Gull_Hover.uasset",
+      "git_blob": "d1cdc0f4f99840faaa0bbb8299310598fe77db2d",
+      "bytes": 314799,
+      "sha256": "76cd897f516570c58bda871e947bbd3ed136446410487402f59115643f22a01a"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/A_Gull_Perch.uasset",
+      "git_blob": "6be6909016d93ebac8acd4322a7e5322caad6581",
+      "bytes": 70764,
+      "sha256": "a16f506ed57e212da531650244f5a41d93a296392a4cb643121447a8f8d10330"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/A_Gull_Walk.uasset",
+      "git_blob": "67a2b7d273451cc9b3184c692f0de6593c41ff37",
+      "bytes": 91592,
+      "sha256": "0b95995cdf98c8ec6ac048dfab075d6824ca51f43a42f66c673a53565479ac10"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/MI_Gull_Body.uasset",
+      "git_blob": "f7dc331782b34a4f49fd876a7f0b354f22789513",
+      "bytes": 5066,
+      "sha256": "b6332179e82fbd6708366b8a5320a4a3a29ad5c80d9bff7028f5ea2d3a3141b8"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/MI_Gull_Eye.uasset",
+      "git_blob": "7fe1a1d23ad4914f6b9167a0364faf077212ff00",
+      "bytes": 5495,
+      "sha256": "d6f71ebfb2533bae37fe07a67862340b57c72e2572be93ee8dd764cdd8f545f4"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/MI_Gull_FeatherFX.uasset",
+      "git_blob": "f5d0f77d7b66d2996dc523318fd97f61942300ba",
+      "bytes": 5293,
+      "sha256": "c4deb2db350784ca41a771a5dd205405ee71b3751969cfb0e4ea66b246e41113"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/MI_Gull_Feathers.uasset",
+      "git_blob": "6e5b8234ec166bf5e367d27daf4a7ae2d0904090",
+      "bytes": 5287,
+      "sha256": "732ec279cc5ce81c3c072b96719cd8974ba01ab2127b1bbda8d40eb453539bd0"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/SK_Gull.uasset",
+      "git_blob": "c87c863b241a7cc9679c673f2126824a056bc574",
+      "bytes": 3579948,
+      "sha256": "47d61fda1653e341b55324f4448a30806fa843cfb1d2e4a5a26ffe619833e1e8"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/SK_Gull_Skeleton.uasset",
+      "git_blob": "10a0e5d0387a1561304e3aba4fa86f3f13f19115",
+      "bytes": 16161,
+      "sha256": "4d2f31d92af19240cb2a97544ec70457962eac79d1b5571e8d8a49789b81b188"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/Textures/T_Gull_Body_BC.uasset",
+      "git_blob": "91a8cbef2fa9de78de9e0cc788e683bc1dad6769",
+      "bytes": 233956,
+      "sha256": "8005ca0a14d192305605e2fcc41435b98a008f1c689ef01362e08de0a48fae9e"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/Textures/T_Gull_Body_M.uasset",
+      "git_blob": "8dd11c8803a071e992c8437c802ce8a09ef265c7",
+      "bytes": 200454,
+      "sha256": "9cc939deffab4c21973bb2dd699c25c41ea833e59c4136f9e84628f16d0837d5"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/Textures/T_Gull_Body_N.uasset",
+      "git_blob": "b56f1ab87ab7ed2a04bc5bf529ae5a88b5e0ca18",
+      "bytes": 648991,
+      "sha256": "df7fb09aca7d6d5fd670a480a2ab7e24e42417d861a1812c1cee1929fb3a65d0"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/Textures/T_Gull_Feathers_BC.uasset",
+      "git_blob": "11815e5f955968aaac322e64f06deaba3a882c65",
+      "bytes": 3507495,
+      "sha256": "bfc477b9bb4a66b1af0feb42ec3034d27720155c56e93eeee473ef99e7cf421c"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/Textures/T_Gull_Feathers_M.uasset",
+      "git_blob": "ee51f72c30ef05adae070fe8d1b44dd105ad8bd9",
+      "bytes": 2252229,
+      "sha256": "a2025515c6232286a07462fa7fda93efb0d4e0de711f342aa59c624ee49ec1ee"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Gull/Textures/T_Gull_Feathers_N.uasset",
+      "git_blob": "fa18ceb775999106bf3d18878fa9c67fca706bcb",
+      "bytes": 636311,
+      "sha256": "7cd3f72f3607e11465d9733e83d8ae0e534cddd067e0208aeb5029b7fc407067"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/A_Kingfisher_Flap.uasset",
+      "git_blob": "79baf9255f805aced745e1e80d927ac11f91ee3d",
+      "bytes": 287586,
+      "sha256": "3beef48f5ddd4fd2ec42d5be67ef51ec7fb25a47c86c6cc8641cd944a752d477"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/A_Kingfisher_Glide.uasset",
+      "git_blob": "b7713211b11670b0b54842fe42e47a8effebb9c5",
+      "bytes": 67366,
+      "sha256": "28cbecdf951b98cb198faca3e531c984fab5f54e77b509fd0dec542fa437bf89"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/A_Kingfisher_Hover.uasset",
+      "git_blob": "8c3123145cdb25a79cd9b2805f3be55fe17c94be",
+      "bytes": 287593,
+      "sha256": "d8ffaa9c02b0716ab3c86042d8a6ccb2f252eaac2a47b6c167bbed07c50528ec"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/A_Kingfisher_Perch.uasset",
+      "git_blob": "16c98368ebebafeff253919987805505368c8719",
+      "bytes": 67366,
+      "sha256": "f3276bb7eed0571c9a4f1c7fdc52166a36b7983a23e5b68282bec2e28afab65e"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/A_Kingfisher_Walk.uasset",
+      "git_blob": "c65393dcad78a338f2b5945303daf6a9570109f2",
+      "bytes": 86210,
+      "sha256": "3402d4913b9581c4542adaad58dea30042582df755ec8ef99d14d97b43c8bb7c"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/MI_Kingfisher_Body.uasset",
+      "git_blob": "79c9206eb4b9ed63cfbf249d9b99067c8b475df3",
+      "bytes": 5168,
+      "sha256": "68e70018b2c056a38ed7b11b02e7fe4cbbebe703652d8e4c0bef52347b4ecc9a"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/MI_Kingfisher_Eye.uasset",
+      "git_blob": "1ea8d4853cfcb49d86e4b3e34f645124a6912593",
+      "bytes": 5597,
+      "sha256": "18791dfd60979fd98bdbb84051ceebe329ae9ce52c29a2ff8e41dd72451446c0"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/MI_Kingfisher_FeatherFX.uasset",
+      "git_blob": "841282489233375f84942d2672d3841d20961a2a",
+      "bytes": 5395,
+      "sha256": "2a71be9c0178c43b375b8f84fca845120297dd6b81060770b7c9f99c4f0e61a4"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/MI_Kingfisher_Feathers.uasset",
+      "git_blob": "76cbd8ff3e70d59ff8903aadf1a6241d56df3036",
+      "bytes": 5389,
+      "sha256": "fca3710869eb4b2b9058fac1916072f25795de4dbd57b358733e453c5ec29ef2"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/SK_Kingfisher.uasset",
+      "git_blob": "f7f019218e0595d946fb826633d69dde946ebe27",
+      "bytes": 3454950,
+      "sha256": "fd27313a3d5d1a17d7060dba892d829f99414b9c47c4a878297b1c040dd0f9de"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/SK_Kingfisher_Skeleton.uasset",
+      "git_blob": "4c1dd22c9bb721ec34369b0de22e80d8a98272fa",
+      "bytes": 15443,
+      "sha256": "0eb68012a02f6e919781253fe2198cb0177eccdd64b343c788bb41d3c5137a85"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/Textures/T_Kingfisher_Body_BC.uasset",
+      "git_blob": "44f937fd67290e945bbd6f1f65fae6b0f0bbf63f",
+      "bytes": 238197,
+      "sha256": "c77e1db4378ecd8cb421364d0b8e899d3a9ff27adf5f9fec7c04e14199c23996"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/Textures/T_Kingfisher_Body_M.uasset",
+      "git_blob": "f46a80f2c2425200cc545d4d26a3fe9e76abbb85",
+      "bytes": 175723,
+      "sha256": "de7771aca0344bb423d3bc388abdc3f19e579997e9647507aa8ea3b5cf791077"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/Textures/T_Kingfisher_Body_N.uasset",
+      "git_blob": "051c5b3a2b3f38ca872d4f1fc15a9b7d6ff03f03",
+      "bytes": 665419,
+      "sha256": "43ca274422d2136bc8f12470d56e9fc0e8e3ca81cf30f3d2450d141d7e5aa287"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/Textures/T_Kingfisher_Feathers_BC.uasset",
+      "git_blob": "15daa815dc01765b72f6f641c4c65a265ecc8ed4",
+      "bytes": 4406742,
+      "sha256": "962a8cf4ab99b96177ab4788aff6f0fe1f74627fc4b13ebdc9e0b5b615639b01"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/Textures/T_Kingfisher_Feathers_M.uasset",
+      "git_blob": "d484963bbd3b85ded5a254e89f65cccca8f69d35",
+      "bytes": 2698091,
+      "sha256": "8072ca43ecd4e53e3ab404017a72eb7c5dd03e149bfae59014af70c6a2f358d2"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Kingfisher/Textures/T_Kingfisher_Feathers_N.uasset",
+      "git_blob": "81edf5e5d3b3ab3e6a7dc55a788652eeeb8bfd74",
+      "bytes": 636534,
+      "sha256": "270f76ba9929a5f446d28775d17f3743a92612f6263a9c2001ff97666c6d0c37"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/LODS_Birds.uasset",
+      "git_blob": "1df132042ba4e6a299868bf30c4c5449f448d5db",
+      "bytes": 8102,
+      "sha256": "6eeae99691fdc165dceef0f4ee2ad16479b8c2bc5084a27331391fe09581f17b"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Materials/M_BirdFeatherFX.uasset",
+      "git_blob": "9d29fe6a97a7b5543a229b286e19c08e7aaf1727",
+      "bytes": 14806,
+      "sha256": "a3e71b37309e678fad3e953c3ba96207f84a1cd8a92efe34cc00eec4abc1a4f9"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Materials/M_Bird_Body.uasset",
+      "git_blob": "d47a92445d517c523747188522140ec69a9b3652",
+      "bytes": 21037,
+      "sha256": "017d13f5858ed4dbde287b5efa27a9fa85d17a10c73374b1c83506053895c5fc"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/Materials/M_Bird_Feathers.uasset",
+      "git_blob": "08b19d2f3f564bed5c59e629c67780c4a3c8d7a4",
+      "bytes": 21330,
+      "sha256": "ac06458b71be38ef11c9aefc16fdf5f9496494f93217520940bbb4b2175203d1"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Birds/SM_BirdFeatherFX.uasset",
+      "git_blob": "80062b31406f503d14f52a6b0086dbd3d0be9ac9",
+      "bytes": 12356,
+      "sha256": "29abb39eb7db7ea113f4e9c406692a4fde2d302a78b20b181b264faa176b3d5f"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Materials/M_Bumblebee_Body.uasset",
+      "git_blob": "70ccfc9bfb06cb01df8b34ec87400743e46d619a",
+      "bytes": 23846,
+      "sha256": "98e297f24c5c4d2e9fb89cc12e18a53a1114d7dc880f998837b3bed1d33d19c2"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Materials/M_Bumblebee_Fur.uasset",
+      "git_blob": "769cbb1171e50e1c3f7e81c821efa91dc41b0ad1",
+      "bytes": 24486,
+      "sha256": "797e9214b68edfcac9a16119b165452e04c42dfed8d18ca10ec389a4a93808d6"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Materials/M_Bumblebee_Wing.uasset",
+      "git_blob": "e1ecd2b1c6be5fa3eed956b5058c888cd7897a4e",
+      "bytes": 24157,
+      "sha256": "84f49dbd683799eda4438f3c9fd1602560d612d69268c5c9736abbf0c0ef9439"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/SK_Bumblebee.uasset",
+      "git_blob": "2c00d6ff72862eaef63382df2db8f0db8870c6e4",
+      "bytes": 7803467,
+      "sha256": "1b83c26909b7790dbc03ac78cb2779ebcb33dc3c3e1ff11b6a1b4717427f19ec"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/SK_Bumblebee_Anim_Armature_Fly.uasset",
+      "git_blob": "2c4ae6730d293bb5ad809c2e4e5f8f886afc0afc",
+      "bytes": 207713,
+      "sha256": "5ad7ea6410abefe503f1b30018ff05f5b08db5f6c04b546bed1470737d190d43"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/SK_Bumblebee_Anim_Armature_Idle_Landed.uasset",
+      "git_blob": "20cab5057abaef53b0b8077670a0ae1c439061ae",
+      "bytes": 171508,
+      "sha256": "669b102b01fada6a1053eaf66f51cd6c8792aa15bd91c6ef05516edd6d537792"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/SK_Bumblebee_Skeleton.uasset",
+      "git_blob": "e46312dd5e8a564355a2311a6c09c94b47b5b255",
+      "bytes": 7925,
+      "sha256": "bd1ac73165ac7c81e39c562adb508a74b258ecb02bca915e9cc769430485df37"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/SM_Bumblebee_Fly.uasset",
+      "git_blob": "3eb0a5ab1eb68aff2f43754a8f284fbec7077fb1",
+      "bytes": 1518261,
+      "sha256": "268818c046c5d5cd2031021fed31aea3aa78dfdfedbe1db2c5a263b17454d87b"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/SM_Bumblebee_Landed.uasset",
+      "git_blob": "1e8122d6e5d5e087964b2d2debee3e00e4533324",
+      "bytes": 1520496,
+      "sha256": "ef4cd26e3dc0f036bfe848cb1346fdf4e59b9fb8bc4f441a68d1128c073d6fc6"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Textures/T_Bumblebee_Body_BC.uasset",
+      "git_blob": "1a4ea0f8d8497beef100da09e25fbd2d72a7507b",
+      "bytes": 1084220,
+      "sha256": "a55b4bbd398dba11f6cbbea338d60941059d75f4efe56ba366c72a4f5bf9df8d"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Textures/T_Bumblebee_Body_N.uasset",
+      "git_blob": "5c4f188d4bf63bcf73e88af9b39d77943f994cde",
+      "bytes": 2258720,
+      "sha256": "f5d98cf0d7bb61c88f4875daaa93ad7d5910ade330872ef5078eb08be4e3e321"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Textures/T_Bumblebee_Body_ORM.uasset",
+      "git_blob": "6cf076f58ec4fd5e789c2b451bcffd6258719fe4",
+      "bytes": 1395570,
+      "sha256": "2151abe6dc48ce60f99951922b565153418df468d682f24836bc19df7d305df6"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Textures/T_Bumblebee_Fur_BC.uasset",
+      "git_blob": "5a135bf20d8d2b03b66333baca3aaf4f5d6ba897",
+      "bytes": 1795018,
+      "sha256": "811dc296ddee57943952303489ba57a011d00c86dd631880540416f58e3e85c3"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Textures/T_Bumblebee_Fur_N.uasset",
+      "git_blob": "cf46e47fce9748d4ad4a5055b05f081453943a31",
+      "bytes": 1796525,
+      "sha256": "950c21e13d2202e4e44fadd7b480c98608557e166e31245075807afeacfe35b4"
+    },
+    {
+      "path": "Content/Prophecy/Creatures/Bumblebee/Textures/T_Bumblebee_Wing_BC.uasset",
+      "git_blob": "d1929d3a7cbb5c23ad284fcfab61bae41854d6e4",
+      "bytes": 500118,
+      "sha256": "fb92e869f2b8869d31b9117a4c132de91a449927595066adcdb45403d23dbfd2"
     },
     {
       "path": "Content/Prophecy/External/PolyHaven/FirSapling/fir_sapling_1k/Materials/fir_sapling_branches.uasset",
@@ -14544,6 +14988,12 @@
       "sha256": "95f1ad0bb66410b98a30c294c2fa13198a5757860407aa101dae3b51fab4636c"
     },
     {
+      "path": "Docs/Birds.md",
+      "git_blob": "a8a12a7262c22969627e41fbb2db58fab19864c1",
+      "bytes": 18608,
+      "sha256": "65f6f612de5b465a3ff0e27baaab77e0c48ae0cec4f117c28dfb0c21515ba75b"
+    },
+    {
       "path": "Docs/BlendIdleAudit.md",
       "git_blob": "623d955acb9125d41409371d9dcc468ec596408e",
       "bytes": 4883,
@@ -14569,9 +15019,9 @@
     },
     {
       "path": "Docs/BodyflipNative.md",
-      "git_blob": "2d60e3e00a5cd03053a8c9a0ac23a44bc3735cc9",
-      "bytes": 41935,
-      "sha256": "8899933e061e1be704f47347c84cf1ca15d23d5f7abf72b644d55272fb09e76c"
+      "git_blob": "57c8d79fc867648934cd0755a7b81c1005202fce",
+      "bytes": 50597,
+      "sha256": "468506d915e1e7e97cea6140b12db964c8403775741f98c2100f8caf08b67e3d"
     },
     {
       "path": "Docs/BodyflipNativeRig20261030.md",
@@ -14614,6 +15064,12 @@
       "git_blob": "a624eaf26395a2c1a969edd570279b3d7f179008",
       "bytes": 14719,
       "sha256": "7d9ca8b50748d4ab0cc9a6bb2f4e24e6da034a9d3d678b92257905ca2c8a0706"
+    },
+    {
+      "path": "Docs/Bumblebees.md",
+      "git_blob": "55660a1816c8d36409d81b7f80c81261829e4aec",
+      "bytes": 12636,
+      "sha256": "147a82fc0327ee640d318f99261eed018126a8d2e0d85352473d2a5818d83e27"
     },
     {
       "path": "Docs/CalfRollDuringAttacks.md",
@@ -14809,9 +15265,9 @@
     },
     {
       "path": "Docs/FootIKNative.md",
-      "git_blob": "c227740bb73efcc600ed3a9faa25a18fab54e3fa",
-      "bytes": 16764,
-      "sha256": "9bacd43e368bee1e171e360ede34f9a2f058da37a5a3e9fd7236794692873300"
+      "git_blob": "e912faf976b856880542ad84911a2283054deb2d",
+      "bytes": 19168,
+      "sha256": "2dafa2fa1fa3803f133550afcc41dd7a475da7969a4f725f68c17108b54ee431"
     },
     {
       "path": "Docs/FootJiggle173.md",
@@ -15462,6 +15918,12 @@
       "sha256": "9fd177f4c00407893e774c5cf66ab7fdb2650716e3e5cd5ffc46315b151432a7"
     },
     {
+      "path": "Docs/Leaves.md",
+      "git_blob": "e6b5a8856ff8e09141b5d279f44047f32f9798c0",
+      "bytes": 9711,
+      "sha256": "c66adc09357622d299695be518f37948414b20b502ca852719bb0ca32edfcae1"
+    },
+    {
       "path": "Docs/LeftArm16020261004.md",
       "git_blob": "fc38187603df5bd903a5f41b226d8fbda862a0f8",
       "bytes": 3506,
@@ -15601,9 +16063,9 @@
     },
     {
       "path": "Docs/MimicKitTraining.md",
-      "git_blob": "2015911cde5c806aa6cf5b66c1e29ca6466375c5",
-      "bytes": 990880,
-      "sha256": "7eda6ac62c1ae5fc49012bdd41fb8d8b295645d6dd5c28937425515b4ce443ad"
+      "git_blob": "fc7c820044b24fcb88aeb922397388865e4b1f99",
+      "bytes": 996007,
+      "sha256": "aa1e898306f517493b305eac981fdccac320a265bfae9a8bd8e1fec9bef9abc7"
     },
     {
       "path": "Docs/MimicKitTransfer.md",
@@ -15829,9 +16291,9 @@
     },
     {
       "path": "Docs/Recovery.md",
-      "git_blob": "d13410eaf8565c98f0a61bfbdbd72cec84c2b630",
-      "bytes": 17169,
-      "sha256": "52710c988e567c9f34e3ca04c83ac036ea7ef78f1f00f2c7e1adb197009b9466"
+      "git_blob": "701c2c75bc6d4ca407bb39eb0ed9700a5f3eb2e4",
+      "bytes": 18572,
+      "sha256": "7a216175627eb135db3d7a551f1c59d66eea816c86115e8604562e455c60b3af"
     },
     {
       "path": "Docs/RegionalSpecialRecovery.md",
@@ -16302,6 +16764,12 @@
       "sha256": "76aa7c729a29db9d4afd78724a80834fa3e0e0151c4d35a77500f26ef3414b78"
     },
     {
+      "path": "Docs/Wind.md",
+      "git_blob": "3d24405e8b969a17f98358548cbdf4659a7dfa35",
+      "bytes": 9636,
+      "sha256": "b30279de556d1806ddeee6297301945c908ba8976df2ffe6bd4cd050c73e6ec4"
+    },
+    {
       "path": "Docs/Wrist230AndClampTransitions.md",
       "git_blob": "874d14de7ebf2fad3235101797658df111c21c5e",
       "bytes": 4670,
@@ -16312,6 +16780,168 @@
       "git_blob": "bfed6b9cc53f4df0653d17e18e5e11ea8bf23580",
       "bytes": 34989,
       "sha256": "8efb2636bcd0f012b9ee8480c8953997b0a39fee95166bbdfa8cb7422946b843"
+    },
+    {
+      "path": "Exports/Birds/Gull/A_Gull_Flap.fbx",
+      "git_blob": "584ff9986992ecef3b17b5d12eaccc16355179a2",
+      "bytes": 618364,
+      "sha256": "f3297d6f19fa44f4270f1bc6ea2c0757ac7fbb2ce5affc76e1a53973ad065efe"
+    },
+    {
+      "path": "Exports/Birds/Gull/A_Gull_Glide.fbx",
+      "git_blob": "bd079e2268d3b97041d5c5a42f18c4247f78012e",
+      "bytes": 419628,
+      "sha256": "c35fb27f5a0b15d6c562e4abc3f8c1299f5d089c3bdafa1bf42cfff913d29fc5"
+    },
+    {
+      "path": "Exports/Birds/Gull/A_Gull_Hover.fbx",
+      "git_blob": "84716786a392d0dbc8f92097c30d288314f45d04",
+      "bytes": 618364,
+      "sha256": "17de304de6e776d50074baa91c2c41c717dc8fb77dbaee814bbfa57547dd7a99"
+    },
+    {
+      "path": "Exports/Birds/Gull/A_Gull_Perch.fbx",
+      "git_blob": "eb32ada7368b8173a2f1573dade84ecf92ddda01",
+      "bytes": 419628,
+      "sha256": "2dfe403f5cfb2a99c32fd44a9d7844f502b4d51bab5f5e39988353a4a8d71e91"
+    },
+    {
+      "path": "Exports/Birds/Gull/A_Gull_Walk.fbx",
+      "git_blob": "230907bdd46cfb03b8a83ec40d4d9913d4c37ac3",
+      "bytes": 618364,
+      "sha256": "94e9f46926d026d7231715a5bb76e1869b899a77edb3fea0d4b771fe6e2109d6"
+    },
+    {
+      "path": "Exports/Birds/Gull/SK_Gull.fbx",
+      "git_blob": "2fe772bf9d3351ecc476462f9ceb726645355fdb",
+      "bytes": 743036,
+      "sha256": "41a4a8cdd93cb8f3555250978b59d66459d0775cb4884a25084704a2fd430135"
+    },
+    {
+      "path": "Exports/Birds/Gull/T_Gull_Body_BC.png",
+      "git_blob": "d19739465a5b4fdb1505fa4654963c355f559169",
+      "bytes": 234888,
+      "sha256": "50a31687f7941a1e215bed448c1d5495a9e37e89956100950f8c51cf335be53f"
+    },
+    {
+      "path": "Exports/Birds/Gull/T_Gull_Body_M.png",
+      "git_blob": "24efa1c3e56d2baa7e0cd8b277f67edf0e465468",
+      "bytes": 210424,
+      "sha256": "6a6ffec2f975ee77c374d9ce118ba5b0dff8b3ee23bc59691807c0ec6f75ae9b"
+    },
+    {
+      "path": "Exports/Birds/Gull/T_Gull_Body_N.png",
+      "git_blob": "49387bd1cf27d3ece9775bf741ae82331a95d1f3",
+      "bytes": 617834,
+      "sha256": "5d4b0ee8b316849306a25b3aec18dd33bd0ce597ab2511e460f110319dad9dd4"
+    },
+    {
+      "path": "Exports/Birds/Gull/T_Gull_Feathers_BC.png",
+      "git_blob": "613d106e16635a2b3e022b3746046c7c2244cc95",
+      "bytes": 3912115,
+      "sha256": "95dbf357b05423539ba5f358547533d9af68beab0423dd5635341a8a373e987b"
+    },
+    {
+      "path": "Exports/Birds/Gull/T_Gull_Feathers_M.png",
+      "git_blob": "717fff24d038c8244ae934c20d9434b20731b158",
+      "bytes": 2409196,
+      "sha256": "bbd3740669c4397549d09fb4e0f9a6c534e12e5a2bd9b8ae0dfd05f7dd381367"
+    },
+    {
+      "path": "Exports/Birds/Gull/T_Gull_Feathers_N.png",
+      "git_blob": "6910070307c2dd0f268436e8e8a802a6a7437f3e",
+      "bytes": 832583,
+      "sha256": "d8f8693a47d9db3dcc9b7e27752b495886b429443b312cf450063ed4d479228f"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/A_Kingfisher_Flap.fbx",
+      "git_blob": "d28b3f8ebf1ed41db0682d51d9319abaf0ed5e1a",
+      "bytes": 584172,
+      "sha256": "068e6173697883bc3850ef1cd32db0ab55c176f50ff4e3c1baf05ec1bc50c8f2"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/A_Kingfisher_Glide.fbx",
+      "git_blob": "e61800e786ed41caacbde03c93e43bd4dffb0a38",
+      "bytes": 396636,
+      "sha256": "626af4f0531314f93a997ae2179ad2f600a05eb0b727f958ab80127c236dc8be"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/A_Kingfisher_Hover.fbx",
+      "git_blob": "700ca6e091fe7b03d22c5b4f9dda5ae81177230e",
+      "bytes": 584172,
+      "sha256": "b8b50ee48ed98fc48811c0d5cf721725cb6de41ba628bf435cfcfa7584bb87ec"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/A_Kingfisher_Perch.fbx",
+      "git_blob": "413a81e161162a12b6643364242e3cc48ad4eb65",
+      "bytes": 396636,
+      "sha256": "c537ce71a74bb04cd08cb0124c7ea51dbcc649d5ad82d7dc85a9a63f2dc96504"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/A_Kingfisher_Walk.fbx",
+      "git_blob": "f1c75a1306280f3f3001c7835be2be02975ee2ed",
+      "bytes": 584172,
+      "sha256": "c889c730b718b32fd17156e452a4065bfe118a92807747bdd7535c25821bc8a6"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/SK_Kingfisher.fbx",
+      "git_blob": "9747b49dd535c11c302f00d8c76f424ecc9b8551",
+      "bytes": 728396,
+      "sha256": "f50056779c683aedd0161e54460b09aa99c31ce39889df1e4c44f7ede6c3e208"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/T_Kingfisher_Body_BC.png",
+      "git_blob": "88bd6cfbd773bbca18b4c5c60d09c880119b1885",
+      "bytes": 230201,
+      "sha256": "5114b36057a74269201ad9a99ad386c497e6bc89fc714221a6d976e4adfadc9a"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/T_Kingfisher_Body_M.png",
+      "git_blob": "0d13009a46d25f15e55a49c540fc9474a49b1d05",
+      "bytes": 187198,
+      "sha256": "f808df2700e2ef534b38541d2cf252392fe8ac444ed9a8263b6299da8b03066a"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/T_Kingfisher_Body_N.png",
+      "git_blob": "04acdb49695463b613f818b44ad4cdec1ef8b277",
+      "bytes": 633232,
+      "sha256": "bc3e4a9080200d53951c861c608b52dddf2db935e57ef64649120feb8f203c31"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/T_Kingfisher_Feathers_BC.png",
+      "git_blob": "5aea8790a44f9faa91388d7ec149f3e61407cada",
+      "bytes": 4839617,
+      "sha256": "1aa3c30bbe474ee107bc9bfaac0e137c7eac17a7114e723a087a7d0f67c32720"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/T_Kingfisher_Feathers_M.png",
+      "git_blob": "d5c1152f7363259287bc6d3f94cb0feb2a0c1648",
+      "bytes": 2868253,
+      "sha256": "f6b392d18c0eb8262d6279ed6b0e28a5f33b4d041633463f6dfb4636a798b2cc"
+    },
+    {
+      "path": "Exports/Birds/Kingfisher/T_Kingfisher_Feathers_N.png",
+      "git_blob": "83968925ab7df503ef5cfb465237b0092a1dfd5c",
+      "bytes": 832583,
+      "sha256": "609d7b625e1a8f603e02e7b08cf51e184a268896dc1bea487b0d46c377b4669c"
+    },
+    {
+      "path": "Exports/Birds/SM_BirdFeatherFX.fbx",
+      "git_blob": "7b8b2e786a7788d0293c1776740ef1c16e4e8eae",
+      "bytes": 15964,
+      "sha256": "11a1f3af9b7b7a95288133401a967115d9ba7b56724a86016d1585d5d9e4a8c8"
+    },
+    {
+      "path": "Exports/Birds/setup_bird_lods.py",
+      "git_blob": "e41ce82845499fc9061c74bed4c282d64a428c03",
+      "bytes": 4218,
+      "sha256": "6d6e7af2ddc0c8bfbb93a7e933c320704b5bde182b14d552b51a530ed1251c5a"
+    },
+    {
+      "path": "Exports/Birds/setup_birds.py",
+      "git_blob": "e3bc087c3c99bd5d388d6d0cc8a9d3de7294e524",
+      "bytes": 21259,
+      "sha256": "a5a633146a5249b7ab447f87ec04d72bedd0a3f8370b5c906f5dd6eab399edb1"
     },
     {
       "path": "Exports/Bodyflip/PikeFinal/Receipt.json",
@@ -16339,9 +16969,9 @@
     },
     {
       "path": "Exports/Bumblebee/README.md",
-      "git_blob": "08a42769cd20e107720d4d59c514c47b9ed90482",
-      "bytes": 2582,
-      "sha256": "6ee5558cb8642a777372716d6adadf11ea87ed59b825f36cbe6d16ab6350b7be"
+      "git_blob": "2bbe14ca78fb47b99a561983cd0f35043db5ef15",
+      "bytes": 1621,
+      "sha256": "c58f1c30843dc64f05e37ccd104c1be61a2d6a31c0d8068df9cea28d479d274e"
     },
     {
       "path": "Exports/Bumblebee/SK_Bumblebee.fbx",
@@ -16453,9 +17083,9 @@
     },
     {
       "path": "Exports/Bumblebee/setup_bumblebee.py",
-      "git_blob": "f57052ee9968295e472fd930c35c82adb417bd84",
-      "bytes": 16991,
-      "sha256": "4dd55177aa3a4e92e3534a7b8ed92bca007d5879ab2d864a7b31df688d7851dd"
+      "git_blob": "16dac11baead794de32b332e42f884c20b3a998b",
+      "bytes": 19023,
+      "sha256": "8e375726cc023ad97c3426e6070c8660329df30dc5a0ab9f60e2fd99f7f22e3e"
     },
     {
       "path": "Exports/Dodge_jabR_tick260_20261005.zip",
@@ -17202,6 +17832,66 @@
       "sha256": "f13b5d50d40104ad1c756c73aef18226e5fe6119335f36bdf2467f3e4ccc1036"
     },
     {
+      "path": "Exports/Leaves/SM_Leaf_Cupped.fbx",
+      "git_blob": "05aa9c948527708e582ae2ed7a1fcc84fc6242d9",
+      "bytes": 23772,
+      "sha256": "07460e295b03c5cb934b1350c608c284c6efce206988e9aa4ab27ff66b7d6d1c"
+    },
+    {
+      "path": "Exports/Leaves/SM_Leaf_Flat.fbx",
+      "git_blob": "565b358d0b07fb5080e3cf9d6e6a08fb4f935d66",
+      "bytes": 23724,
+      "sha256": "a8334c07d1fea2e65dc2d5e2f2235cec7bcedcaad4f7dcb96a3464e758e4cdf2"
+    },
+    {
+      "path": "Exports/Leaves/SM_Leaf_Rolled.fbx",
+      "git_blob": "4c6046e50a70617682f5a5818fb0d300a1f049a2",
+      "bytes": 23836,
+      "sha256": "fa3542a7f3d63e9288d809c18b9f6576558a80d145e839bdade1bbab16f30cdd"
+    },
+    {
+      "path": "Exports/Leaves/SM_Leaf_Twisted.fbx",
+      "git_blob": "d7959836ac8a0a299de8b5ac81b47282858c9b55",
+      "bytes": 23852,
+      "sha256": "81c357afe10f4a7513a4f6114548a278b82acf07932a255f37a8a6da0f1b6a2a"
+    },
+    {
+      "path": "Exports/Leaves/SM_Leaf_Wavy.fbx",
+      "git_blob": "dc44513ac77b66f3394fc7fa90545a2e86d7c49f",
+      "bytes": 23820,
+      "sha256": "3f8d2a2e70077ca37ceb0056fe597acde935f5cd308021a2eb91d4feab153cf7"
+    },
+    {
+      "path": "Exports/Leaves/SM_Leaf_Wet.fbx",
+      "git_blob": "1f1c1b402d2adffc9ce44e6d24f21dca1e894176",
+      "bytes": 23532,
+      "sha256": "760eb72d8a796f835eb14653815717f47d63471a809908a9d98c25461941fc20"
+    },
+    {
+      "path": "Exports/Leaves/T_Leaves_BC.png",
+      "git_blob": "4bb16861b54c0890046c4e15e8be7f2a3ce2695d",
+      "bytes": 1518930,
+      "sha256": "97e47701a1dc0dd7f7ac9b92b33d83b6da83dfd12227d8d1fa15dd4b8b9908b9"
+    },
+    {
+      "path": "Exports/Leaves/T_Leaves_M.png",
+      "git_blob": "645e074f4fdcf6d9e5f78b87a2f2951e6ae17d36",
+      "bytes": 2393280,
+      "sha256": "8bc536d5bee683b8e056dceae2854c0e0780c8131352ef075977b242764e7140"
+    },
+    {
+      "path": "Exports/Leaves/T_Leaves_N.png",
+      "git_blob": "9ca87f338826568e2ed0f76cad118351c4cfdaf7",
+      "bytes": 1062296,
+      "sha256": "92c88e69889b71048c390ad9cfbc8ce14c9bc1a3d778667635a060fa350b4e83"
+    },
+    {
+      "path": "Exports/Leaves/setup_leaves.py",
+      "git_blob": "e0fe9e148c8a302a799b9f76b56283c7b8de1eb5",
+      "bytes": 10686,
+      "sha256": "91c55b809e45517b9686d5212040812b9c8edb0da7734e7fa12507e558b1ef1e"
+    },
+    {
       "path": "Exports/MimicKitEquipment/20261019_stopped_47039/README.md",
       "git_blob": "7bf156e125496b1c6435fc62fc3221ab735bbf17",
       "bytes": 1537,
@@ -17734,6 +18424,36 @@
       "git_blob": "9f58b61431668758dbc45519a726245e8c0b2fc6",
       "bytes": 73810,
       "sha256": "7c8414dda5d010a3c43a3d248f41cb0c984f1cd82dd1de8a4f1b85075af6351e"
+    },
+    {
+      "path": "Exports/Wind/setup_wind.py",
+      "git_blob": "bbe2d8287356782cd0d7a18758bb58aa6207580d",
+      "bytes": 18066,
+      "sha256": "527344cdd50361f309ffc38affcec54ea4606e9a2dd80198df41e9a90450382e"
+    },
+    {
+      "path": "Exports/Wind/wind_apply_all.py",
+      "git_blob": "1256a7fd782c42dd1a8020f05b3eb9efbfc360f5",
+      "bytes": 415,
+      "sha256": "7731937e40c498c63d9b24f1b3a159392d0a5f4cf886b371527ffe52944b3dc7"
+    },
+    {
+      "path": "Exports/Wind/wind_overlay.py",
+      "git_blob": "55ac6afd8a8b540d0bf1f1ca24394f9708165962",
+      "bytes": 10882,
+      "sha256": "64cf0ae5af1e278f81d2473ba5257f5e45267713158e806a3126c7f4e74b0dc8"
+    },
+    {
+      "path": "Exports/Wind/wind_overlay_revert.py",
+      "git_blob": "9ec551e8083fdb560203538beaf0e9d5dfcf616d",
+      "bytes": 721,
+      "sha256": "ec944a8c2fc26cda158649abfe27a864865038ad47b72865e858fc46605acfba"
+    },
+    {
+      "path": "Exports/Wind/wind_overlay_stats.py",
+      "git_blob": "8e7361fbf8701a2a76275d5d58bbce2750044266",
+      "bytes": 1291,
+      "sha256": "5fcacf4620b02b4df850132b12c8d0accf45fc77ebc51e167b20bb709fc94d54"
     },
     {
       "path": "GameAnimationSample3.uproject",
@@ -22321,9 +23041,9 @@
     },
     {
       "path": "Labs/BodyflipLab/README.md",
-      "git_blob": "575fa8c646652b9f61846e22688480a815103b31",
-      "bytes": 344104,
-      "sha256": "538cfb6f26e34b86568bbecc31cfff66c9af962c39b4cb78911b7e1ad327432d"
+      "git_blob": "628bb8693d73d00214813271a6b44065e89a3a5d",
+      "bytes": 351449,
+      "sha256": "64970d32a365f56f5b93c41fd39b1d783251990259a1e3ce9f2eaa818cd95e36"
     },
     {
       "path": "Labs/BodyflipLab/THROWS.md",
@@ -22393,9 +23113,9 @@
     },
     {
       "path": "Labs/BodyflipLab/app.js",
-      "git_blob": "60c811ceef160b7a5ad297983b2a75a26cd0837c",
-      "bytes": 72518,
-      "sha256": "e00f569d31f876654566e4a7e0a9c2ed0d477806c5396598ae72997e23050be5"
+      "git_blob": "ba4097c8fef41514e9c4dab581426e5b94f59b76",
+      "bytes": 74017,
+      "sha256": "c5390cd02fa5d138b9f0f36cbac0eb95d90f866f1cf919c83e03bac63aa27a32"
     },
     {
       "path": "Labs/BodyflipLab/approved-response-parity.json",
@@ -22447,9 +23167,9 @@
     },
     {
       "path": "Labs/BodyflipLab/attack-aim.js",
-      "git_blob": "23cb864cba5143f10490da7ddfc81be74806d8af",
-      "bytes": 23948,
-      "sha256": "a9e0511a5545c82b2ec56dfb9c3f738bf8eeed64afc492ed1f3cd337f1a6032d"
+      "git_blob": "57223e1fef0834d91af321d9d0537cdfedf0fca2",
+      "bytes": 23981,
+      "sha256": "ff2fd613d42578de5d3cf3b29f5955837daab919597f0ddbe8184017f93f9dd4"
     },
     {
       "path": "Labs/BodyflipLab/attack-compensation-verification.json",
@@ -22609,9 +23329,9 @@
     },
     {
       "path": "Labs/BodyflipLab/capsule.js",
-      "git_blob": "5aa7fb4cd5e48e65badbe585b81cf6d846943be2",
-      "bytes": 19036,
-      "sha256": "e29d7a39f2dd017c1eded122a944142b1ba5b1e9354b45dca5a621ccd2d3b71b"
+      "git_blob": "38fbed11d48f2357450c6180004ae051cc719749",
+      "bytes": 19119,
+      "sha256": "165bf33f5f3a7d287409ba80d73193735ee926d7f02199207e626267681db9cd"
     },
     {
       "path": "Labs/BodyflipLab/check-physics.mjs",
@@ -22657,9 +23377,9 @@
     },
     {
       "path": "Labs/BodyflipLab/core.js",
-      "git_blob": "632af8f5be8843c81a806417ad30e8204c800c97",
-      "bytes": 24282,
-      "sha256": "dca13510158be98c2c77d9f9b3575b439e1f695093786722d00015fee9e60b80"
+      "git_blob": "ea446335b6559855a2750d459e740569652c8f8f",
+      "bytes": 24129,
+      "sha256": "d62fa5f2950cbfc5df6263ef5aacc8c675a6693aaadd64a907ef85865d12c31a"
     },
     {
       "path": "Labs/BodyflipLab/data/KickL_01.bin",
@@ -24954,6 +25674,12 @@
       "sha256": "c6ed8f70a5af40e30d3332906b0d14f5df3ed06e3ad97872c5ad4ab0f339754c"
     },
     {
+      "path": "Labs/BodyflipLab/fixtures/kick-spin.json",
+      "git_blob": "4a59dd9a148b4146c6cadda5cc6f6df64ca6869a",
+      "bytes": 7259,
+      "sha256": "df6d4456c8ebb22b39b9856175c5383cff87647f7aedaa326b9f1309abab5155"
+    },
+    {
       "path": "Labs/BodyflipLab/fixtures/landing-continuity.json",
       "git_blob": "bf0442eb563353ee4d5958b58c037389e4fa0a57",
       "bytes": 161880,
@@ -24984,6 +25710,12 @@
       "sha256": "12c0104e1b45635bd3e9cac5533b5cdf94f64ede4a59790deb6e33649964cf2f"
     },
     {
+      "path": "Labs/BodyflipLab/fixtures/sweep-current.json",
+      "git_blob": "ecef1581c778aa9ee5ec48fec5fe59eff4bf04de",
+      "bytes": 16936,
+      "sha256": "13b32dadb549935b1f33b54d09a73f1b08244f02bede28793f84c5cc5da6de7d"
+    },
+    {
       "path": "Labs/BodyflipLab/fixtures/twist-attack.json",
       "git_blob": "c9f34ad5c2d1711195b96ad7d000d24bc3652da1",
       "bytes": 35101,
@@ -24997,9 +25729,9 @@
     },
     {
       "path": "Labs/BodyflipLab/flight.js",
-      "git_blob": "dbe37555c44fc452f2f115192970b5658c5ffcc3",
-      "bytes": 61675,
-      "sha256": "5e62782533aaf0b8fb6719c2b71fe12f282c52729cf58bbe7b4ba11b93fb0582"
+      "git_blob": "340aa919c571eeaa70af07a6a8d4e6160ca61308",
+      "bytes": 61473,
+      "sha256": "c83ae82519f581b0fb4934a61920ad703625903bbf97d4ba6f5bb61fb807f89d"
     },
     {
       "path": "Labs/BodyflipLab/foot-ik-verification.json",
@@ -25087,9 +25819,9 @@
     },
     {
       "path": "Labs/BodyflipLab/index.html",
-      "git_blob": "e8d5cbea40f92a8bd1186cbbea4b3b8eed0632ce",
-      "bytes": 35410,
-      "sha256": "d1f4ff16f9e8db71e0e7b12f96697d8142ab665e92b6c67a901b1efd2ef83c33"
+      "git_blob": "35d2dde5101c7d52f677b986ec5eceb3acd78250",
+      "bytes": 36250,
+      "sha256": "4265656236adf4cb55de9db5fdb5c9f769549b596c68510789e1334a8a5a92d2"
     },
     {
       "path": "Labs/BodyflipLab/inertial-response-verification.json",
@@ -25213,9 +25945,9 @@
     },
     {
       "path": "Labs/BodyflipLab/kick-attack.js",
-      "git_blob": "86b5a739a39e977c12ac02eea525476a9e7bfd32",
-      "bytes": 5114,
-      "sha256": "9812426d214e1e37d1a390509f3b0595ad51cb7c9be7d0c18cafc1d773171abb"
+      "git_blob": "0ded3f483f900c5fe3cbf317d97a1070c84c1ead",
+      "bytes": 4998,
+      "sha256": "9a384f65b6e4dd5f26a76d0b42c2824854ef0dcdd502dfe50b366857d025bcd0"
     },
     {
       "path": "Labs/BodyflipLab/kick-integration-verification.json",
@@ -25375,9 +26107,9 @@
     },
     {
       "path": "Labs/BodyflipLab/physical-aim.js",
-      "git_blob": "4156b7a1853ae4072ab42d96dfa143cca805cca7",
-      "bytes": 18695,
-      "sha256": "8c4796a26e1c4fbd7b4ef0516240c8df3d25a0a021d4b6af8ca0b1b90f2161e0"
+      "git_blob": "fbd6e62549803898420524b2bd09acc345b971fc",
+      "bytes": 19574,
+      "sha256": "f572a9459823ff2c56b4b47e9bf160800c776123abf6fda9e3db5a4ffbfa4c54"
     },
     {
       "path": "Labs/BodyflipLab/physical-flight.js",
@@ -25483,9 +26215,9 @@
     },
     {
       "path": "Labs/BodyflipLab/renderer.js",
-      "git_blob": "153e595199eb5e044b07afbe948a954e77193324",
-      "bytes": 37232,
-      "sha256": "181448e4d701d79dc3854a825d9efbf43e7eb6408083a14559d4f064c6fa39c0"
+      "git_blob": "81ff10020e9bd344943d91fc9c8c87149ca15a9e",
+      "bytes": 38085,
+      "sha256": "c34a8bd4ee8440a446f161cba0e08f3a842bf9965f5de1dea29cfcdcfc28ccea"
     },
     {
       "path": "Labs/BodyflipLab/resume_locomotion.py",
@@ -25531,9 +26263,9 @@
     },
     {
       "path": "Labs/BodyflipLab/saved-profile.json",
-      "git_blob": "0166d5b96079cf4ab85abadec89c16b1cc8a2ad9",
-      "bytes": 30885,
-      "sha256": "100413e408a9d906a402f74f681069fe12a97f9491e47c43a601a8ccf7574e38"
+      "git_blob": "def3a1fda5cc5629b47ece9d0760b8e0b3563348",
+      "bytes": 24283,
+      "sha256": "75ea440a4d1808c0810ae5bb26037fe073ccef316be227231a23e874b6d2a33d"
     },
     {
       "path": "Labs/BodyflipLab/scenes-verification.json",
@@ -25543,9 +26275,9 @@
     },
     {
       "path": "Labs/BodyflipLab/scenes.js",
-      "git_blob": "d6ff2e6d6d82d640c6eeb6a876b3d80feb933c0a",
-      "bytes": 2978,
-      "sha256": "e0a40627b3aca055074bda6422586b633988497b780bffda505d997eaa63a099"
+      "git_blob": "1ccc1db74597c38bf4af68bd43c506764d18d8c7",
+      "bytes": 3373,
+      "sha256": "2cf3639a3d977291edf230a0cca9ae3acf9913e5f4c91d48e4072fcb1c8d4a67"
     },
     {
       "path": "Labs/BodyflipLab/schedule-verification.json",
@@ -25561,15 +26293,15 @@
     },
     {
       "path": "Labs/BodyflipLab/server.py",
-      "git_blob": "5566f3cb2df4d720de4aac3923dd322a82e2711f",
-      "bytes": 4390,
-      "sha256": "d03ab59d89b220a52c9e300938645a5bfd847d5835850b694b860c6f6a93ff14"
+      "git_blob": "b44efbb9d3ef219550f1d6f3d05a2643a9a09b5d",
+      "bytes": 5332,
+      "sha256": "0b357865ae47a5e6cf800853a0f4c51a5a4d5d21d1e077aafb64bd0405bdd2c0"
     },
     {
       "path": "Labs/BodyflipLab/shared_foot_ik.py",
-      "git_blob": "0c81f32e84abdad57750f5d7bd92e7fa57b893ca",
-      "bytes": 1231,
-      "sha256": "02f840a7bb75a7ae6d56cff70f913d10e82ad871809673e0284f6684ae5003a3"
+      "git_blob": "31cf9516f28fba9ad34f76a4cc3253a842566bb8",
+      "bytes": 1647,
+      "sha256": "cb0d3ab84a1e6c3b4ed55635431bca9e35d341e48473aa3123615bf8c29ab9c3"
     },
     {
       "path": "Labs/BodyflipLab/skew-motion-verification.json",
@@ -25732,6 +26464,12 @@
       "git_blob": "bec7ab136808b1f6b483b590a975089dfa5f0cb7",
       "bytes": 6596,
       "sha256": "cbdd634015cab5c33739e2d42590d1d757beec4712aec4406169634d2f255187"
+    },
+    {
+      "path": "Labs/BodyflipLab/terrain-mode.js",
+      "git_blob": "9ef8d94609f32c98bfaeb2f47adcc6d5c08f5632",
+      "bytes": 3483,
+      "sha256": "49f787ad6615a482b431f2621097812c428e177158b335031a32562d2119f4ba"
     },
     {
       "path": "Labs/BodyflipLab/throw-aerodynamics.mjs",
@@ -26124,6 +26862,12 @@
       "sha256": "7844de1b09e679ed650fc0f73709628c144beb7a37af4349c49b6b790fe4eea0"
     },
     {
+      "path": "Labs/BodyflipLab/verify-frame-step.mjs",
+      "git_blob": "f3238116134282a9b81753fc333f8c2b704ec054",
+      "bytes": 3876,
+      "sha256": "0436203ed0c388e4b05d15248d0a92138ee8a456aecbd26fe9cad91d15ba2f38"
+    },
+    {
       "path": "Labs/BodyflipLab/verify-generation-invalidation.mjs",
       "git_blob": "4e5b9ec974c31201d17cbc1952b45e2cf52e18b6",
       "bytes": 2074,
@@ -26266,6 +27010,12 @@
       "git_blob": "a080d636c1fb72a614bcaa3aa672704fe2fdb329",
       "bytes": 7637,
       "sha256": "da13e208b87769af06e9eb7b56b2f4306c498a8f1417f2a86002594510aff5bf"
+    },
+    {
+      "path": "Labs/BodyflipLab/verify-kick-shape.mjs",
+      "git_blob": "65be77a788c58b5c9a877507d0dd02e5995e7d83",
+      "bytes": 9842,
+      "sha256": "bc46abe2a8c724fb2352f7815fd08eed7741978d9d2585aba1a4caf3c1ecc831"
     },
     {
       "path": "Labs/BodyflipLab/verify-knee-blends.mjs",
@@ -26431,9 +27181,9 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-platforms.mjs",
-      "git_blob": "2af72dfd90d0890ab6e694a49f95f0074bb53efc",
-      "bytes": 17402,
-      "sha256": "c33a66f31fb9f43af8104c1d11f0447d0d09d8bd9cac5cc13a83582967db5f97"
+      "git_blob": "a341594abfebd802d32ff04a96241d423dc699cb",
+      "bytes": 17525,
+      "sha256": "01ec4ec1293ed35e7ffa77ba746398d8d6e628c45c43be3cf401215dd166bfca"
     },
     {
       "path": "Labs/BodyflipLab/verify-playback-refresh.mjs",
@@ -26443,9 +27193,9 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-pose-app.mjs",
-      "git_blob": "bc0f9e826aaceb96b7758710d97f0c22e0828000",
-      "bytes": 12443,
-      "sha256": "2e0fd980dc41179348c5020f66c34a9e09c9a76fdbdc8d14c883d78aac86e3e6"
+      "git_blob": "f6897dced4f6f3ccdac8dffb890466f7dfc303f8",
+      "bytes": 12416,
+      "sha256": "b357ff11e50679960293919365b9fcbc54b1bcd76b57e5b2bdbcfa09a9f36c66"
     },
     {
       "path": "Labs/BodyflipLab/verify-pose-pelvis.mjs",
@@ -26470,6 +27220,12 @@
       "git_blob": "a5de21f875e93468833c8b52efa74d7b59555812",
       "bytes": 2479,
       "sha256": "fc7bd0576dfea4414014e3258078cae738c891af06e3b16324e3ceb153ccfaf1"
+    },
+    {
+      "path": "Labs/BodyflipLab/verify-projectile-renderer.mjs",
+      "git_blob": "a50382348ea278d08a5fa9093e92fc8ae09ac0fd",
+      "bytes": 2745,
+      "sha256": "2156e293f66034b93f99e3d57c0897ad8c148cfc118bbf6bc11224057103271a"
     },
     {
       "path": "Labs/BodyflipLab/verify-projectile-retarget.mjs",
@@ -26503,9 +27259,9 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-scenes.mjs",
-      "git_blob": "27ed3f92b09af4cd55ec6d52060a91d99fb25bd0",
-      "bytes": 10327,
-      "sha256": "ccb982e6e457cb28c7bd0aae406b16a5bc04feac00866f19d21d95a5f8c80cbd"
+      "git_blob": "65e80a922274956859885e6165b0a2c60af5a3a1",
+      "bytes": 10420,
+      "sha256": "6a9fa791ca4401c38d2847ef163583423fa73af6ebe396443c5d1c7c690ae9a3"
     },
     {
       "path": "Labs/BodyflipLab/verify-schedule.mjs",
@@ -26671,15 +27427,15 @@
     },
     {
       "path": "Labs/BodyflipLab/verify-sweep-current.mjs",
-      "git_blob": "eae876354f2f98b9742fece0fd3a6c0bece88e1c",
-      "bytes": 8027,
-      "sha256": "a5051996c085f710af82138c62634ca4365f632fd4f8a4855bfc0feaf0173ff3"
+      "git_blob": "77f184628f11b16c2ea358b09e05c16d35e12ca1",
+      "bytes": 8036,
+      "sha256": "8fbcd38fab2f0063d3c64fa76dfbd0169f884ba00bdc9a5a5bb10b1389f9f7b5"
     },
     {
       "path": "Labs/BodyflipLab/verify-sweep-cut.mjs",
-      "git_blob": "1e99b4c6006ba11370848349bb038fc1f765b505",
-      "bytes": 6982,
-      "sha256": "3d080931d02c595544b233f7cda9962aebb6eb32f74a34586d9344dc3f6852e0"
+      "git_blob": "7223ee286a0d5f3024ac2d8ac6e1ed458786d1ce",
+      "bytes": 6991,
+      "sha256": "510fabf8a8c660cd5117b7358a8d41270b3645f8200e70fe216c5a6fb5a38235"
     },
     {
       "path": "Labs/BodyflipLab/verify-sweepkick.mjs",
@@ -26704,6 +27460,12 @@
       "git_blob": "7ad7cdd032675709ba00b1dc72ab37244bcf80fb",
       "bytes": 7229,
       "sha256": "570709d197188a621b2c1d8e9b9aa07834cc979abd3272a3a49867eb8aa3afde"
+    },
+    {
+      "path": "Labs/BodyflipLab/verify-terrain-mode.mjs",
+      "git_blob": "ec611a88f065c24b9d0c0eac6807123a72442c4a",
+      "bytes": 5809,
+      "sha256": "3ee4e1f28c5ad7cf98989c54cd56711fc7a1b34689ad457e50454c339311e7cd"
     },
     {
       "path": "Labs/BodyflipLab/verify-throw-aim.mjs",
@@ -27049,15 +27811,15 @@
     },
     {
       "path": "Labs/FootIKLab/README.md",
-      "git_blob": "b1ebce12137441b677446c86a25a12cfeadb5dcf",
-      "bytes": 168573,
-      "sha256": "0a10a854e10146d9370b9ef4fdb7ab06baf40a3e45af69cb6a4a76f1b11b6c67"
+      "git_blob": "95b6f8457a090967af271ee20ba93f98a79954c9",
+      "bytes": 177538,
+      "sha256": "bd37d5086e8db05f86ff5ffd042d86d3bc09d4cf2e32dbc7afd13e712667239d"
     },
     {
       "path": "Labs/FootIKLab/SHARED_API.md",
-      "git_blob": "c7ecc6283357492069b6e3ad56f28964a1ef8924",
-      "bytes": 13327,
-      "sha256": "ead86189394258902a6601e9255078a8a5fdf79a6161b7e8d8d32ef8d495d44e"
+      "git_blob": "db6c8c77581cdafe70b2267b0e4cf7b1474fa5f0",
+      "bytes": 16695,
+      "sha256": "91a282c8722c1eb0ab07e94232eb0f3a65b5ed2437083f25ea0400b598e9407e"
     },
     {
       "path": "Labs/FootIKLab/ankle-verification.json",
@@ -27124,6 +27886,12 @@
       "git_blob": "7eb6bd70cc3cf16dfebb47db277aca4a418c562c",
       "bytes": 1327,
       "sha256": "fcf9bea23352ae5f4acefd699bb9b1bc9ae4e09b643eeef002f333024be66162"
+    },
+    {
+      "path": "Labs/FootIKLab/bodyflip-wall-scene.json",
+      "git_blob": "33507166311ef1cac13acce33f5b560374376ae2",
+      "bytes": 955,
+      "sha256": "6167a4af65bd6a9ed2006824c7a6bfd3468b6a427db762719e27631989da9f57"
     },
     {
       "path": "Labs/FootIKLab/clearance-verification.json",
@@ -27445,9 +28213,9 @@
     },
     {
       "path": "Labs/FootIKLab/footik.js",
-      "git_blob": "475c9a1fe32cd0b3ba2dec85b7470de84249c951",
-      "bytes": 79430,
-      "sha256": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e"
+      "git_blob": "7b5be892c1ceb81a2f344012236487f137ba3319",
+      "bytes": 79470,
+      "sha256": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94"
     },
     {
       "path": "Labs/FootIKLab/frame-22.jpg",
@@ -27751,9 +28519,9 @@
     },
     {
       "path": "Labs/FootIKLab/slide-arms.js",
-      "git_blob": "bf06a565f04f697dbd76aa28cb49b53ef1898b17",
-      "bytes": 18101,
-      "sha256": "01f977a1d32fb81266fa19990805444f0092a8c99c12cf4b2acb0c2982b77f0c"
+      "git_blob": "78022b42a39521d9fdd41c85a8fdceeceb4a9b2e",
+      "bytes": 18789,
+      "sha256": "3f646bc0e6fc8ddd2c444286d146c85427b6cf3d7da71848a7422e8c2a5e1ba1"
     },
     {
       "path": "Labs/FootIKLab/slide-entry.js",
@@ -27799,15 +28567,15 @@
     },
     {
       "path": "Labs/FootIKLab/surface-verification.json",
-      "git_blob": "a9ce036cca777d93ad1f2b266cb1d44683e8928a",
-      "bytes": 141619,
-      "sha256": "775ada8ceca6c7068c6fb8f15829af662d0b58a8eea09fad6e7292ac0a79008b"
+      "git_blob": "a16eb02feda36946b43f0cac4791a94605b9c358",
+      "bytes": 149543,
+      "sha256": "e7af06aeff467c5d892083ba4070ea9a3341824f0aad9d532bf34b4a4c135ac7"
     },
     {
       "path": "Labs/FootIKLab/surface.js",
-      "git_blob": "56f3eedb49731c5779667c7c01c7559531c9f4b2",
-      "bytes": 79422,
-      "sha256": "4bef927e87d6f2187005afcb8c5a2a1c9d7519a6cc28a8782499a8890b41a97d"
+      "git_blob": "76984e7466c216a029b6056a0c7f7d58093ef545",
+      "bytes": 92908,
+      "sha256": "9968c74b06e73b0018898b8b8796ca382998a7c890100cbff9f622fda2160878"
     },
     {
       "path": "Labs/FootIKLab/surface_driver.cjs",
@@ -27817,9 +28585,9 @@
     },
     {
       "path": "Labs/FootIKLab/surface_nn.py",
-      "git_blob": "252bba2962345b9c67b6371ca96681c949fccd83",
-      "bytes": 21691,
-      "sha256": "967e703cd0e381480bdf59f377762f5ace1c7bbb5b2865e3dbd4326edd7da456"
+      "git_blob": "0a50d04f531e74a5d26711508cf077f8e0c166ad",
+      "bytes": 22603,
+      "sha256": "7393820dbb508b3efe615ebcf2f80c0ef9b29f976cb6a14bdf8dad41dbd4a853"
     },
     {
       "path": "Labs/FootIKLab/terrain.js",
@@ -28237,9 +29005,9 @@
     },
     {
       "path": "Labs/FootIKLab/verify-shared-slide-isolation.cjs",
-      "git_blob": "579935af3550dcb95e41158f8e8d7d04d8744d90",
-      "bytes": 3521,
-      "sha256": "bd7a41003bf16c61d0809d4ab5c3c4ea0816201fb012fd55d467a09e11293cc1"
+      "git_blob": "258134a797d8787499875678473ae04d5d32eab0",
+      "bytes": 3775,
+      "sha256": "acfcfce73863bfc9a3de2ccc67f65ddc2c67e4292926cefc87e145538f72dc50"
     },
     {
       "path": "Labs/FootIKLab/verify-slide-arm-clearance.cjs",
@@ -28393,9 +29161,9 @@
     },
     {
       "path": "Labs/FootIKLab/verify-surface.mjs",
-      "git_blob": "b9c244b86b4bc6f3dfae9a2be3e4fa1633600395",
-      "bytes": 10523,
-      "sha256": "aed1eba69cbd626a6cc976f27c27a496a3ab12ded365ef5ab55f82dd60c76216"
+      "git_blob": "0c4dfb4c3ad22a9410983a27f9a37e98217bbfdf",
+      "bytes": 11289,
+      "sha256": "fc7e038929eebfc6307234b3c22ef4dd500c98ed3c912932aa00dea74a7c496a"
     },
     {
       "path": "Labs/FootIKLab/verify-toe-release.mjs",
@@ -28446,6 +29214,12 @@
       "sha256": "04efa3866f515509c92d4be6f0dbb86b0200e95c504de2c7db8ea49d41fd5f49"
     },
     {
+      "path": "Labs/FootIKLab/verify-wall-entry-rotation.cjs",
+      "git_blob": "167d3d3a46da162cb87760a9ed3cb1beb6a1b38b",
+      "bytes": 6481,
+      "sha256": "6a146a996a7d1e9d7bb5526efb58119ffc6232cbbbb11790537043b2a4ec2125"
+    },
+    {
       "path": "Labs/FootIKLab/verify-wall-frame-browser.cjs",
       "git_blob": "a1450f39876cf269af401d39b1785abcbc51095b",
       "bytes": 3565,
@@ -28456,6 +29230,12 @@
       "git_blob": "e8259bbdbc5ca45a5451fbef1bac7b7126c0140f",
       "bytes": 3596,
       "sha256": "aaca4683970a709ba9f3dfc4153b75b49dcd9db6ead2fb6117b42cc8d131a6e0"
+    },
+    {
+      "path": "Labs/FootIKLab/verify-wall-run-regressions.cjs",
+      "git_blob": "8c9e73c938e2bedcdf52f9786c65ca04b2ebca61",
+      "bytes": 5613,
+      "sha256": "8bad859dbfe939585137c83d7e632160f6ca19964dcc09420b0b9adb07aac529"
     },
     {
       "path": "Labs/FootIKLab/verify.mjs",
@@ -31518,6 +32298,96 @@
       "sha256": "8f186d02cc81851c6910a272105a4001e558466ce94c7de61e2dfebd545a1f4a"
     },
     {
+      "path": "Labs/MetaSounds/.gitignore",
+      "git_blob": "6c56ff1bd9054f9e9a0147f85233c996b06536d7",
+      "bytes": 28,
+      "sha256": "a51104264729e7b362ea8c739de0ada29ba6e4f6047580ec3a3fd330ad20fd47"
+    },
+    {
+      "path": "Labs/MetaSounds/Launch MetaSounds.cmd",
+      "git_blob": "b6d56b11e83f63ecdb4781215ca3fc7d8f243ff0",
+      "bytes": 351,
+      "sha256": "1cd759c46a8d114a7a86148a3a2f2e96237276d962d742851eda52619987db47"
+    },
+    {
+      "path": "Labs/MetaSounds/README.md",
+      "git_blob": "daeef44713245c6d85482911d7c91bb6ba64e059",
+      "bytes": 6172,
+      "sha256": "25450a2bae74201e27a2c6915be14a7d27537d1567c8a4eb24bbf95c07ded017"
+    },
+    {
+      "path": "Labs/MetaSounds/check.svg",
+      "git_blob": "35d7ad7b6c8e8b2a7469ce184f604f9f5659ce32",
+      "bytes": 140,
+      "sha256": "192dfcf9c8e24121257ff9d08c0ffd6c91a444804f70e600b905806b4aea8f72"
+    },
+    {
+      "path": "Labs/MetaSounds/icon.ico",
+      "git_blob": "853a4154215a968b6b18c5a55729de3182d81a52",
+      "bytes": 24100,
+      "sha256": "547fd91b04ba2f42c8b71c21c17b32d9f714a3bab95c480cc4eefc97d6142716"
+    },
+    {
+      "path": "Labs/MetaSounds/meta_engine.py",
+      "git_blob": "578b74cdfddac4f4d6cb000cdb552c73d1b31f33",
+      "bytes": 53379,
+      "sha256": "fcf6726bf1ff2ee44f6eab91f30d328dbd6f181bb502cce34cc9313ef9f7fd51"
+    },
+    {
+      "path": "Labs/MetaSounds/meta_export.py",
+      "git_blob": "4bd3103d474ff7eb32d3212cb4d0022f40778fcd",
+      "bytes": 20812,
+      "sha256": "e6b69e5a6f1b8dc0b886e44736a6b0fd200bfe2b903b5ffae54f297a9bef6105"
+    },
+    {
+      "path": "Labs/MetaSounds/meta_map.py",
+      "git_blob": "1938770890d83b4670e8b651ac47c7aa302c23b4",
+      "bytes": 22184,
+      "sha256": "520edbb7847bd6b59a1bd99f0bbab94bbcd34d72b90c577a4a1101bde03658dd"
+    },
+    {
+      "path": "Labs/MetaSounds/meta_model.py",
+      "git_blob": "02d74b3e3a77726f60b160d38bb687aa0b44fcdc",
+      "bytes": 26556,
+      "sha256": "3990b6e188205ed7853b4a52dbb1e7cb57fcf5982b7b62e3b03b2d73243bda14"
+    },
+    {
+      "path": "Labs/MetaSounds/meta_theme.py",
+      "git_blob": "710afbe4169e1ba6134529ed5b56d70e44469786",
+      "bytes": 7152,
+      "sha256": "1150d967498318d853302701eddc16de71668099edb035bed5048b8f15a9ed57"
+    },
+    {
+      "path": "Labs/MetaSounds/meta_ui.py",
+      "git_blob": "27c512180f8469f53088ccab6389b97c01555aaf",
+      "bytes": 92685,
+      "sha256": "bc3733b4ee6bad5fc99b14e1185b4069ba6069a88634039b7189d0cf692b257a"
+    },
+    {
+      "path": "Labs/MetaSounds/metasounds_app.py",
+      "git_blob": "c5709a42d1806a279e9e678e8863a7c4780059a8",
+      "bytes": 3009,
+      "sha256": "3a33915c1974ada46dad362a8b5e3d09c3ba2b181db623c1fa704df239030d26"
+    },
+    {
+      "path": "Labs/MetaSounds/requirements.txt",
+      "git_blob": "2722339628c5dd38e9bd93a9f59830efa5009534",
+      "bytes": 110,
+      "sha256": "881ea3ac28ff4787e8690445e0830a33681e7e0edb98de70a47292ffe567d253"
+    },
+    {
+      "path": "Labs/MetaSounds/test_metasounds.py",
+      "git_blob": "e8621ca5160dc1548eb32eef58772a3e9db504ab",
+      "bytes": 21903,
+      "sha256": "136e09cfef4fe131b77b936a311432d5853dba4ba96bf92ff6cc10ca315e245d"
+    },
+    {
+      "path": "Labs/MetaSounds/test_metasounds_ui.py",
+      "git_blob": "a3f1adab4bba22a2d034b6d13b24aa969e0f6b00",
+      "bytes": 8404,
+      "sha256": "01f63ffa8e9e31eaaf9fdcc9ef36fcfd5ec2cdcf1c69b8ee42cf84ca2e8594d4"
+    },
+    {
       "path": "Labs/MimicKitIdleLive/README.md",
       "git_blob": "76fff995ff1417e153465b98019a8be3486237e5",
       "bytes": 2302,
@@ -31999,9 +32869,9 @@
     },
     {
       "path": "Labs/MimicKitTraining/bridge.py",
-      "git_blob": "1864bf35eb4943e999776644425b56f3cbd34505",
-      "bytes": 6522,
-      "sha256": "7a63f4f1e5be69ba734f1e68e7474ff8d8201b280827ba2372f80746bab1bc71"
+      "git_blob": "15108224fefa8dbb66034feeb6ba719fbfbf9754",
+      "bytes": 7462,
+      "sha256": "762e178d4463fecf0067b3a5c46052489702550e3416859766d0219a410ed013"
     },
     {
       "path": "Labs/MimicKitTraining/build_foot_losses_20261027.py",
@@ -32221,9 +33091,9 @@
     },
     {
       "path": "Labs/MimicKitTraining/dashboard.py",
-      "git_blob": "87f110e15bc9f11486965fd7d5e5961bc3f49f02",
-      "bytes": 13899,
-      "sha256": "04fe6dda59b2fb01dc63415fe9cd26b472a707c15a15eb483c7413e98af2c672"
+      "git_blob": "e4fe75061ad2d37b52699422081182432e765bac",
+      "bytes": 15554,
+      "sha256": "edc9f6615c9f90e078a5f0777470d3b8a70a350cbcbc7d0aec100fd6e6062ffa"
     },
     {
       "path": "Labs/MimicKitTraining/deferred_fk_probe.py",
@@ -32716,6 +33586,12 @@
       "git_blob": "f5c0e41de3631ad0eafae8589d9d3cd280749b0a",
       "bytes": 1683,
       "sha256": "949c59325837a6ae7622ca292a4e486017722eab497b17eb838a8cefd797dc55"
+    },
+    {
+      "path": "Labs/MimicKitTraining/local_process.py",
+      "git_blob": "e0f51e5b888f2ecb5abb05f234c138dec51bddf0",
+      "bytes": 1948,
+      "sha256": "cda36c0df025dfda0a0426652c479d75122b9f282497ce992ee7efbb46a172b5"
     },
     {
       "path": "Labs/MimicKitTraining/loco_advantage_diagnostics.py",
@@ -33619,9 +34495,9 @@
     },
     {
       "path": "Labs/MimicKitTraining/replay.py",
-      "git_blob": "31017c0f6d375d8f9753b48ef9f44cdb7cac61be",
-      "bytes": 14682,
-      "sha256": "c7ecfae30f3dbedffdea13fb947ac5647dcb3d6bc581531b2dcedb332e8cb166"
+      "git_blob": "7b30b1bd283deed93a634df2878e256cd95ee8f0",
+      "bytes": 14812,
+      "sha256": "82076d9099478a0bb5b1b1f8112bd01998bf486178228d6091a33ddbfb19e3bb"
     },
     {
       "path": "Labs/MimicKitTraining/replay_reference.py",
@@ -33763,15 +34639,15 @@
     },
     {
       "path": "Labs/MimicKitTraining/resume_com2_loss.py",
-      "git_blob": "106ae752d7a1c56d1f87cd443cf29a70ea345ca8",
-      "bytes": 20128,
-      "sha256": "e68f9e1ed45c030b4be568186e6c938acd37289d9634056f67f8954d5fa7f017"
+      "git_blob": "696167e8aa1b25ef6df984486090175c8193194e",
+      "bytes": 20133,
+      "sha256": "1c103e2de47acce5602de18e521e2ef47db9423010516c5bf0cd4e6c9e6bae12"
     },
     {
       "path": "Labs/MimicKitTraining/resume_com2_x10.py",
-      "git_blob": "c8b73999b931cd1b0fb995d103ce8ccced949d55",
-      "bytes": 6965,
-      "sha256": "5583e8ed304c8e271bdda07f7625fcae1304fb780e638fcd1926be3f48c198bd"
+      "git_blob": "712c4bd26c7e5811799b83a9b6eaae4cb3cb5bd0",
+      "bytes": 6970,
+      "sha256": "24fec0d3321adedad33bc6544aa36c9662a00a656bab544e842329ecde2ab6a3"
     },
     {
       "path": "Labs/MimicKitTraining/resume_contact_warnings.py",
@@ -33979,9 +34855,9 @@
     },
     {
       "path": "Labs/MimicKitTraining/serve_tensorboard.py",
-      "git_blob": "fbb70a259ec3c2b4421ba2a73a2d5f6e60c90522",
-      "bytes": 2409,
-      "sha256": "2968cc1142dacec50548be7cdc3839fdde646408bb4144c3a131f1de31610780"
+      "git_blob": "3f2c98875d6012319143e8338880d98da203e3a9",
+      "bytes": 2894,
+      "sha256": "c21ccd74c86bfdd7570115a036cb189fa181f2f687143ead71f0b35acc881b75"
     },
     {
       "path": "Labs/MimicKitTraining/setup.sh",
@@ -34000,6 +34876,12 @@
       "git_blob": "6c7927c3f55427e3d95ceb367712db7f485fd3ba",
       "bytes": 4741,
       "sha256": "3ead317926aa7c7d4ff897427dd4dcfa6b09da89720cb20d73ac2d57e259b541"
+    },
+    {
+      "path": "Labs/MimicKitTraining/stop_observers.ps1",
+      "git_blob": "ab52ac31acc4337ad0e24f34ac447860623a6f44",
+      "bytes": 1647,
+      "sha256": "5b9a81dabfcdbfa3a82a30e2a7c3a70c45454dc71450f3d98a59923c15e6f387"
     },
     {
       "path": "Labs/MimicKitTraining/success_learning_sweeps.py",
@@ -34734,6 +35616,12 @@
       "sha256": "61a394bd855f65c653e3eb4e3753bf4408dfd35ad74133227fffcf33576f8843"
     },
     {
+      "path": "Labs/MimicKitTraining/test_local_process.py",
+      "git_blob": "e4cdf0a9cad2203d1be3d66e496dae1bd6f53529",
+      "bytes": 2654,
+      "sha256": "0d188175f785a8832af82081b542b38466b612077606af05c8724943c1526cda"
+    },
+    {
       "path": "Labs/MimicKitTraining/test_loco_advantage_diagnostics.py",
       "git_blob": "4a3f89d352d1022374c7695c9afb16ab46dc65dc",
       "bytes": 4294,
@@ -35185,9 +36073,9 @@
     },
     {
       "path": "Labs/MimicKitTraining/train.py",
-      "git_blob": "e92371d111728ed5fbece44bb00f1ab69d75eda7",
-      "bytes": 66387,
-      "sha256": "d079f004ed08d56e35d1fd9b8fb65a264637f767d97cae3a8e2c67d49f15fcae"
+      "git_blob": "d242ae6f70b6cf8d20fe56b753a0543d06d3b629",
+      "bytes": 67366,
+      "sha256": "4da03293304c44ca084e5fe57192134d731cb864738ee04e913db1f5f236416a"
     },
     {
       "path": "Labs/MimicKitTraining/uefn_engine.py",
@@ -35623,9 +36511,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/contact_engine.py",
-      "git_blob": "1580a415dcb927599629314fe8fe843e7d513ddb",
-      "bytes": 6438,
-      "sha256": "b2f93bec04d7ef5519fa5f8cf2b06fb7d7cb50a7a4e90e2fc95b72c4f6f144ae"
+      "git_blob": "c30adb88105970033e46c6283a8646e2024dc49f",
+      "bytes": 7240,
+      "sha256": "c34927a2e99bdf760b58401ebac6109b1c37c10854b640f669a57dd45ab2fb52"
     },
     {
       "path": "Labs/MimicKitTransfer/contact_manifolds_gpu.py",
@@ -35977,9 +36865,9 @@
     },
     {
       "path": "Labs/MimicKitTransfer/sequential_contact_adapter.py",
-      "git_blob": "f9bbd2396dfa0abb3083e517089960fb614348e1",
-      "bytes": 15343,
-      "sha256": "ceaeffda623b85ec9e45cb35bc20d9f05f5e21b006f177fa7e50a90c5107f7a7"
+      "git_blob": "f76551f65923e8a9e0a424578f640655e24d50ff",
+      "bytes": 16090,
+      "sha256": "b3a64c96b95f0245b26f2a3805b07bf50e4771b79e515dc830b5431b02ea7cdb"
     },
     {
       "path": "Labs/MimicKitTransfer/sequential_contact_gpu.py",
@@ -37807,9 +38695,21 @@
     },
     {
       "path": "Labs/RoboticMotionAE/SlowLocoPolicy.md",
-      "git_blob": "59a75dae4a2d13ec5fb8b28499fd259b3ae44eda",
-      "bytes": 115961,
-      "sha256": "99ac6c1b8a912870327c577295d19d54f3905d19151c93992169ae8e50cd992c"
+      "git_blob": "dc23466443697cf9057a5cb8b940d29c33908948",
+      "bytes": 149467,
+      "sha256": "a98583f9a3770fb5f8652c04b20d0e9ecb3ac571aee31a9f2c111eef25c9e1ab"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/action_jiggle.py",
+      "git_blob": "b5761993724a942c739bfdd3c43e15b27378fe65",
+      "bytes": 3631,
+      "sha256": "233e611d4f9f8e4728ff551681856ff70d2e73aea90585dbdb1cc412d3aa9bfe"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/analyze_crawl_jiggle_termination.py",
+      "git_blob": "49cc04739962dd418422a5665bee99505adc9fb8",
+      "bytes": 4254,
+      "sha256": "b1c269131514c84e213bb503cfb76a3ad67206bed1389ac965c413f8ef2a7b47"
     },
     {
       "path": "Labs/RoboticMotionAE/apply_saved_sitting.py",
@@ -37830,10 +38730,28 @@
       "sha256": "3507a7fc2947f0ca70576c720940ccc14dfb164e59574e8538d6f9915ca53e20"
     },
     {
+      "path": "Labs/RoboticMotionAE/audit_action_jiggle_remote.py",
+      "git_blob": "2b1c210346c0ae7778f134f15d400ff9831e90f8",
+      "bytes": 1702,
+      "sha256": "7b698f382dedcafa9692f8151c0f20bf890f5070ca066dd76115195f172b88f1"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/audit_body_jiggle_24524.py",
+      "git_blob": "8b99b20ede08590ce415cb0af94da3cf3c3138c3",
+      "bytes": 1958,
+      "sha256": "81a2d0249542c4f003c4d64bb884e8aba00069be35f47217c969041ca41c7a25"
+    },
+    {
       "path": "Labs/RoboticMotionAE/audit_crawl_capacity_remote.py",
       "git_blob": "61af38699b933495c8a2620e5d06d6be8a049df4",
       "bytes": 8588,
       "sha256": "e8c019014c2fbbab48154c91b5598ed2a9b6d309a5df64ff06cf136be01e33b3"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/audit_crawl_physics_origin_remote.py",
+      "git_blob": "5b4fbc175dc7ee62db2c70f4e9d7f45e1d141060",
+      "bytes": 5303,
+      "sha256": "afa2f73bba1bbc2bfa13f74bbc8931ecfc51aebf84dc7c0dbc00b354adbaf2d0"
     },
     {
       "path": "Labs/RoboticMotionAE/audit_crawl_stall_remote.py",
@@ -37890,6 +38808,12 @@
       "sha256": "e24e49330e6bee6f2fde6371c068f8abd927cd11448f16bb4c76aedd4468226a"
     },
     {
+      "path": "Labs/RoboticMotionAE/build_crawl_jolt_audit.py",
+      "git_blob": "3ceeb5f4d0ac2589241feacf90c48c47aece6ba1",
+      "bytes": 3064,
+      "sha256": "e97329b0c3bbac919d5879e0048e8f69e2130f18a841e24e59cd4065f8596fa6"
+    },
+    {
       "path": "Labs/RoboticMotionAE/build_disabled_inits.py",
       "git_blob": "ffe39e898b15f3faddd999ce9e710468cabdef8e",
       "bytes": 6036,
@@ -37920,6 +38844,12 @@
       "sha256": "d26c5b41815900574fdab080d438482c1dcbe946426b93652e4767227c9ba104"
     },
     {
+      "path": "Labs/RoboticMotionAE/check_crawl_relaunch_alive.py",
+      "git_blob": "ec2a48391d7412c2198676a0b269a390d5bf0688",
+      "bytes": 1307,
+      "sha256": "7442557e919ba64ce90f590e037fb8fd0532b2dd9ab41dd3e64732328cded83c"
+    },
+    {
       "path": "Labs/RoboticMotionAE/check_limp_idle_preview.py",
       "git_blob": "f9873bba5fd73a1336d96e50348dc1bdacc4c7fd",
       "bytes": 4690,
@@ -37932,10 +38862,22 @@
       "sha256": "847ba1b32194473d2628bdce28ccb7db5016b6a4e15429e8b3ec0f3cc09a208e"
     },
     {
+      "path": "Labs/RoboticMotionAE/cleanup_crawl_relaunch.py",
+      "git_blob": "030877888e10edf193b46a1eba7c23364651d182",
+      "bytes": 2847,
+      "sha256": "53e222ca3c14221a38798cd69ef7bbc01ae58a62cfc97f5b3f3e672778dc9a28"
+    },
+    {
       "path": "Labs/RoboticMotionAE/cleanup_slow_checkpoints.py",
       "git_blob": "157a768ae4c3103dffb1efb0e4b0a7ac44558800",
       "bytes": 4181,
       "sha256": "d6c2e0fbc7bee123662e8783f171f66707272264cf900293c909421cf641fb37"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/cleanup_slow_verified.py",
+      "git_blob": "bd930bc86d4de73f0aa29cc05a77a1e713475f48",
+      "bytes": 4784,
+      "sha256": "70028955766060693a0ec4a23a7a924d132b7866a76b8315ba2713d58c4c3b59"
     },
     {
       "path": "Labs/RoboticMotionAE/close_crawl_contact_cycle.py",
@@ -37992,10 +38934,28 @@
       "sha256": "a4a20483d943f278b0999e027904d44f9a934d4638caded881635704705e301a"
     },
     {
+      "path": "Labs/RoboticMotionAE/crawl_jiggle.py",
+      "git_blob": "81f8bedab93c4f57ef2f920af2fca05e4cd7f8d9",
+      "bytes": 3213,
+      "sha256": "969a0c84b48dd4ad65d515ae0b044863a19dc4d2e0f9e04cfad09dab77ce2868"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/crawl_jiggle_termination.py",
+      "git_blob": "8df3891c35d12992c08c53c73a62fe075c59e406",
+      "bytes": 3733,
+      "sha256": "b21b5527277045d6a1e4de77070c824731de7c70bdffbe406da4748083d5fbb6"
+    },
+    {
       "path": "Labs/RoboticMotionAE/crawl_lean_arms.py",
       "git_blob": "b7b004352fb346678fe04b700e792866b1d0941a",
       "bytes": 8800,
       "sha256": "cb4618446f42ff206c8ae9415d778e2a9c3df978747e6c9aae5b2cff1261ec31"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/crawl_physics_audit_kernels.py",
+      "git_blob": "f3b6edf7820a91dd39189fcce43354e5b81f23ad",
+      "bytes": 3491,
+      "sha256": "043829c164ab3e80acd44d88f8f826eb872ec9662264124f581a35bb13f5a4a6"
     },
     {
       "path": "Labs/RoboticMotionAE/crawl_reference_upper.py",
@@ -38014,6 +38974,12 @@
       "git_blob": "b85fe37b52571ee0d504ca4da09afc5fa7bd08d1",
       "bytes": 9522,
       "sha256": "dc6ed7fe8671e2c591ee168039df85f155faf86daf16c4e42e2060e8ef4df959"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_action_jiggle.py",
+      "git_blob": "e34c9e8c4a695157d1bbefa08a247bb898d9f3d0",
+      "bytes": 13841,
+      "sha256": "08c3f265c9b6644abe10c1dbd1f70a837dbd700ffecbae96a79a7a8b68d3c837"
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_activeleg_no_leeway.py",
@@ -38052,6 +39018,12 @@
       "sha256": "99952dc59780a2f1f09634fe1b97eb67ab378e1d04e21f632ecb63ab6959a2ab"
     },
     {
+      "path": "Labs/RoboticMotionAE/deploy_body_jiggle_termination.py",
+      "git_blob": "d4d3ef7ea9536e63542fa9cf09e8f9dbb7592c68",
+      "bytes": 8782,
+      "sha256": "e73352c99468e0d2920b637d9aad61b158954c5b4edc605de62eee907bf00549"
+    },
+    {
       "path": "Labs/RoboticMotionAE/deploy_contact_cleanup.py",
       "git_blob": "7f7a1d7c7550d93ac73e48b4f090a6ae5bae638c",
       "bytes": 12949,
@@ -38076,6 +39048,18 @@
       "sha256": "b5e96adb02f270910eff052177fef3e29dd12d76243e20b3d105edb08507ad01"
     },
     {
+      "path": "Labs/RoboticMotionAE/deploy_crawl_jiggle.py",
+      "git_blob": "171710f89626fb8c55708d30583394285eb041ad",
+      "bytes": 9837,
+      "sha256": "87025c5b6d618b6e6e2718508ff9058ed31fdc1c0bd4bac05dc73213cc98fb4d"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_crawl_jiggle_episode500.py",
+      "git_blob": "824ec4b83b9e1374cbd09451784a23c0a680c85f",
+      "bytes": 2652,
+      "sha256": "a7525b7924c412a33973a8025e46fc8e484beb3a3a0e4e67c7df733339e59ea9"
+    },
+    {
       "path": "Labs/RoboticMotionAE/deploy_crawl_legs_only.py",
       "git_blob": "6670ce814051a4bedd562259882907db7289c51a",
       "bytes": 4259,
@@ -38083,9 +39067,15 @@
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_crawl_only_experiment.py",
-      "git_blob": "72b571bfb594448e10bd17b9ebf3c7c05e197ead",
-      "bytes": 6662,
-      "sha256": "20b402ac660eead0bedbe90e2a22dae716a42c5595cdf5741fe3071cb41cffbd"
+      "git_blob": "a38a25ee89fe2b150e931045768f9cc0824610f7",
+      "bytes": 8084,
+      "sha256": "5326a86c9206aba18e82094f2167a198c0ca29f3d056f23287a256b29f731109"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_dead_friction.py",
+      "git_blob": "02312e2682ea932f81c51558fa0631490536da2c",
+      "bytes": 5169,
+      "sha256": "e761abfd4c2a6bafdece48147d602bb8a868e32d0b26a68daa6d6677c1eadfe7"
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_disabled_curriculum.py",
@@ -38098,6 +39088,12 @@
       "git_blob": "b2bdbcc5213258bb5428e3b1bd7c5517ce6ebc19",
       "bytes": 7872,
       "sha256": "2433aa1c35d12593ba4c57c679762c0bad29d3498701afe4350ae4068bd4980f"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_grip_update.py",
+      "git_blob": "48edcef81a74f27aa194ade077a12727a1b07ee6",
+      "bytes": 7414,
+      "sha256": "781dcf18f82528d5041a73978085aafa1aa7b87115d6b2c9d239d9385cc14ccd"
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_head_strength.py",
@@ -38128,6 +39124,12 @@
       "git_blob": "b074f1844858ff59ab714695d0095af1ba5f4ff4",
       "bytes": 17346,
       "sha256": "d24003b0ff270b4e8632848cc2d234b4435d91e0f36eafdb284bcfeb8f4a722a"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_jiggle_termination.py",
+      "git_blob": "4661d31609e8f13d41195db78932d72572982e6e",
+      "bytes": 8598,
+      "sha256": "cb73c493fd40bd5f69ca0b995650dc8a8836e82895de608efa6a0cd427d8d1f1"
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_knee500.py",
@@ -38164,6 +39166,18 @@
       "git_blob": "6a253f62c281e7cdbffb3759482806ee6d4dc8a9",
       "bytes": 2046,
       "sha256": "40dd6c16f6f5cbc0c7694baa95142d4f7ed3cee74159addee4d7f969c93be51e"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_pelvis200.py",
+      "git_blob": "8e99297a6ddd9f0e8efb140669457db247fac395",
+      "bytes": 5008,
+      "sha256": "e9f8b6c56d0cb1f024901fb554097287c56057f3341fb2a4c6fa6c84cc23abe0"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_pelvis55.py",
+      "git_blob": "8d0682ed44cb13ae32faee30b84dc7ee022b31b0",
+      "bytes": 5663,
+      "sha256": "f2c499f2e53a390c81bb4c16b84907571ec48ca055e0eba798fe91578704413d"
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_pelvis70_radius40.py",
@@ -38209,9 +39223,15 @@
     },
     {
       "path": "Labs/RoboticMotionAE/deploy_slow_policy.py",
-      "git_blob": "ee291d0dbbc36186e7afbaa94057c9c1168a13f9",
-      "bytes": 9774,
-      "sha256": "bcf1794aa7b368b7ff05dd7353a6cc393e85f97bc4c990e5e0872482b163a3da"
+      "git_blob": "3f977dbe2e586ba82b34bbd7bc3bed3b95ecdfd1",
+      "bytes": 10761,
+      "sha256": "1b75913b2bc86cc47a8ede76c230eb522614f2e6ce034d99911d1eec582ac6df"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/deploy_upperbody_damping.py",
+      "git_blob": "f166cd294b9b46643456113184f16fe0a49ee190",
+      "bytes": 5230,
+      "sha256": "a1c37fb0aff99f15c62adfc789978fe0251f639367b50dbb980c69d912c487d4"
     },
     {
       "path": "Labs/RoboticMotionAE/diagnose_saved_sitting.py",
@@ -38238,6 +39258,12 @@
       "sha256": "a431aa729e4bf0a158bdc4ce366dfe8abcca4f6d688f4a658de5e19130174870"
     },
     {
+      "path": "Labs/RoboticMotionAE/finish_crawl_relaunch.py",
+      "git_blob": "51dfb75aa9df4579f88d9344857dd666b05edd19",
+      "bytes": 1236,
+      "sha256": "47268c2e52b629c23d24795e524945a8eaf719b4c9021c2dab88669552eb08a4"
+    },
+    {
       "path": "Labs/RoboticMotionAE/head_strength.py",
       "git_blob": "0134e97f95f8ca95df645f534f2377c4f43cfeca",
       "bytes": 469,
@@ -38260,6 +39286,12 @@
       "git_blob": "b010eb07d2268d6bf9ec37e558a558bfffd3f29a",
       "bytes": 13942,
       "sha256": "b275c74c61ba26856a89c226c89179d1e48172824cf6f450b9aa3472b464d1f0"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/passive_joint_damping.py",
+      "git_blob": "a7a407f98e7609fb7686a10c2866efd732764f43",
+      "bytes": 2665,
+      "sha256": "d4be0e92019ca89184187616a6ba6036e7091ad9de37cd6c4d1e3b6c333167f9"
     },
     {
       "path": "Labs/RoboticMotionAE/plot_limp_idle_audit.py",
@@ -38317,9 +39349,9 @@
     },
     {
       "path": "Labs/RoboticMotionAE/pose_editor_server.py",
-      "git_blob": "ec6a1a6cdb1f07b6d672540a17d4a3f5ae4f9d6a",
-      "bytes": 5011,
-      "sha256": "4c825ea6565594fa27827c5dc1538bc2bb9f1689b4dcb4f971d2a00c4f2e8a82"
+      "git_blob": "bc9b3452b133be158dae4f4fd4157051f888960a",
+      "bytes": 5778,
+      "sha256": "f83b2e2cc4ce2bbc393fdd2fb396e78657ec1095154e3698a081d6c2cec746f6"
     },
     {
       "path": "Labs/RoboticMotionAE/preflight_crawl_only_remote.py",
@@ -38376,6 +39408,12 @@
       "sha256": "f9d2994d3885b14fed8d4ad05086f32e5993ac03dde8f2caecab0ec996d3203a"
     },
     {
+      "path": "Labs/RoboticMotionAE/probe_arm_bandwidth_remote.py",
+      "git_blob": "b117db72f168d24b2996010dc0d0319d1821cbfc",
+      "bytes": 6018,
+      "sha256": "dc4e6e321870d2144bbfde9b5b49dbb4c2619f903aba2efa9304f034f6d2c864"
+    },
+    {
       "path": "Labs/RoboticMotionAE/probe_crawl_forward_signal.py",
       "git_blob": "955b2340c3a30f21854230f8cf212c4efd05827f",
       "bytes": 4986,
@@ -38392,6 +39430,12 @@
       "git_blob": "896dc7d5e29dcb1a5c08b5c834d04ff23a8bc65f",
       "bytes": 8090,
       "sha256": "d7943098bc0fa037795e2e958ddd9ff668d352727fa7f0ceb4cef38f3a1ce436"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/probe_crawl_traction_remote.py",
+      "git_blob": "3b707cb6cb567069b7d752221d7b16b02371d5cd",
+      "bytes": 12888,
+      "sha256": "feaa0af038e264dcea05ef22d9217e3f0ab7046a29ea0d06f0ca915a428f0993"
     },
     {
       "path": "Labs/RoboticMotionAE/probe_limp_hop_capacity.py",
@@ -38431,9 +39475,9 @@
     },
     {
       "path": "Labs/RoboticMotionAE/replace_crawl_experiment_pod.py",
-      "git_blob": "8febd65688487c090ae25f9079df112c5d9ef3a5",
-      "bytes": 3494,
-      "sha256": "7aa5a3b2215e39a9d899332531aa737eafea719005b688cf524c0c41a7e7d1e3"
+      "git_blob": "36e9fb4133192866f4a3be6d9464577afde9eaa5",
+      "bytes": 3920,
+      "sha256": "3e1477377f44155a91f2413171a423d0ec5836a0d2cb753de2827139c1655ff1"
     },
     {
       "path": "Labs/RoboticMotionAE/replace_disabled_pod.py",
@@ -38448,16 +39492,28 @@
       "sha256": "a44ec10b79c613216b84cadda4c4bfc6b16f9e852b26bc25ebf0bf147df8d7b4"
     },
     {
+      "path": "Labs/RoboticMotionAE/restore_crawl_baseline.py",
+      "git_blob": "4c63c1f4d73609c75a31e8b6170f48ee241b39ed",
+      "bytes": 6986,
+      "sha256": "2e752cfbbbb206a2cc2b8a84f5e6c6e3488c7b48ee326b9c30c51193f8819f3e"
+    },
+    {
       "path": "Labs/RoboticMotionAE/slow_loco_disabled.py",
-      "git_blob": "b9daff370ed5cfd922c772d26084d3d22575687a",
-      "bytes": 17135,
-      "sha256": "b58381e60985d4633b7f12c448695e2670d90dd9411c2a71c99fb9267dea1a41"
+      "git_blob": "800c257128a814e9c2efe5ca20b37c1222f2b9a9",
+      "bytes": 21434,
+      "sha256": "a4854c9a563f39640577c0ceb336e86f72a87e297d2dc137875fb86d4c4649fd"
     },
     {
       "path": "Labs/RoboticMotionAE/slow_loco_env.py",
-      "git_blob": "47add16b4c0786af3de4e25ed7f2a3b6970ad6b8",
-      "bytes": 28587,
-      "sha256": "7c3a73c0ccb9b3948e6360dd71d7794ed86beebda7d85b90fe5a20dc45c739a2"
+      "git_blob": "e14223ea87f3bfac39a8fe879b26c754cfa57a87",
+      "bytes": 29485,
+      "sha256": "c195bdaee5bce31c75d59b203fa040643a1555988bbc990ac6b6327140e2d262"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/smoke_grip_remote.py",
+      "git_blob": "926a2d07f951bfda32f9e5fd042c203d05277b17",
+      "bytes": 3459,
+      "sha256": "7b1c4e14c9bdae51ad5d723521cc5bb4b6d73f8f50031359d44ad04f8634657b"
     },
     {
       "path": "Labs/RoboticMotionAE/stabilize_slow_repair.py",
@@ -38476,6 +39532,12 @@
       "git_blob": "6dcdfd7d245ef38b92945810f64d02f932bd078f",
       "bytes": 5378,
       "sha256": "e8f42d372e4f16d520c20fb46af4292d1a691a4f00cb1046975be6a58820dd41"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/summarize_crawl_wrist_damping.py",
+      "git_blob": "1b073bc8a8d2446b9d4bff4089daa1ffe7633a13",
+      "bytes": 3169,
+      "sha256": "15ef173d8cf547da7437eaf06b991d0a9f59fb20ebf52d490c9b9fb43fec67dc"
     },
     {
       "path": "Labs/RoboticMotionAE/summarize_limp_hop_capacity.py",
@@ -38502,10 +39564,52 @@
       "sha256": "9e81e84e8b823ae460c642b4e524f80fef5899c54d680ab5b84c106209bf8f85"
     },
     {
+      "path": "Labs/RoboticMotionAE/test_action_jiggle.py",
+      "git_blob": "70236ac9614adaba9e43c3dca6b1cc0918c8eb48",
+      "bytes": 1608,
+      "sha256": "715c8adda909c94732ba3e74802d663f1bdcd7c4c8204775b74b2e78254d5c7c"
+    },
+    {
       "path": "Labs/RoboticMotionAE/test_all_radius.py",
       "git_blob": "929d226fc63d759688fb341498c0532d92f46ac7",
       "bytes": 2826,
       "sha256": "a50be44c8bc73941a27bec5b294f38928bb1599a9b37441e211dff324aa052b6"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_body_jiggle_coverage.py",
+      "git_blob": "16674f74627a3aebaeafd626cb51841ea87b4284",
+      "bytes": 1865,
+      "sha256": "6ddf27a13bd198d8cd541e2682aa6ca4b24343b4d1ebd6fd60ebb6b9fbb524f9"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_body_jiggle_termination.py",
+      "git_blob": "f1c1c5965806863e0cdadba423780d5c9d52bad2",
+      "bytes": 3885,
+      "sha256": "28de101c04b0664c2812f189bd42016b6027366a8a6d257ff0e393b3b3f5f33c"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_crawl_jiggle.py",
+      "git_blob": "dd8be95b05688f3ced13588df98ba5a8a259ed0e",
+      "bytes": 2431,
+      "sha256": "41cb8aeb6d8162b4899a1ed02079136d68e15457f419c3c1f0e73b8015a19d93"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_crawl_jiggle_termination.py",
+      "git_blob": "80e4717e784aca2037f168152b45ba4c7691cba2",
+      "bytes": 4363,
+      "sha256": "1e1f17adf203f74ff80fcfb16d4c551ff32af11c16b47e5cdd4ecc25c4b123ef"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_crawl_jolt_audit.py",
+      "git_blob": "7b516263e38ff4073c5c6bf23fe0fc7c4b08ef63",
+      "bytes": 7469,
+      "sha256": "83d18fb7e0a011049408cc8c29c6bd12143f3325dfd654a88651cc8f025dd40e"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_crawl_wrist_damping.py",
+      "git_blob": "33b0fbc5f3bf259974a4ef7684ae836ffdd2aed3",
+      "bytes": 6611,
+      "sha256": "14edc8cd7a919562984bf0fb7cd9a3298b884a1d27311fae773954b7692c462a"
     },
     {
       "path": "Labs/RoboticMotionAE/test_disabled_foot_termination.py",
@@ -38530,6 +39634,12 @@
       "git_blob": "91435b5177edf47b1d6e2292a56363a07d9afe1d",
       "bytes": 3196,
       "sha256": "27d26f5a0e32a59d8b7c7029805b06a6b6d912e8639132c5d6b79f88d325b628"
+    },
+    {
+      "path": "Labs/RoboticMotionAE/test_passive_joint_damping.py",
+      "git_blob": "ca3757a731a7b8e8b9e8ee3ce88355658b4c8cd9",
+      "bytes": 3508,
+      "sha256": "0298d019f75eece3384618fb7735c28dd34bb08be37038ff19498872c5b34896"
     },
     {
       "path": "Labs/RoboticMotionAE/test_passive_leg_mse.py",
@@ -38574,6 +39684,12 @@
       "sha256": "b6b219e6a92d0059b0848c9116b8ce16880a2c2b868249fd62ec57c14edfcd75"
     },
     {
+      "path": "Labs/RoboticMotionAE/train_crawl_traction_trial_remote.py",
+      "git_blob": "5b9fc1791e68b1bfaacf1d6a250ff9faad085e1d",
+      "bytes": 7050,
+      "sha256": "634c1c27f52fe4967e643e54c068c94139d5bc426e28b87391df9214295b1a51"
+    },
+    {
       "path": "Labs/RoboticMotionAE/validate_slow_contacts.py",
       "git_blob": "656b1641eff1793318f23b18578b3602976580ab",
       "bytes": 2739,
@@ -38593,9 +39709,9 @@
     },
     {
       "path": "Labs/RoboticMotionAE/verify_disabled_replay.py",
-      "git_blob": "40396c639e0106ad2d96acff387bfc89431926a2",
-      "bytes": 3917,
-      "sha256": "2a4cbb63345c6efe275724e261803c5be59786c86d4b8eedc9a5e9675607ed15"
+      "git_blob": "de3b7b2fa5abc429a79a1104fa0134921ca308e6",
+      "bytes": 5661,
+      "sha256": "dd01877a8ee9af5f2cf8a6b0e4b2dde910aca539974eca414a00527efd667537"
     },
     {
       "path": "Labs/RoboticMotionAE/verify_limp_hop_capacity.py",
@@ -38611,33 +39727,57 @@
     },
     {
       "path": "Labs/SoundStudio/README.md",
-      "git_blob": "ceb7ee448aaf071026b256166e51f9f708d767fd",
-      "bytes": 20817,
-      "sha256": "34518a69f92bf2e741a1340bdba10aba705ff3bbc592ec085c18f2a2582355ea"
+      "git_blob": "a6aa2c9738fc458f306e5b53f18d5216c229e194",
+      "bytes": 38055,
+      "sha256": "45a4232b36b48426638d78cc4b3240668b10b81bc1765490edae55d2c4e903cc"
     },
     {
       "path": "Labs/SoundStudio/app.py",
-      "git_blob": "780fd512ed2e340ffde81f2f9f91ec542c1a84f3",
-      "bytes": 50288,
-      "sha256": "6e1769d2aa9de414b6a153cb06a8a7ebfd6162a95d2c305ceb76f191097c2a1e"
+      "git_blob": "ae7712d0afeb4697b0a7766341e44e2f9eac1eb9",
+      "bytes": 47219,
+      "sha256": "811d9a81873de1235ce48a491e1dc72ce2c4937207bdecef7393985387a875d2"
     },
     {
       "path": "Labs/SoundStudio/audio_engine.py",
-      "git_blob": "1d091c90d4a51d37829293eee860505239d68c99",
-      "bytes": 25801,
-      "sha256": "eea7cf002d339f07bd63c6a527aae08097add73200c058bad68854169ce6eec0"
+      "git_blob": "80c2a34f63a2ea52af26ad23fc49fb6ef405be74",
+      "bytes": 29377,
+      "sha256": "dbf930fe38985060b8a93e3b795cba2e9674b53e7d14c4390dbc3a36da66952c"
     },
     {
       "path": "Labs/SoundStudio/check.svg",
-      "git_blob": "66f97ab6c8622e3857b199171660ec57bc322ba4",
+      "git_blob": "35d7ad7b6c8e8b2a7469ce184f604f9f5659ce32",
       "bytes": 140,
-      "sha256": "84b4495d7d899c24a24a4765839663269ea7659907638b78af64d21671617eed"
+      "sha256": "192dfcf9c8e24121257ff9d08c0ffd6c91a444804f70e600b905806b4aea8f72"
+    },
+    {
+      "path": "Labs/SoundStudio/clean_audio.py",
+      "git_blob": "abd2830e3bdfdcb741160fa086dfe790b60dbde1",
+      "bytes": 5938,
+      "sha256": "2fe8b0d1b4dfe897ce8ae3c0f6ee70fa1cf5304984e501e3753ef8c13d354057"
     },
     {
       "path": "Labs/SoundStudio/create_icon.py",
       "git_blob": "cee6541aeedda68c1ccca8b37492e4f02c100213",
       "bytes": 1187,
       "sha256": "2d416eecac7721a47f33bffcafef1924cb40c9d9a69c6805ed1a82c8fd828517"
+    },
+    {
+      "path": "Labs/SoundStudio/creative_audio.py",
+      "git_blob": "255b664412cd7939a43ca8035aac6e86349774ee",
+      "bytes": 11533,
+      "sha256": "ed577ba19c1458609a26257effe0f3ab573df1b34befd8bc3f1cdd6e1564fc20"
+    },
+    {
+      "path": "Labs/SoundStudio/creative_tools.py",
+      "git_blob": "dc4afd644a288aaf57fac4684e25b02773c5fad7",
+      "bytes": 26220,
+      "sha256": "b96db7f9c539f8f53421a4cb0331a0393ad71ed084e2b1628b261a71aa50277c"
+    },
+    {
+      "path": "Labs/SoundStudio/envelope_display.py",
+      "git_blob": "8e38e13b651420b86dcff9c3f4fd3fb604c7a5ef",
+      "bytes": 7117,
+      "sha256": "c8831636f97b579831d47d77506752043029bee44e3f848c335fe58fc4ba159a"
     },
     {
       "path": "Labs/SoundStudio/icon.ico",
@@ -38653,9 +39793,15 @@
     },
     {
       "path": "Labs/SoundStudio/install.ps1",
-      "git_blob": "a84197774c5e39a2bfb080120584379be18efdf1",
-      "bytes": 4078,
-      "sha256": "07e72f98ccda1b4c948a6d6703e761a09fda0b5c2e0a718b8c611aad9e8e8731"
+      "git_blob": "11004905749bc1cb8136e0ea4f6a5488ead67ac6",
+      "bytes": 4235,
+      "sha256": "fb12aeb49a8292af7172a77d7c617a012b5767a329dc8c96222d03965c108a29"
+    },
+    {
+      "path": "Labs/SoundStudio/install_audio_tools.py",
+      "git_blob": "afccddbd512e45c21c07e0c37f319313f1ac2b8a",
+      "bytes": 1629,
+      "sha256": "0e2cd84aeb7daddf01f4537b38b38f40ec83cce7798f5653d76db590195ae481"
     },
     {
       "path": "Labs/SoundStudio/requirements.txt",
@@ -38664,22 +39810,64 @@
       "sha256": "881ea3ac28ff4787e8690445e0830a33681e7e0edb98de70a47292ffe567d253"
     },
     {
+      "path": "Labs/SoundStudio/source_timeline.py",
+      "git_blob": "1eaf71165f2d189e6af43b0ab8448efd4669589d",
+      "bytes": 4374,
+      "sha256": "63c32d665fa07f1d888173b8437440e8befd8bd4e5ce4befb14d438a748f3cff"
+    },
+    {
       "path": "Labs/SoundStudio/studio_layout.py",
-      "git_blob": "7df111546828eba7797bdf40298979bc250d7614",
-      "bytes": 12900,
-      "sha256": "8be93db7f94688ad098c4c2487ffac3a738bcc365142457da167e6a37069a037"
+      "git_blob": "ef01b78196a2aa786e3e381a930847dc687faccf",
+      "bytes": 14061,
+      "sha256": "fc2d0789ac0e8085de98b62283fb4579d6125b485599e33f01bd053e1200d6bf"
+    },
+    {
+      "path": "Labs/SoundStudio/studio_theme.py",
+      "git_blob": "710afbe4169e1ba6134529ed5b56d70e44469786",
+      "bytes": 7152,
+      "sha256": "1150d967498318d853302701eddc16de71668099edb035bed5048b8f15a9ed57"
+    },
+    {
+      "path": "Labs/SoundStudio/test_clean.py",
+      "git_blob": "b6cc2ed7a76a37a21cd378d21e82963595808a52",
+      "bytes": 6964,
+      "sha256": "2c0c4fcdc95a007b152ab3851a49713e14e346a3ac9ebae53729eddc12c0e735"
+    },
+    {
+      "path": "Labs/SoundStudio/test_creative.py",
+      "git_blob": "c9a2f69c6c4a6e2283ffb0ce75fef29df78ad74e",
+      "bytes": 15766,
+      "sha256": "c5624154c73b9bb518f3a33878784a7a398dbf9f5bb37eec40f457dfed95783b"
+    },
+    {
+      "path": "Labs/SoundStudio/test_simplified.py",
+      "git_blob": "3fee53590393ea0824a823b9e7ee5abe3fe564af",
+      "bytes": 8451,
+      "sha256": "15ccfc2bc76da8b4609538cbd7d732a23992e50c26a597abb3100ebb56ddde59"
+    },
+    {
+      "path": "Labs/SoundStudio/test_source_timeline.py",
+      "git_blob": "a7818a4863b03e3fcda9e8b21edccf90823ee833",
+      "bytes": 5597,
+      "sha256": "b29c17d89d4ae57cdbbda7eb851a02aec1308c716e936a2fccc56832d17dd69c"
     },
     {
       "path": "Labs/SoundStudio/test_studio.py",
-      "git_blob": "20a5762c726c7ce93eb07cdf6bf9d4e106801975",
-      "bytes": 41663,
-      "sha256": "c27f2525afc1812ffd044845ef6a8158069b4181dddc4486f63f62a561b4465b"
+      "git_blob": "bf1804693f7db17cd8f6631a8c82c9bcf78b6244",
+      "bytes": 41933,
+      "sha256": "afb5d207dc2291a801d60bc80c355e6d49bb3f72d14a7dcfad35cbce369e03b5"
+    },
+    {
+      "path": "Labs/SoundStudio/test_wave_navigation.py",
+      "git_blob": "0b3ec31f7e42d7d105a131fb4de7eac9df91660f",
+      "bytes": 7144,
+      "sha256": "aa8821406c079724c66b98781bb13d0815a0ce45a9ca0378798b97dbcb0c4d05"
     },
     {
       "path": "Labs/SoundStudio/visual_audio.py",
-      "git_blob": "2125ae7cdbe1955b1f492f5f5015330ecae15371",
-      "bytes": 20281,
-      "sha256": "ed245934b24f4d0277cb233c2c40a240f0e5e391ba01abb96b7df9122bc3d602"
+      "git_blob": "573340d5213102f18d7657a76bc949a7e4d64435",
+      "bytes": 28485,
+      "sha256": "8a01489c1033e9c8760be368975d9fad67f9de9d056e4ee14f0ee182b526dd57"
     },
     {
       "path": "Labs/SwordHolsterLab/.gitignore",
@@ -40615,9 +41803,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "920e7e61d950e44a81786695758469f5117f3424",
-      "bytes": 755881,
-      "sha256": "ef6513d51b5bbab9bfb5f5718ec34dee71e33367bbce114e2c6904943a55a06e"
+      "git_blob": "4a6599c4f2855eac2387d6f5f76b9a3d1a2d6b95",
+      "bytes": 520996,
+      "sha256": "f14199fd8a60bbbbebb179bd74e445ba9ebc898f8cc71429b8147904bd851422"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -56280,6 +57468,12 @@
       "sha256": "580bd63f8338408db11861509dec51521fb0d28ea46c1b76c4c28c6dfdc52c45"
     },
     {
+      "path": "Saved/WindTest/overlay_revert.json",
+      "git_blob": "2af2018d8047fc6f54634d7d2845864e83c3d502",
+      "bytes": 1667,
+      "sha256": "ec415cbe75fa1e7e37de4e38c6e7aff1cbb585ea1205d317e684b291f0fe3570"
+    },
+    {
       "path": "Saved/akf_probe.py",
       "git_blob": "d5805a4436cf19cbda728f562e477d595ba61ad8",
       "bytes": 17578,
@@ -59035,9 +60229,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyBodyflipAgentTests.cpp",
-      "git_blob": "a520a1435814f638c8da3ea0399ce8a6dde8db27",
-      "bytes": 79998,
-      "sha256": "dfc2f89f9c0a86248cbcaa4690e9cb9df01b1f0e318a111e07af28671e02e6e7"
+      "git_blob": "a974f6b27fb5da69c609165e46616c52c8d5f4b3",
+      "bytes": 83404,
+      "sha256": "501672640c567b24a5cfc84ef84792b44d7075f38871e4935eab3416ef9c930f"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyBodyflipApprovedTests.cpp",
@@ -59611,9 +60805,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyBodyflipOptions.h",
-      "git_blob": "25740ce4103aec53f5972728df4edfb49b5d19cb",
-      "bytes": 16974,
-      "sha256": "3ca7214b62ad07fa21e57ebd8b358032a574a26462284174c05ada8330d17e2c"
+      "git_blob": "3b867db215ec7fc08628073400830dcf406e6335",
+      "bytes": 17150,
+      "sha256": "1d8bdb72143cb65d656e1710f0e02877932d92396a2c904c568db5f4a2efaa80"
     },
     {
       "path": "Source/GameAnimationSample3/Public/ProphecyBombLibrary.h",
@@ -60120,52 +61314,184 @@
       "sha256": "5c52f5061016e6a23bca3420345332acb74366160a8a4580b9b1355b4642979f"
     },
     {
+      "path": "Source/ProphecyAmbient/Private/Bird.cpp",
+      "git_blob": "a83d9ef95e9a710b11e888fca9f4fefb36b69664",
+      "bytes": 91177,
+      "sha256": "b46c2acb8692ac6a68d42a2b7d25dc8c3feaf8a29972993d99ad14a7c9860a22"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdAnimInstance.cpp",
+      "git_blob": "17b7ca4b4fe4c48ae52078d602dd47992da620a7",
+      "bytes": 10214,
+      "sha256": "b702834889942e1010a1173ba9660520069f902ec746be858217ad8fab4e52db"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdFish.cpp",
+      "git_blob": "47547d963d41e35871d085344b1ca964d3305192",
+      "bytes": 4154,
+      "sha256": "cb0706a04ffa30a04f4fea961b246cb36d62df79061b1a010605f454a3753d34"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdFlock.cpp",
+      "git_blob": "71947fb410b8193f33c191a2a73735414a8ad66a",
+      "bytes": 40433,
+      "sha256": "a9a1c5288bee0d4bd615a0ed5e92959aa95f5299e2ef6cdae29119521e7b1daa"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdLibrary.cpp",
+      "git_blob": "754a13a57e9302b784d9018485ffb5651e67105b",
+      "bytes": 3085,
+      "sha256": "0d70c1e11acfbcb3c861e924ae3dae35bb0d23a707a462f56a3885955d03f5f9"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdTestDirector.cpp",
+      "git_blob": "8960502bb07ef1ce29e9bcf255ff9b49f399cdcc",
+      "bytes": 40131,
+      "sha256": "5267c6a4a0258f75e1dfdd263e644bb2ba13bafe02f08cc2b70edf2de67e0fb0"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdTestDirector.h",
+      "git_blob": "dacbc14a54a28b6ebba4f180cb7c9c31c7f927ab",
+      "bytes": 4084,
+      "sha256": "8265998ffda10e3bebeb016f795e64e12701d18e9e5c9cc5b9dfe36e118fd9e1"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdTestDirector_Leaves.cpp",
+      "git_blob": "17cefc3c15551fe9ad98feedd653fbfed46b6527",
+      "bytes": 20993,
+      "sha256": "d1693fef38788bddb645ab2b27ef466640749cd8f0328e9a7084c4dcbed1c654"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BirdZone.cpp",
+      "git_blob": "26079bc7dee66495fbddea1cf5bff6f21f2f4ba4",
+      "bytes": 7041,
+      "sha256": "2c4b06d3a30faaa29143c2b3a1348660691e6fef915fc3db3fd146b819c62bbd"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/BumblebeeLibrary.cpp",
+      "git_blob": "a2ca9581506476065e43113adc6dc584abbea762",
+      "bytes": 2385,
+      "sha256": "b47838df9a40d409f943113dc523fc7e912412ed630577f0782fac757a5b1507"
+    },
+    {
       "path": "Source/ProphecyAmbient/Private/BumblebeeSwarm.cpp",
-      "git_blob": "3613237765b77dc7e5dbf91dd426585a7bca388c",
-      "bytes": 37474,
-      "sha256": "7f291bf20fb3f2f89dbcb2a119edd1fbdf2e5e09f683aa21a7ccb30640fdb398"
+      "git_blob": "bdd2e5e76186ad6b73d9e289e8a20053bc557c70",
+      "bytes": 59480,
+      "sha256": "d2ae2963615a21b7809fd0fc71f362fa92f61669ab1c72d66c2f266a17ac6ca9"
     },
     {
       "path": "Source/ProphecyAmbient/Private/BumblebeeTestDirector.cpp",
-      "git_blob": "56735f3c090fd937985ed653b8fbe9be72e771db",
-      "bytes": 20019,
-      "sha256": "57b52c8aed5c32a9702d444b4f8cc62d19f237e0940d8a911f8d29e2b74311bb"
+      "git_blob": "759583636e4e78514e2d11f7223a0cf8a923fba1",
+      "bytes": 48406,
+      "sha256": "ba55e9bb8c9b0e61fe62add53fa320ae6114d4668eb702706724b8eb8a95c506"
     },
     {
       "path": "Source/ProphecyAmbient/Private/BumblebeeTestDirector.h",
-      "git_blob": "b8788493bf8417331bf236d15c4d0b057d48d34e",
-      "bytes": 2295,
-      "sha256": "97bdef35f26414410e75725ee4b47738518cc74c65216afb97a8147563ada4b2"
+      "git_blob": "89f104227c6ff54402b212e4d17e003ede68aab1",
+      "bytes": 3345,
+      "sha256": "c31584aa2fb56edfc9a3933f17d644335809fdb356704b77d4157a826585a1af"
     },
     {
       "path": "Source/ProphecyAmbient/Private/BumblebeeZone.cpp",
-      "git_blob": "12a078eed79e66ade16199de3d068469f31af479",
-      "bytes": 1824,
-      "sha256": "91089a50ae8041458838983974aa72e88ae394c17e25b3e35ae2d4ae66f5d8b2"
+      "git_blob": "efe640d70208903d2c8227f7600be70b81cdfc49",
+      "bytes": 3796,
+      "sha256": "b083b6878e05386739b270bb692de12a4a0180d0f16fe682e1bb787a1e293fe1"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/GlobalWind.cpp",
+      "git_blob": "995a9cdc689ad0a8856fe8738e442ff0ca105fed",
+      "bytes": 14736,
+      "sha256": "d0f72780ab7079f39ff6d6df2fbe224642c88af647fd414f91c920006bd3990c"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Private/LeafFall.cpp",
+      "git_blob": "c8df687a995743f6eddeb4538e5e297090db97d8",
+      "bytes": 30706,
+      "sha256": "09ceef919a74e57953066884da0148dc1188adc0f4a6941e2e730fa18e6f23dc"
     },
     {
       "path": "Source/ProphecyAmbient/Private/ProphecyAmbientModule.cpp",
-      "git_blob": "ca51b59add6e33c8ebce2ca5853d4d7021a81034",
-      "bytes": 1123,
-      "sha256": "0ac320075a5a9a1fe7df375b4e564f87d4a73930e689bf5ae302852f13955635"
+      "git_blob": "6bdcba7ad5258081bef7febd1d317f6f2576a4fe",
+      "bytes": 1837,
+      "sha256": "34a7f7c5128ac093dfc700f0fa8cb0906f76c80db44655574dd89948fee58fa3"
     },
     {
       "path": "Source/ProphecyAmbient/ProphecyAmbient.Build.cs",
-      "git_blob": "eaba5eb0cbc325875c9030b4d5d2c556dd07c9cd",
-      "bytes": 511,
-      "sha256": "67e4ff36f653179d9cbe35ba6a3d936cd6c21f08625a785d11e747126270e1da"
+      "git_blob": "4c5c4bdf9e43c9b658e6be70c691222f5cc335f2",
+      "bytes": 581,
+      "sha256": "e7e9e1a9812488775c4dd2a33536b576a14c327219086e09d8638089cbd164bb"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/Bird.h",
+      "git_blob": "76e3aa08e5fa19183d788dbdcf425b70faa97a64",
+      "bytes": 14163,
+      "sha256": "4c2fe2d94558f5871b1848bc42c244b6b9b6e7f35a09b74ca46e6ae6cf2bed57"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BirdAnimInstance.h",
+      "git_blob": "3ff70fc9b848e24f857a455796f5bc176ba11a4b",
+      "bytes": 3243,
+      "sha256": "05c1fc9ce34e8d3e6c597131f2c305875f2ec691c0e7f12a229efe382b41c64f"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BirdFish.h",
+      "git_blob": "517de07bbafc1b923239f031396b210a805ac586",
+      "bytes": 2543,
+      "sha256": "13e3c6275713cacf5034938eb7872f6ceefa049cff457a8e0f6a711faec94930"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BirdFlock.h",
+      "git_blob": "a8fb225d55ce93dd9c68dafa30f433299e5ea65e",
+      "bytes": 16307,
+      "sha256": "3e5682531c33e165a389400731c60b5cd538ed3a98db2b384c7f90d5d6810e7b"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BirdLibrary.h",
+      "git_blob": "4bc999cd89faab5de1501e8a1f104ea931942938",
+      "bytes": 4604,
+      "sha256": "35d7e79bc1676a3bcfa335846079cc0c2c1fe7694dd1a31a44b2be05638c252d"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BirdTypes.h",
+      "git_blob": "5c346b9a0d6f6553332c2eec01b62b91c5df0c6c",
+      "bytes": 15852,
+      "sha256": "6a7b62280a470e358757b32613218db1afbf2a9315821beac58c257a31733d02"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BirdZone.h",
+      "git_blob": "dfa3cc537b2d73e6ca8d77866c68f0af4d0443b7",
+      "bytes": 5071,
+      "sha256": "bb1137b04cc79d28267cd2d9bd74079d9bd148abc49892aef0f62cb09e023e53"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/BumblebeeLibrary.h",
+      "git_blob": "564f2b68c55c7dd82045fac7b4e8bf5088e41749",
+      "bytes": 2518,
+      "sha256": "3457b53c80920c84844c7b0d04f6e17067a6b3729fcabc67671f238d621f9dc4"
     },
     {
       "path": "Source/ProphecyAmbient/Public/BumblebeeSwarm.h",
-      "git_blob": "8f91ef2df9bb622021274a71ac11060deee69cc4",
-      "bytes": 12586,
-      "sha256": "479a339e1fa58d5d54fcb00d7b267e4865e72d954e22cfea639bcca6c657315c"
+      "git_blob": "ea1127b83d0d9b2dda1437e565858fe4fe72b128",
+      "bytes": 20241,
+      "sha256": "3034c48a3bf6f5e59623da8c85d5c1c4e88c234fb603b7fa9f51bc3df0a517b4"
     },
     {
       "path": "Source/ProphecyAmbient/Public/BumblebeeZone.h",
-      "git_blob": "5abe70b7cc28bfb58682448929c9c2fcec464e89",
-      "bytes": 1750,
-      "sha256": "0143bdbbdf6b9a1deafd3ee7264ac9b511dae54a47ca4f446ca91efad95f1c8b"
+      "git_blob": "948812c00c5db6678863ee0f0132197de7930764",
+      "bytes": 4210,
+      "sha256": "aebfbeae671ed2c9f14dc685c321154f8b798910db74a1dcfa37f1315fd20774"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/GlobalWind.h",
+      "git_blob": "45d428cebfdededca8f288690f139902b503552e",
+      "bytes": 8595,
+      "sha256": "c4f5131f2e6f72146963891391aff5fdba5c990a7bca1dc612480b32bca80591"
+    },
+    {
+      "path": "Source/ProphecyAmbient/Public/LeafFall.h",
+      "git_blob": "d0ab9a66e6476183274644eaee44c150ffe1c88a",
+      "bytes": 12932,
+      "sha256": "be273840d4c5f76389d694f55edf109eafc10055c62a84b0f0b8e466bbce8d96"
     },
     {
       "path": "Source/ProphecyEditor/Private/Benchmarks/DoubleReachKernel.inl",
@@ -61206,6 +62532,12 @@
       "sha256": "87dee03b8a42151283d80f6bb9f2a0a9daabdf819055c2a44ea2fa3e2ea7d3cc"
     },
     {
+      "path": "Tools/Bodyflip/capture-review-lab.mjs",
+      "git_blob": "30c29455f33956c597af7ed7290ff18e8444ca38",
+      "bytes": 7112,
+      "sha256": "22376b11bca62919485e5ed36901347e0e846cadd9b84839fe9748a747709c9b"
+    },
+    {
       "path": "Tools/Bodyflip/chakra-probe.cpp",
       "git_blob": "d5ed08d0c30d4f7f23a7d1d4305174275f4a2976",
       "bytes": 5030,
@@ -61224,16 +62556,28 @@
       "sha256": "cb698b8c30b484e423c906ee5883c90bb31121c96a554c124e3763913ed55d68"
     },
     {
+      "path": "Tools/Bodyflip/native-review.html",
+      "git_blob": "3959d522e613778a9ce397eeafb42f0bf57e16d5",
+      "bytes": 11656,
+      "sha256": "10a481c0113cd62cf703d47203ad25f1c07de5873f79edefd534ab8ce9a43b02"
+    },
+    {
       "path": "Tools/Bodyflip/package-runtime.mjs",
-      "git_blob": "dd7c4e211ea9e1316578318bd28c127adf5282ad",
-      "bytes": 9343,
-      "sha256": "75fa099c4981a2ea26e3e23225c0d4d4f121cd28b3247d0b56163432b5bba573"
+      "git_blob": "7658cd72af520a11f795b6c12aaf4e29b641d605",
+      "bytes": 9651,
+      "sha256": "97612017c463ff0164c0c58f375196cbb6507b2c3a6d4d423fd9f6ff2fcde3ca"
     },
     {
       "path": "Tools/Bodyflip/prepare-native-host.ps1",
       "git_blob": "f514964243c23d4f8013add959e09c90b3968754",
       "bytes": 3778,
       "sha256": "53007c9fef460e798bd0631d14fa9cc18076dcbf179a8a8473b17da13abf7e76"
+    },
+    {
+      "path": "Tools/Bodyflip/prepare-native-review.py",
+      "git_blob": "ca40004ecdb3e5e5637fea08e76212afcdab1f64",
+      "bytes": 6510,
+      "sha256": "74a84ff8dd66d0641b0ad5c952456696c548cd024ba73b74775105b0e9fa4f65"
     },
     {
       "path": "Tools/Bodyflip/prepare-toolchain.ps1",
@@ -61291,9 +62635,9 @@
     },
     {
       "path": "Tools/Bodyflip/verify-current-port.mjs",
-      "git_blob": "f574316edb99f1db6a535f733188972e192d0378",
-      "bytes": 3213,
-      "sha256": "ef7ba5e18b5665da75be1768a1bd51dd5384b6d6ee40ffaee20c3f45f0ce7a6c"
+      "git_blob": "0193617393d5001acaafc1c8c2b3cf1523d9c512",
+      "bytes": 3541,
+      "sha256": "24bc637cb7a25298d07bcff869579d1eae1b95bc60bbf3d30fab07a77f00ed44"
     },
     {
       "path": "Tools/Bodyflip/verify-current-v8.mjs",
@@ -64764,6 +66108,12 @@
       "sha256": "3af7d390ed267939ef136c2e7d0a115984fd8609e8bc86f637d1666be3f7c61d"
     },
     {
+      "path": "Tools/Recovery/Receipts20261102Bodyflip/accepted-lab-final.json",
+      "git_blob": "e3cc7f36e2ad3f9ff6ecd89fde187269af1d2dc1",
+      "bytes": 11426,
+      "sha256": "a9fd6da21911d69cee6ad5b06a9cc13963899d01b7a29c5d2251241934e9a01c"
+    },
+    {
       "path": "Tools/Recovery/Receipts20261102Bodyflip/accepted-pike-motion.json",
       "git_blob": "91a92d9c3ab99b24c93795cb0edf604c7ef3f850",
       "bytes": 10394,
@@ -64780,6 +66130,12 @@
       "git_blob": "8c7193d108c9268caf2ec09bf32638bfa3b0a067",
       "bytes": 3808,
       "sha256": "85e227a72d488eccd5a90fae4b4e09a69b8cb512c4004b97bdcbf4b861b50c8e"
+    },
+    {
+      "path": "Tools/Recovery/Receipts20261102Bodyflip/foot-friction-comparison.json",
+      "git_blob": "c8e3a9415c6d2cd91706c7dfceb2b84b96cdc9d0",
+      "bytes": 6926,
+      "sha256": "c1dd7761a9862c94b11f48fe28375bb0e686ceb7e46f5a9180cce92907b8092f"
     },
     {
       "path": "Tools/Recovery/Receipts20261102Bodyflip/native-port-verification.json",
@@ -66808,6 +68164,12 @@
       "git_blob": "4d9d649a65361cdb0de97eb94aad5f03c9b33cb5",
       "bytes": 1802,
       "sha256": "de7a3c3052da23c7ce3e957c71eb78602f1c1a19f05c249dea8282b9479417a8"
+    },
+    {
+      "path": "TrainingJournal.md",
+      "git_blob": "5308eff29a2a3d872e15c6e9045fe6ad1dcb3521",
+      "bytes": 305859,
+      "sha256": "b741a8e6fcde554ecdbffe1bdad916a21663f34a0a665a94f57d2f820572e23a"
     },
     {
       "path": "Ultimate StampIT Collection for UE.pdf",

@@ -1,5 +1,114 @@
 # Bodyflip native runtime
 
+**November 3 CURRENT: vanilla shared Foot IK runtime restored.** The user asked
+whether the rollback was really to the original Foot IK lab. It was not: the
+first rollback still retained the older captureSustainable acquisition guard.
+That guard is now removed. All11 shared runtime files match committed HEAD,
+including the accepted later port corrections from dbc4401e; surface.js itself
+also matches76614437. The HTTP shared-foot-ik.js bundle was checked to contain
+that original surface solver with no guard. Bodyflip integration, jump/backflip
+and user tuning remain; no wall-step workaround remains in canonical FootIK.
+The existing Bodyflip target projection is still part of the host integration;
+matching solver source is not a claim of identical final rendered poses between
+the two labs. Jiggle is unresolved. Do not restore pre-bent wall arrival or
+change the incoming pose to hide it: contact should stay stable, with the knee
+bending on the wall when necessary. No native port or push.
+
+
+**Earlier November 3 rollback (superseded by vanilla restoration above):**
+The user wants the leg to bend as needed AFTER contacting the wall, and chiefly
+wants a stable contact without jiggle. They did not request a pre-bent landing
+or an anticipated wall pose. Do not restore that approach.
+
+Restored the runtime immediately before the latest attempt: surface.js from
+Saved/Diagnostics/surface-before-wall-lock.js; removed the added wall roll/yaw,
+swing-carrier and early-stance changes; removed terrainTarget projection bypass
+and preparation handoff; removed the terrain-mode-only NN forearm return fit.
+The Bodyflip + Foot IK mode, scene, settings and previous integration remain.
+This restores the earlier reach-ahead acquisition guard as part of the exact
+rollback; that guard was also rejected as a fix and the jiggle is UNRESOLVED.
+The contact regression therefore remains expected to fail on the missing first
+right material pin. Test thresholds restored, including2mm at jump contact.
+Previous passing verification and first-wall recordings describe the reverted
+attempt, not current success. No new replacement fix, Unreal port or Git push.
+
+**Bodyflip + Foot IK mode, November 3 (LAB ONLY):** Added a separate mode and
+wallrun/backflip preset. It uses the canonical FootIKLab surface/coupled NN
+implementation, served from the Bodyflip server, then passes actual world pose
+and movement to existing support/push/spin. Other modes do not run terrain IK.
+Mode timelines retain their own platforms and spin settings; prior setup is
+preserved. Wall controls sit on the left between return and pose controls.
+
+Default: 90-degree wall, run phase .58, support marker .65 s, backflip command
+320 deg/s, 0-2.2 s loop at half speed. With saved tuning: push/release .70625 s,
+before original slide entry .73333 s; right toe landing 1.65 s. Wall loading
+uses posed-body collision rather than an upright capsule. On landing only the
+invisible root is rebased onto the support plane; physical bones stay in world
+space. These two corrections are restricted to the new terrain adapter.
+
+verify-terrain-mode.mjs (--saved also passes): 529 frames at240Hz, finite poses,
+reverse seeks, successful wall push/foot landing, no terrain IK during flight,
+mode restoration, displayed handoff position gaps below2mm (contact1.44mm;
+release/landing below.02mm). 363 ordinary Run/Walk/Space poses exactly match HEAD.
+Scene33, playback16 and arrow13 checks pass. The old capsule standing-jump test
+still fails, reproduced on HEAD; not counted as a new regression or fixed.
+Browser loads the shared compressed frames and plays the selected new mode.
+Numerical/UI checks are not user acceptance of dynamic appearance.
+
+Scope: shared wall locomotion into Bodyflip, then its existing grounded NN
+return; repeated re-entry from a landing into a new wallrun is not yet a new
+causal surface session. Initial terrain generation retains FootIKLab's five-
+second limit (explicit error for longer locomotion-only timelines). Unreal,
+Blueprints/assets and native packages were not changed or rebuilt; no Git push.
+Evidence: Saved/Diagnostics/BodyflipFootIK/verification.json; original live
+settings backup: Saved/Diagnostics/bodyflip-before-footik-mode.json.
+
+**Expanded motion review, November 3:** The same native-review.html now offers
+14 recordings / 1,709 frames: original floor/friction comparisons, native left-
+and two-hand pushes, plus lab throw/sword returns, stopping spin and landings.
+The left-hand capture exposes the earlier calf-to-foot stretch (+4.12 cm at
+0.4 s), with desired-pose overlay. Native physics and lab algorithm comparisons
+are explicitly distinguished. Four lab recordings have no independent expected
+pose; overlay is disabled rather than inventing a target. Landing continuation
+uses fresh local NN output: the old cached-input test failed before generating
+motion, so this is not labelled a reproduced movement bug.
+Tools/Bodyflip/capture-review-lab.mjs and prepare-native-review.py generate the
+local-only replay under Saved/Diagnostics/BodyflipFloorReview20261103. All frames
+checked finite; displayed position errors agree with recorded reference errors.
+Selector, flagged-frame seek and overlay availability checked in the browser.
+No gameplay, Unreal settings, original tests or live lab settings changed.
+
+**Foot-friction controlled comparison, November 3:** Test-only native runs
+baseline / zero foot friction / foot-foot pair disabled completed146 frames each.
+Actual baseline feet use friction0.7, restitution0.3; zero-friction test verifies
+friction0, Minimum combine, retaining restitution and all requested poses/rig.
+Zero friction does NOT eliminate foot jitter. Disabling only foot-foot collision
+removes its late contacts (37 ->0) but also does NOT eliminate jitter. Therefore
+prior explanation attributing jitter to that pair alone is not established.
+Fresh baseline right-foot peak19.79deg differs from original57.15deg despite
+identical requested poses/rig; do not claim deterministic reproduction of that
+peak. Precise remaining physical cause is unresolved. No gameplay tuning changed.
+Compact result: Tools/Recovery/Receipts20261102Bodyflip/foot-friction-comparison.json.
+Raw evidence: Saved/Diagnostics/BodyflipFootFriction20261103. Replay selector now
+also offers all three controlled runs. Normal build passed; TestNN reopened.
+No push requested/performed for these diagnostic additions.
+
+**Recorded native motion review, November 3:** User requested a replay of the
+saved-scene simulated mismatch with a selectable requested-pose overlay.
+Tools/Bodyflip/prepare-native-review.py exports the two existing native traces
+without rerunning physics; Tools/Bodyflip/native-review.html provides play,
+frame stepping, speed, floor-present/lowered selection, overlay/off/target-only,
+body selection, orbit/pan/follow and worst-error seek. Local viewer:
+http://127.0.0.1:8878/Tools/Bodyflip/native-review.html . Generated replay remains
+under Saved/Diagnostics/BodyflipFloorReview20261103 (not added to Git).
+All292 recorded frames retain native world coordinates. Recomputed rendered
+pose errors agree with native errors within1.75e-8rad /1.8e-15cm. Worst floor-run
+error is right foot57.15deg at2.2s, AFTER the character has left the floor;
+floor contact at that exact instant is not established and must not be claimed.
+The lowered-floor run peaks33.36deg at the right thigh,1.567s. User reviews the
+movement; this viewer is not a solver fix or visual approval. No Unreal/live
+lab settings changed and no build required.
+
 ## Current state
 
 **Accepted lab port, November 3 (built and verified; source-only checkpoint):**

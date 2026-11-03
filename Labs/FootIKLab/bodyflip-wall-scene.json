@@ -1,0 +1,45 @@
+{
+  "settings": {
+    "gait": "run",
+    "terrain": "incline",
+    "slopeAngle": 90,
+    "approach": "toward",
+    "phase": 0.58,
+    "upright": 0.55,
+    "inclineGravity": true,
+    "minGravityIncline": 80,
+    "fullGravity": 70,
+    "energyConservation": 100,
+    "pelvisCloser": 40,
+    "pelvisSpeedMin": 1.5,
+    "pelvisSpeedMax": 6,
+    "slideEnabled": true,
+    "slideSpeed": -2,
+    "rootYawSpeed": 0,
+    "deleteFloorFrame": -1,
+    "enabled": true,
+    "trimIn": 0,
+    "trimOut": 1.8,
+    "speed": 1,
+    "loop": true,
+    "platformLayouts": {},
+    "slideLegBlend": 0.5,
+    "slidePelvisBlend": 0.5,
+    "slideCloser": 10,
+    "slideHeadSpeed": 30,
+    "slideHandShift": 20,
+    "slideHandShiftSpeed": 10
+  },
+  "camera": {
+    "pitch": 0.14719860839843807,
+    "zoom": 0.8,
+    "panX": 0,
+    "yaw": 4.700389710579055,
+    "panY": 0
+  },
+  "schema": "foot-ik-lab-v1",
+  "playback": {
+    "time": 0.31666666666666665,
+    "playing": false
+  }
+}

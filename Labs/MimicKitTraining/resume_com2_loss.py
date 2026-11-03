@@ -267,7 +267,7 @@ Helper Labs/MimicKitTraining/resume_com2_loss.py;
 receipts/calibration/precomputed references: Saved/MimicKitLocomotion/com2-loss.
 
 '''
-    for path,marker in [(d.ROOT/'ProjectJournal.md',b'## Resume here'),(d.ROOT/'Docs/MimicKitTraining.md',b'# MimicKit humanoid trial')]:
+    for path,marker in [(d.ROOT/'TrainingJournal.md',b'## Current handoff'),(d.ROOT/'Docs/MimicKitTraining.md',b'# MimicKit humanoid trial')]:
         data=path.read_bytes();at=data.index(b'\n',data.index(marker))+1
         path.write_bytes(data[:at]+b'\n'+note.encode('utf-8')+data[at:])
 

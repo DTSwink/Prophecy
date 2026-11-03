@@ -1,53 +1,513 @@
 # Slow loco policy — November 1, ten motions with signed limp-idle commands
 
-**November 2 isolated crawl trial — NOT RUNNING; awaiting authorized replacement capacity.**
-Capacity automation ACTIVE: launch-isolated-crawl-experiment-on-rtx-4000-ada,
-every60seconds, explicitly authorized after replacement unavailability. Follow
-this current section, not historical instructions below. Reconcile provider and
-local receipts before allocating; exactly ONE replacement at <=$0.28/h, check
-Community and Secure. Stay quiet while unavailable/unchanged. Notify verified
-launch, meaningful failure or required user action only. Pause this schedule
-once launch is fully verified, on unresolved setup failure or user cancellation.
-Keep setup bounded20minutes with BOTH local/remote controls identical. If setup
-cannot complete, stop only owned replacement and confirm provider EXITED.
-Never allocate another pod over an existing replacement. Existing original
-5xs589fdlcb7nr and stopped vpv6saq7zyooak/disk must be left untouched.
-Working directory C:/Users/singerie/Documents/Unreal Projects/Prophecy; Python
-Saved/Robotics/env/Scripts/python.exe. Upload main20414 with replacement helper;
-use deploy_crawl_only_experiment.py for this trial, NOT old disabled-curriculum
-launch helpers. After setup preflight/stage/launch/audit/verify, check local
-TB8035 reward cards and8021 replay, then report verified launch and pause.
+**November 3 disabled-friction half rule — VERIFIED RUNNING.**
+Resumed latest25579_final on retained pod9snbu59mla2xcd as
+20261103_215952_uefn_slowloco_disabled_curriculum_dead_friction_half_2048,
+trainer16389/guard16390. Checkpoint saved locally+persistent, SHA256
+1ecaa990cb6657ce2233e98c53e55f5b9c47288480cd24e03d0ed969c869b090.
+Preflight passed2048worlds, all16 disabled masks, production friction kernel
+pair checks,36864 boundaries,3 resumed finite updates and8-row replay export.
+Two mapping attempts failed safely before deployment (MuJoCo body-name prefix);
+final mapping uses the existing contact runtime's unique suffix convention.
+Live25580->25590,1,677,131,776samples, optimizer/normalizer restored. Eight live
+replays independently reconstruct losses/rewards and carry friction0.5 metadata.
+Persistent checkpoint readback verified; watchdog released until stopped.
+Forward reward, actor command-jiggle loss200, FAIL500/body-jiggle termination,
+physics except the friction rule,55cm/200tick sphere and300sec replays retained.
+Source SHA256 1d154067a40448eec0fcaf3de3923fc499030bd1530db6b841714bf37b140b2e.
+Helper Labs/RoboticMotionAE/deploy_dead_friction.py; evidence
+Saved/MimicKitSlowLoco/dead-friction-half-20261103/. No improvement claim yet.
 
-Main final20414 is safe locally and persistent; exact original main source/configs
-are archived for rollback. Main checkpoint SHA
+**Standing rule: disabled-limb friction is half baseline.**
+Apply 0.5 to every segment of a disabled arm or leg, across all slow-loco motions
+and row types, including vanilla limps. Active segments retain 1.0. A contact
+involving two disabled segments is halved once, not quartered. This covers ground
+and self contacts; mass, inertia, collisions and motor strength are unchanged.
+Per-world material factors follow disabled flags at reset. Friction is scaled
+before manifold assembly each substep from freshly rebuilt coefficients.
+Preserve the pinned training adapter hook when rebuilding packages; the separate
+shared/native lab adapter has diverged and must not be overwritten blindly.
+
+**November 3, 21:40 Warsaw — local bridges revived.**
+The slow-loco bridge/dashboard and TensorBoard were absent; existing replayer
+8021 remained alive. Restarted observers through deploy_slow_policy.observe()
+and the singleton serve_tensorboard.py supervisor. One worker per service;
+thread-pool memory limits retained. Bridge download counter advanced
+2,750,885 -> 2,754,982 bytes. TB8035 serves the current 18-05-09 run alongside
+nine earlier runs; latest scalar sample 1,671,823,360 (training iteration25509).
+Replayer8021 serves current capture25504, recorded21:36:43 Warsaw. Both APIs
+HTTP200. Remote training untouched. Receipt:
+Saved/MimicKitSlowLoco/bridges-revived-20261103.json.
+
+**November 3 direct policy-command anti-jiggle loss — VERIFIED RUNNING.**
+User approved a loss on the NN outputs. A deterministic 64-world, 300-tick audit
+of checkpoint 24630 confirmed repeated reversals in noise-free motor commands
+in all 64 worlds (45 also reached the body-jiggle termination). This is a command
+regularizer added directly to the actor objective, not an environment reward cost.
+
+Opt-in agent_config.action_jiggle v1: 13-frame window; at least 3 reversals per
+motor, ignoring changes <=0.02 in normalized action units and carrying direction
+through brief plateaus. For gated motor samples, penalize squared excess of
+abs(mu[t+1]-2*mu[t]+mu[t-1]) above 0.04. Full gradients pass through the current
+policy at all three states. Gate construction uses detached noise-free means;
+exploration samples are never used in this loss. Windows crossing a done/reset
+or rollout-buffer boundary are excluded. Enabled-motor masks and scope limit the
+loss to moving crawl with both legs disabled; phase outputs and disabled motors
+are excluded. Formula averages over all batch/motor slots, including zero masks.
+
+Coefficient 200: coefficient 1 measured only ~0.1% of actor gradient. At final
+coefficient, sampled raw loss .00191946, unweighted gradient norm .01606,
+weighted gradient 3.212 versus combined actor gradient 15.8217 (~20%). This is
+not a fixed percentage of total reward/loss. No dynamic reward renormalization.
+CPU tests: constant/ramp/smooth 0.5Hz and 2Hz strokes/single shock/tiny chatter
+have zero loss; 5Hz and alternating commands are detected. Gradient step reduces
+the synthetic loss; disabled channels and reset/buffer boundaries are checked.
+Final GPU preflight: actual checkpoint 24699, 2048 worlds, 36,864 boundary cases,
+3 finite resumed updates, completed 8-row replay export, 244 seconds. Earlier
+preflight failures were test-only (frozen parameter in gradient audit, then a
+60-frame partial-replay limit); live trainer remained unchanged during testing.
+
+Latest 24718_final saved locally + persistently, SHA256
+ff24c011e4a8712797c4218bdb946e972a38717081a2b1b2f6d3ecb5abba2db6.
+Resumed on same pod 9snbu59mla2xcd, trainer 14868 / guard 14869, run
+20261103_180509_uefn_slowloco_disabled_curriculum_action_jiggle_2048.
+Verified 24719 -> 24729, 1,620,705,280 samples, optimizers/normalizer restored,
+160 observations/34 motors unchanged. Eight live rows independently reconstruct
+reward, MSE, body-jiggle resets and command-jiggle diagnostic values. Live TB
+weighted loss .0915779, raw .000457890, detected fraction .2061615. Persistent
+checkpoint readback verified; deadline released to until-stopped. These checks
+verify implementation and stable updates, not learned removal of vibration.
+
+Forward signed reward maximum 5, existing body-jiggle reset/FAIL500, physics,
+55cm pelvis sphere/200-tick recenter and 300-second replay cadence are unchanged.
+Replayer records full mean-command traces and displays “Policy command jiggle
+(actor loss)” separately from reward. TB run 18-05-09 cards:
+policy/action_jiggle_raw, policy/action_jiggle_weighted,
+policy/action_jiggle_detected_fraction. No new GPU or local service duplication.
+Source archive SHA256 28bb40dd53d83566c9aac18faae9c6becd1949093e6a5578c2c97d2da62b32a5.
+Helpers: action_jiggle.py, test_action_jiggle.py, deploy_action_jiggle.py.
+Evidence: Saved/MimicKitSlowLoco/action-jiggle-20261103/.
+User-requested cleanup completed: latest 24774 downloaded and SHA/ZIP verified
+locally (6c10682ac2cc59d9675dd2777e7e059e6b7cc74835d7cded89f3d913e781d2b3).
+Deleted 18 intermediate archives from persistent storage and the owned pod,
+572,421,181 bytes on each. Finals, latest saves, local pins, rollback 24718_final
+and original main 20414_final retained; event/replay history untouched. Old run
+20261031_175934_uefn_slowloco_unperturbed_2048 retained entirely because its latest
+receipt timed out. Cleanup helper now lists only checkpoint prefixes, parallelizes
+independent reads, and uses bounded requests; unverifiable runs are skipped.
+Evidence: action-jiggle-20261103/checkpoint-cleanup/{preserved,plan,complete}.json.
+
+**November 3 body-vibration coverage fix — VERIFIED RUNNING.**
+The user’s capture 24524, row 0 lasted 122 ticks with the v1 hand-only jiggle
+counter at zero throughout. Its final pelvis gap was 0.553415 m, exceeding the
+0.55 m sphere; that reset was not caused by jiggle. Pelvis angular cancellation
+was 1.08 rad/s with 7 reversals at frame 60 and 2.56 rad/s with 14 at frame 70,
+while the hands remained below threshold.
+
+Detector v2 retains the 15-tick window, 30-tick startup grace, 6 consecutive
+hits, thresholds, and hand translation checks. It adds world angular reversal
+checks for pelvis, torso, head, upper arms, forearms and hands (9 bodies), excluding
+passive legs. Scope remains moving crawl with both legs disabled. Rescoring the
+same old capture triggers at frame 64 instead of its actual sphere reset at 122;
+this is an offline counterfactual, not a claim about a new policy trajectory.
+Archived calibration detects 75/80 recent vibrating rows and all 4 known bad
+examples, with no detections on 12 normal crawl/idle rollouts, 6 one-leg crawl
+rollouts, or 98 reference sequences. Independent NumPy/Torch flags and streaks
+match. Smooth gait, constant motion, a single shock and tiny jitter pass;
+pelvis-only alternating rotation is detected. Scope and partial resets pass.
+
+Full actual-checkpoint GPU preflight passed 2048 worlds, 36,864 boundary cases
+and 3 finite resumed updates. Latest checkpoint 24567_final was saved locally
+and persistently, SHA256 705dc53315bd2e5feb41039ea35e10dedeb5272bf0c84fb1144907b5632069df.
+Resumed on retained pod 9snbu59mla2xcd, trainer 13212 / exit guard 13213, run
+20261103_171810_uefn_slowloco_disabled_curriculum_body_jiggle_termination_2048.
+Verified progress 24568 -> 24578, reaching 1,610,809,344 samples; actor/critic
+optimizers and normalizer restored, 160 observations unchanged. All 8 first live
+replay rows independently reconstruct MSE, signed forward reward, temporal jiggle
+flags and terminal reward. All 8 terminate exactly on their first sustained
+jiggle flag (frames 35, 88, 46, 43, 35, 90, 78, 35), charging FAIL500 once.
+This verifies detection, not learned suppression; the resumed policy still jiggles.
+
+Signed forward reward maximum 5 remains enabled; jiggle reward deduction stays
+zero. Physics, strength, observations, 55 cm pelvis sphere, 200-tick recenter and
+300-second replay cadence are unchanged. Persistent checkpoint 24568 readback
+SHA256 e1ecfd636ea067bdcb2c5cd60ba193d2e92350e848b98304414dcd0b2164a157 verified;
+setup deadline released to until-stopped. Local replayer serves capture 24568
+with “Body jiggle reset counter / 6” overlay; TB run 17-18-10 publishes forward
+reward and jiggle termination cards. Source archive SHA256
+be1982b849b08f95377c7f43d66a9e9e1b0def4a4c8107551b145f6b4a288e86.
+Helper: Labs/RoboticMotionAE/deploy_body_jiggle_termination.py. Evidence and plot:
+Saved/MimicKitSlowLoco/body-jiggle-audit-20261103/. No GPU allocation or damping.
+
+**November 3 local telemetry memory fix.** Local bridge/dashboard/TensorBoard and
+replayer entrypoints limit numerical thread pools to1 before imports. Measured
+live private commit across four workers fell~2250->390MB after restart and replay
+requests; physical residency is a different metric. Same10 TensorBoard directories,
+current jiggle card, history and live downloads verified. Singleton observer refresh
+only; cloud training/main-chat preflight unchanged. Keep these local limits when
+relaunching observers. Evidence: Saved/MimicKitTraining/local-memory-20261103/;
+details in TrainingJournal.md. No training-package physics/settings changes.
+
+**November 3 sustained jiggle termination + restored forward reward - VERIFIED RUNNING.**
+User cancelled upper-body damping before deployment. The08:12:46 trainer
+was left unchanged during tests; local physics restored to its exact inventory. Damping receipts
+are explicitly cancelled under upperbody-damping-20261103; do not deploy that helper.
+Replacement candidate applies only to moving crawl with both legs disabled.15-tick
+hand window, cancellation >.08m/s or .8rad/s AND >=4 reversals around the window
+mean (cosine<-.25; residual gates .04m/s/.4rad/s); require6 consecutive detections
+after30-tick startup grace. Reuse FAIL500 exactly once, even with simultaneous sphere
+failure. Later user instruction: remove the jiggle reward cost and restore the previous
+signed displacement forward reward (maximum5, no lower clipping). Physics unchanged.
+Full termination preflight passed2048 worlds,36864 boundaries,3 finite updates and
+8 independent replay reconstructions; focused restored-reward preflight also passed
+2048 worlds/36864 boundaries/3 resumed finite updates from24478. New run
+20261103_164528_uefn_slowloco_disabled_curriculum_jiggle_termination_2048,
+same pod9snbu59mla2xcd, trainer11973/guard11974, from latest24493_final.
+Checkpoint downloaded locally and persistent SHA338ebe6f92ef5e97e13b2a84372b06e0c59d37cb60b43fdf3f54bdfaccf5b53a
+verified. Advancing24494->24504,1,605,959,680samples, optimizer/normalizer restored,
+160inputs unchanged. Eight live replay rewards independently reconstructed: jiggle
+cost exactly0, signed forward reward enabled,500 failure charged exactly once;
+3/8 end exactly on jiggle detector frame,2/8 reach300ticks. Persistent checkpoint
+readback SHA verified; setup deadline released to until-stopped. Replay remains
+every300seconds. TB16-45-28 publishes forward/jiggle-termination diagnostic tags;
+8021 replayer publishes24494 with Jiggle reset counter/TERMINATED overlay.
+Physics source unchanged, no damping/new GPU. Final source archive SHA
+852ef899c3c208839981d59de1da0670875070cc04869d916629961481c57b3f.
+Offline:68/80 recent
+rows detected,0/12 normal crawl/idle,0/6 one-leg crawl,0/98 references;4/4 known
+vibration clips detected. Latest held-out capture24459 detected6/8. Independent
+NumPy/Torch flags/streaks match; normal smooth gait/constant motion/single impact/
+tiny jitter pass, repeated chatter fails, partial resets and disabled scope pass.
+Helper deploy_jiggle_termination.py; receipts jiggle-termination-20261103.
+
+**November 3 jiggle coefficient9 / episode-scale500 — VERIFIED RUNNING.**
+User clarified matching the500-point termination cost over a full episode.
+Capture22905 has7 complete300tick rows. Old coefficient2 scores107–208 total;
+new coefficient9 (4.5x), same5/tick cap, scores mean502.37/median505.01 on exactly
+those rows. Fixed coefficient, not an adaptive normalization forcing cost500.
+Tolerances,6frame window, physics, losses, termination, sphere and cadence unchanged.
+Recorded reference still0; CPU independent reconstruction/isometry/reset checks pass.
+Only pipeline/crawl_jiggle.py differs from previous source inventory.
+Resumed retained pod9snbu59mla2xcd from latest22938_final (local/persistent SHA
+148985e78765711b00f0f9b57dc59db57cc76fdfdcbdd397bfab43bccf7bc267).
+Run20261103_081246_uefn_slowloco_disabled_curriculum_crawl_jiggle_2048,
+trainer10346/guard10347; optimizer/normalizer restored. Verified22939->22949,
+1,504,051,200samples;8 live replay rewards independently reconstructed with
+coefficient9, zero forward bonus, unchanged500 failure penalty/.55m/200ticks.
+New persistent checkpoint readback SHA verified; setup deadline released to
+until-stopped. TB08-12-46 has fresh penalty1.535/tick, replayer publishes22939.
+Helper deploy_crawl_jiggle_episode500.py; receipts
+Saved/MimicKitSlowLoco/crawl-jiggle-episode500-20261103/.
+
+**November 3 crawl forward bonus replaced with temporal jiggle cost — VERIFIED RUNNING.**
+User explicitly requested LATEST, superseding the earlier21779 restart preference.
+Retained pod9snbu59mla2xcd; current continuation
+20261103_074137_uefn_slowloco_disabled_curriculum_crawl_jiggle_2048,
+trainer9488/exitguard9489, from checkpoint22802_final (locally downloaded and
+persistent SHA80049e3abd635959a65017bff71f45111bbb654443636168c3b92da6208cec6a).
+Same2048 all-two-passive-leg crawl worlds, physics/motors, .55m pelvis sphere,
+200tick recenter, -500 failure,160observations and300s replay cadence.
+Forward bonus now disabled. Six-frame/0.2s per-hand velocity cancellation on
+pelvis-relative translation in world axes and world angular motion; tolerances
+.05m/s and1rad/s, scales .1m/s and2rad/s, coefficient2, maximum5/tick.
+Cost is subtracted AFTER exp(-pose_loss), first5samples warm up, reset clears
+only the relevant world's history. Zero for constant-direction movement.
+Four recorded bad clips:3.62–4.19 mean cost at150–230; recorded references0;
+full twice-looped reference also0. Independent CPU NumPy/Torch agrees within
+1.26e-5; partial resets and rigid world translation/yaw checks passed.
+2048-world stress preflight at preliminary cap10 passed36864 boundaries, dead
+motor/loss exclusions,3 finite resumed updates and8 independent replay checks.
+Final cap reduced to5: worst discounted nonterminal cost <=500 at gamma .99;
+final CPU checks passed. Actual cap5 continuation advanced22803->22813 with
+finite updates and8 independently reconstructed replay rewards; forward bonus0.
+Persistent checkpoint readback SHA verified, both guards alive, deadline released
+to until-stopped. TB card receives fresh4.479 at1,495,138,304samples. Local8021
+replayer publishes22803 with penalty/total reward overlay; local bridge converter
+and dashboard mapping updated, singleton observers refreshed without duplicates.
+TB reward/crawl_jiggle_penalty plus linear/angular cancellation metrics; replayer
+shows per-frame Hand jiggle penalty (6 frames) and Total reward.
+Source module Labs/RoboticMotionAE/crawl_jiggle.py; deploy helper
+Labs/RoboticMotionAE/deploy_crawl_jiggle.py; receipts
+Saved/MimicKitSlowLoco/crawl-jiggle-20261103/.
+
+**November 3 passive wrist damping probe — not deployed.**
+Frozen checkpoint22054 in installed Jolt, four matched frame150 starts,80ticks.
+Separate passive wrist/forearm relative-angular damper, no stiffness, same50Nm
+wrist motors; analytical two-inertia decay verified to1.12e-8rad/s.
+Row0 damping0/1/5/20/100Nm*s/rad: forward50.34/50.59/49.47/46.06/54.65cm.
+Damping20 lowers wrist angular-velocity-change RMS57–66% across four starts but
+retains88–92% of travel. Damping100 lowers it79% on row0, while hand translation
+reversal persists and travel rises9%. This is NOT a solution to vibration-driven
+travel: shoulder/arm motion still moves the hands. No claim about retraining.
+No live source/settings/trainer changes or GPU allocation. Eleven bounded local
+single-threaded probes exited. Repro scripts: test_crawl_wrist_damping.py and
+summarize_crawl_wrist_damping.py; receipts/plot/traces:
+Saved/MimicKitSlowLoco/wrist-damping-20261103/.
+
+**November 3 TensorBoard revived:** Local8035 server and slow-loco bridge/publisher
+were absent; restarted through the existing singleton-managed helpers. Latest ten
+historical comparisons retained; current03-55-35 run displays fresh data through
+1,473,314,816samples (update22480). Remote reports training; no trainer/pod change.
+Replayer8021 also restored (single server PID56124); API shows rollout22488,
+captured06:35:44 Warsaw. Existing bridge supplies new rollouts.
+
+**November 3 Jolt crawl transfer probe and overlay (diagnostic only).**
+Frozen checkpoint22054 was evaluated in an isolated executable linked to the
+installed project Jolt DLL (SHA e1081ed46c3ccdd398685ffa8a2909866870c734f0e9b7e538df2e71576668ac).
+Current crawl geometry/mass/inertia/limits/gains/caps; both leg motors OFF,
+240Hz physics/30Hz policy,100 velocity/20 position iterations. Four recorded
+starts at frame1 and150, with/without speculative-contact gap filtering,16tests.
+Observed-state inference phase reconstruction max error9.14e-5. Frame0 excluded:
+its stored first phase prediction did not reconstruct, unlike all checked later
+frames. No claim of full gameplay equivalence or episode success; tests do not reset.
+Vibration propulsion DOES reproduce in Jolt: row0 warm start150, next80ticks,
+standard contacts50.3cm forward versus recorded58.4cm, hand velocity reversals
+45/62 versus62/57. Other three warm starts advance45.0/48.6/47.1cm with standard
+contacts. Earlier-state full trajectories differ more; not trajectory parity.
+No motor activation filter, physics fix, retraining, restart or extra GPU applied.
+All16 local bounded-size diagnostics completed; Unreal/editor/gameplay untouched.
+Interactive overlay: http://127.0.0.1:8863/Saved/MimicKitSlowLoco/jolt-vibration-20261103/
+Orange Jolt/cyan recorded training; same coordinates and common30Hz timeline,
+no frame-by-frame realignment/interpolation. Default150–230 loop, Space pause,
+case/start/contact selection; reused existing8863server, no new background server.
+Scripts: Labs/RoboticMotionAE/build_crawl_jolt_audit.py and test_crawl_jolt_audit.py.
+Data/results/build hashes: Saved/MimicKitSlowLoco/jolt-vibration-20261103/.
+
+**November 3 upstream physics audit — INVESTIGATION ONLY, NOT DEPLOYED.**
+Instrumented the custom contact/motor solve and post-solve position projections in
+an isolated remote source copy; production source hashes remained unchanged.
+Checkpoint22054, eight exact recorded starts,300 control ticks at30Hz; compared
+240/480/960Hz physics with fixed commands and then actual policy feedback. All
+bounded diagnostic processes exited. Production status advanced22240->22280.
+The valid row0 feedback window150–230 survives at every timestep: forward travel
+56.89/58.79/58.36cm; signed position-projection contribution -0.001/-0.066/-0.180cm.
+At240Hz motors supplied350.75J and contact impulses dissipated308.13J. These are
+velocity-solve impulse-work measurements, NOT a full potential-energy audit.
+Hand geometric-contact transitions60/59 at240Hz and84/78 at960Hz; cancellation
+remains substantial. Finer physics did not eliminate vibration propulsion.
+Evidence supports motor-powered oscillatory locomotion, not forward teleportation
+from position projection or net energy creation by the contact velocity solve.
+Hard contacts already use zero bounce; ordinary MuJoCo solref/solimp tuning does
+not replace this custom solver. Current bounded velocity motors have no finite
+activation/torque-rise state; passive joint damping and added armature are zero.
+Recommended next physical candidate: finite motor torque buildup/reversal while
+retaining sustained torque, integrated into the coupled motor/contact solve and
+mirrored in deployment physics. NOT implemented or demonstrated effective yet.
+Prior command-filter tests suppressed chatter but lost progress; do not claim
+successful retraining from these frozen-policy probes. No training/reward changes,
+no restart, no extra GPU allocated. Any eventual approved restart stays21779_final.
+Receipts: Saved/MimicKitSlowLoco/physics-origin-20261103/summary.json; policy240,
+policy480,policy960 traces/results. Fixed-command long trajectories diverge and
+some diagnostics continue after failure; do not conflate these with valid episodes.
+
+**November 3 arm bandwidth trial — TESTED, NOT DEPLOYED.**
+User requested a physical arm-response constraint, then explicitly required testing
+that it prevents bad motion before deployment. Restart source is now21779_final,
+the initialization of the current pelvis55 run, NOT its latest checkpoint.
+That locally preserved checkpoint SHA was reverified; see authorized-restart.json.
+Ran three bounded scratch-only paired physics tests on the retained GPU, each16
+worlds/eight identical recorded starts, deterministic checkpoint22054,300ticks.
+Production trainer remained running; no optimizer updates or live source changes.
+80ms smoothing plus reference-derived command slew limits reduced translation/
+rotation cancellation76%/89% over common pre-failure windows in baseline-success
+rows, but0/8 candidate episodes reached300ticks (baseline5/8). 35ms:0/8; slew-only:
+1/8, with substantial residual chatter. Reference-only slew pass is not proof of
+closed-loop capability. These frozen-policy tests cannot establish retraining's
+outcome, but do not satisfy the requested demonstrated prevention, so NO controller,
+observation, reward or termination changes deployed and NO restart performed.
+All three diagnostic processes exited; current pelvis55 trainer still running.
+Receipts/plots: Saved/MimicKitSlowLoco/arm-bandwidth-20261103/summary.json.
+
+**November 3 hand vibration investigation — OFFLINE ONLY, NOT DEPLOYED.**
+Exact screenshot matched checkpoint22054, row0 of the current pelvis55 run.
+Frames150–230: hand velocity direction reverses62/57 times versus0/0 for the
+recorded reference; acceleration RMS is14.95/13.77m/s² versus2.23/2.20.
+Hand speed itself is lower than reference, so increasing velocity magnitude
+penalties alone would not specifically distinguish the chatter. Replay noise is0.
+At frame187, pose reward is approximately2.8e-8 while the additive forward reward
+is3.545: the exp(-pose loss) component is effectively saturated. Additional MSE
+inside that exponential would have negligible influence at this rollout state.
+Offline candidate: six-tick per-hand translation/angular velocity cancellation
+(mean speed minus magnitude of mean velocity), with recorded-reference tolerances,
+subtracted directly from final reward. A fixed coefficient gives1.65–2.00 mean
+cost on four complete recorded rows while leaving their forward-minus-cost means
+positive; sampled reference cost is0 by construction. This is detection/calibration,
+not evidence of improved learning. No physics/contact-solver fault established:
+30Hz replay lacks substep forces/actions. No GPU, training, reward, termination or
+physics settings changed. Artifacts: Saved/MimicKitSlowLoco/hand-vibration-audit-20261103/.
+
+**November 3 crawl pelvis sphere — 55 CM / 200 TICKS, VERIFIED RUNNING.**
+Confirmed old80cm was the actual live radius. User requested55cm and latest resume.
+Only perturbed moving-crawl pelvis radius changed: both physical failure check and
+recorded target-sphere radius now0.55m. Other limb/motion radii,200tick crawl recenter,
+reward/physics/curriculum and five-minute replay cadence are unchanged. Prepared
+configs are byte-unchanged; source delta is only pipeline/slow_loco_disabled.py.
+Resumed21779_final, downloaded locally and persistent SHA verified:
+6f9a073b8afc3c77054d7aa3b30252a44e9d610a27508f09a9fda7e611bb413f.
+Run `20261103_035535_uefn_slowloco_disabled_curriculum_crawl_pelvis55_2048`; same pod9snbu59mla2xcd, trainer6529/guard6530.
+CPU checks cover55cm sphere boundary,200/400tick recenters and unaffected row/limb
+radii. Optimizer/normalizer restored;21780->21790 /1428094976samples verified.
+Eight independent replay loss reconstructions pass; all8 local replayer rows and
+sphere points report55cm and200ticks. TB8035/replayer8021 HTTP200. Persistent backup
+readback verified; setup guards released to until-stopped. Protected main20414 intact.
+Receipts: Saved/MimicKitSlowLoco/pelvis55-20261103/.
+
+
+**November 3 crawl pelvis sphere — 200 TICKS, VERIFIED RUNNING.**
+User requested200 instead of the remembered150; live source/replay was actually130.
+Crawl/crawl_idle recenter interval is now200ticks (6.667seconds at30Hz). Current
+isolated run still uses only two-dead-leg crawl rows. Radius stays80cm for these
+perturbed rows; other motion intervals, physics, rewards and curriculum are unchanged.
+Resumed latest21435_final, saved locally and independently SHA-verified from persistent
+storage (2540bb698a82f672e429ff4d2bb4a0d4fafc30b82cec3b94cf1e7fd78d78ba8a). Run `20261103_023246_uefn_slowloco_disabled_curriculum_crawl_pelvis200_2048` on retained pod9snbu59mla2xcd, trainer5605/guard5606.
+Only pipeline/slow_loco_env.py changed (interval and descriptive metadata); prepared
+configs match checkpoint exactly. CPU boundary checks cover400ticks, no early reset,
+200/400 recenters, preserved70tick other-motion behavior and80cm radius boundary.
+Restored optimizer/normalizer;21436->21446 /1405550592samples verified. Eight replay
+rows independently reconstructed and local replayer metadata all report200ticks.
+Persistent backup readback passed; both setup deadlines released to until-stopped.
+Five-minute replay cadence retained; TB8035 and replayer8021 HTTP200. Exactly one
+current bridge/dashboard via the fixed observer lifecycle. Main20414 remains protected.
+Receipts: Saved/MimicKitSlowLoco/pelvis200-20261103/.
+
+
+**November 3 local service memory cleanup — VERIFIED.**
+39 slow-loco dashboard publishers had accumulated across resumptions since October31;
+observe() launched a new publisher without retiring earlier ones. Each retained roughly
+400MiB and reread historical events. Removed38 obsolete workers plus their38 Windows
+venv launchers (15.22GiB private committed allocations), one obsolete reconnecting bridge
+(~0.74GiB), and the October31 pose editor (~1.52GiB; saved poses retained).
+Current dashboard/bridge and TensorBoard were replaced locally with lifecycle fixes;
+remote trainer/pod/settings/checkpoints and game servers/billing guards were untouched.
+observe() now serializes launches and identity-checks scoped observer process trees
+before replacement. OS-released service locks reject duplicate workers (including
+manual launches). Publishers exit when sources finish or their owner run is superseded;
+bridges exit on supersession and close SSH children. TensorBoard replacement kills its
+whole owned process tree, not just the Windows Python launcher. Pose editor now exits
+after30minutes without requests; start it on demand when authoring again.
+Three subprocess/lifecycle tests passed, including grandchild shutdown and crash-release
+of locks. Two successive observe() calls left exactly one bridge and one publisher.
+Live bridge/dashboard/TB ownership locks verified. TB8035 and replayer8021 HTTP200;
+all10 previously visible TB runs still listed. Latest received training status21197 /
+1389232128samples is training; bridge transfer timestamp is fresh. No GPU restart.
+Receipts: Saved/MimicKitSlowLoco/dashboard-cleanup-20261103/.
+
+
+**Journal routing:** [Standalone training journal](../../TrainingJournal.md) owns training status and experiment history.
+Do not append training-only updates to ProjectJournal.md; reserve it for actual
+Unreal integration and native compatibility notes. This topic keeps technical details.
+
+**November 2 user cancellation — PRE-GRIP CRAWL RESTORED AND VERIFIED RUNNING.**
+User cancelled grip3/elbow150 branch and requested the previous learner back,
+keeping five-minute replays. Restore PRE-CHANGE20726_final (not new branch weights),
+SHA49dd4d875e5c9b17dee0d0a4b233c8ade3a232fc9b19012b8ea4f6b3d45165b9.
+Run `20261102_232738_uefn_slowloco_disabled_curriculum_crawl_signed5_restored_2048`, trainer4979/guard4980.
+Retained same pod9snbu59mla2xcd ($0.28/hour). Source is byte-identical to previous220414
+package except train.py/base_agent.py replay cadence hooks. All three configs
+match20726 checkpoint exactly. Ground friction returns to1; elbows return to70Nm.
+No new GPU/sweeps. Main20414 remains protected and paused. Source inventory,
+exact previous engine/env/agent configs,160obs,restored optimizers/normalizer,
+8 independent replay reconstructions and persistent checkpoint SHA readback pass.
+20727->20737 verified; both setup controls released to until-stopped, then live
+training log advances to20741/1359347712samples. TB8035 run23-27-38 and replayer8021
+serve the restored run. Five-minute output flag verified; cadence implementation
+is unchanged from the preceding observed5m13s interval. Cancelled branch final
+checkpoint retained persistently for possible later use; none of its weights used.
+Source SHAfcd3f0fc8369004cf633677d2d672703e2d6addab459ffa6e7f73006c5123650.
+Receipts: Saved/MimicKitSlowLoco/restore-crawl-baseline-20261102/.
+
+**November 2 grip/elbow experiment — CANCELLED BY USER; historical verification below.**
+Run `20261102_231246_uefn_slowloco_disabled_curriculum_crawl_grip3_elbow150_2048` on retained RTX4000Ada
+pod9snbu59mla2xcd ($0.28/hour), trainer4313/guard4314.
+Resumed latest20726_final; actor/critic optimizer/normalizer continuation checked
+by training resume path. Advancing20727->20737/1359085568samples verified.
+Hands AND forearms ground friction x3; elbows70->150Nm. Shoulders, wrists,
+dead-limb mass, reward, curriculum and all other settings unchanged.
+Output evaluation/checkpoint cadence now300wall-clock seconds at PPO boundaries;
+publication includes evaluation time and bridge polling. This is not an iteration
+approximation. Source SHAd2fa7aeeefd8cf49dfb0f89e1f6828a6797e28701c76c3e2a91709cec7d85b3d.
+32-world/32tick actual-checkpoint smoke checked finite simulation, exact solver
+manifold friction on all four intended bodies, unchanged self/other contacts and
+150Nm elbow envelopes. No sweeps/new GPUs. First launch failed a strict resume
+config comparison before updates; bounded setup guard retained GPU. Added exact
+named x3 allowance and relaunched from same20726. Source inventory,160-observation model, optimizer/normalizer restore,8 independent
+replay loss reconstructions and persistent checkpoint SHA readback all pass.
+Both setup controls released to until-stopped. Post-release20737->20747 and
+1359740928samples verified. Replay20727->20743 generated312.892seconds apart
+(5m13s); both captures are served by replayer8021. TB8035 lists23-12-46 run.
+Only the retained GPU is used; no improvement in learned crawling is claimed.
+Latest20726 downloaded and SHA verified: 49dd4d875e5c9b17dee0d0a4b233c8ade3a232fc9b19012b8ea4f6b3d45165b9.
+Main20414 remains separately preserved and SHA reverified; never resume main
+from experimental weights. Receipts: Saved/MimicKitSlowLoco/grip3-elbow150-20261102/.
+
+**November 2 crawl traction investigation — EXTRA TRIALS CANCELLED; ANALYSIS ONLY.**
+User explicitly rejected further trial launches and requested simple mechanical
+analysis. Sent SIGTERM ONLY to owned queue2839/2840 and trial2841/2842;
+confirmed nvidia-smi shows ONLY original trainer1276, live20576/1348534272samples.
+No new GPU allocated; no production physics/reward/source/settings changed.
+Do not restart this queue or launch further tests without a new user instruction.
+Remote cancelled.json and local cancelled-and-analysis.json supersede any old
+adaptation-current.json/runner instructions. The four-way adaptation comparison
+was NOT completed; do not claim adapted-policy results or a winning setup.
+
+Recorded evidence retained under Saved/MimicKitSlowLoco/crawl-traction-20261102
+and the same directory on /workspace/mimickit_trial. Pinned20426 replay includes
+row3/227ticks. Initial positions match exactly; matched rerun trajectories are
+not bit-identical (up to2.8cm first30frames). Frozen-policy probes measure slip
+response ONLY, not learnability; fixed IK pulls are short strokes, not gait proof.
+
+Simple conservative static estimate for matched row3, frames150–210:
+hands support262.8N (right236.7,left26.1), legs304.2N, forearms200.3N.
+If palms anchor while other surfaces resist at mu1, break-even palm mu is
+(304.2+200.3)/262.8=1.92. Using proportional hand load allocation and frame169
+joint lever arms plus arm gravity gives right elbow~97Nm versus current70Nm;
+shoulder local components peak~65Nm versus100Nm, wrist~26Nm versus50Nm.
+This excludes helpful forearm contact moments and is NOT an exact capacity
+certificate or globally minimal modification. Targeted candidate, NOT DEPLOYED:
+palm friction2.0, elbow cap100Nm, keep dead-leg mass, shoulder100 and wrist50.
+A20% dead-leg mass reduction removes only4.9kg/~48N; it is less targeted than
+fixing palm grip and the loaded elbow. Recommendation must not be described as
+proven to generate sustained crawling. Helpers and raw probe traces retained.
+
+**November 2 isolated crawl experiment — resumed after setup-deadline shutdown.**
+Current run `20261102_220414_uefn_slowloco_disabled_curriculum_crawl_only_signed5_2048`
+on the SAME Secure RTX4000Ada pod `9snbu59mla2xcd` at $0.28/hour;
+trainer1276/exitguard1277, bridge58068/dashboard29400. No extra GPU allocated.
+Resumed experiment20425_final with actor/critic optimizers and160-observation
+normalizer restored. Exact experimental source/settings retained: all2048 rows
+moving crawl, both legs passive/code12, both arms enabled,50% target playback;
+signed displacement bonus5 outside exp(-loss), failure penalty500, pelvis sphere
+0.8m resetting130ticks. Source SHA
+f81a30bc10656a74b80da46222455a847decddc70902b4d85254b7973f6c0299.
+
+The previous21-39-50 run stopped gracefully at20425 because the bounded setup
+deadline reached its165-second shutdown reserve before verification released it.
+It was NOT a storage-full crash. The old verification accepted a process during
+final shutdown; that did not prove continuing training. The pod remained paid.
+Verification now rejects finished.json and final-checkpoint backup receipts;
+require advancing statuses AFTER releasing both setup controls, not just before.
+Post-release advancing status verified at20516 /1344602112samples.
+Current source hashes,160obs,8 independent replay loss reconstructions and new
+persistent checkpoint SHA readback pass. Both controls now until-stopped.
+TB8035 run22-04-14 has the four crawl reward/speed cards; replayer8021 serves8 rows.
+This proves run health, NOT learned improvement.
+
+MAIN REMAINS PAUSED at20414. Resume the main run later from MAIN20414 and archived
+main-source.zip/configs, NEVER experimental weights. Main checkpoint SHA
 cd4e1569da103b8ab07e2cbd265e0b21415e41e138e0402b984a74837320f99f.
-Trial2048 rows all moving crawl/code12/both legs passive, existing random starts,
-50% target speed and signed displacement bonus passed full GPU preflight:
-three finite PPO updates from20414,36864 termination boundaries,8 independent
-replay reconstructions. Reward zero at rest,5 at target,negative backward/large
-lateral error; no positive credit for zero-net rocking. Existing physics,
-500failure penalty,0.8m pelvis sphere/130tick windows preserved.
-Production launch20-56-23 FAILED before training: train.py resume guard lacked
-explicit allowance for slow_loco_crawl_only_experiment. Agent also armed only
-remote setup watchdog, leaving local guard in until-stopped mode. Local fallback
-stopped podvpv6saq7zyooak on failure. Provider confirms EXITED; same-host restart
-refused for no free GPU. No experiment checkpoint was promoted.
-Config exception is now implemented and exact YAML delta checked. Launch helper
-now requires identical local/remote bounded setup guards, matching pod and price.
-Corrected source790d41c8f061b26d496738d2e924394b8e85dcf1f80f2a5ac721d817207acd1a
-is locally and persistently verified, NOT installed on running hardware.
-User AUTHORIZED ONE replacement RTX4000Ada <=$0.28/h. Initial Community and Secure
-attempts both unavailable; no replacement allocated. Preserve both stopped pods
-and their disks; never restart them alongside a replacement or touch other pods.
-Helpers: replace_crawl_experiment_pod.py allocate/upload_resume;
-deploy_slow_policy.py setup; deploy_crawl_only_experiment.py preflight/stage/
-launch/audit/verify. Allocation helper reconciles named replacements first.
-Before launch require actual-checkpoint2048world preflight on new GPU, both setup
-guards armed and same deadline, two advancing finite statuses,160obs/flags,
-8 independent live replays, persistent readback and telemetry, then release
-setup deadline. Main resumes later from MAIN20414 plus main-source.zip, never
-experimental weights. Receipts/rollback.json: Saved/MimicKitSlowLoco/
-crawl-only-experiment-20261102/. Do not claim launch until deployment-verified.json.
+Main source SHA5f07346b7b396477ff80d2b312732caf7a2a5e5551f111110248310022429032.
+Main20414 was downloaded AGAIN and hash/ZIP verified before deleting anything;
+it exists both in preserved-latest and crawl-relaunch-20261102 locally.
+Experiment20425_final also downloaded/hash/ZIP verified, SHA
+b2ac50804f77cc9422908145543cdca3648382fb9192d963f48713858d2d77dd.
+Removed82 intermediate persistent checkpoint archives,2775938677bytes(2.59GiB),
+and2 matching local pod intermediates(61504182bytes). Retained all final archives,
+each run's latest_verified checkpoint, local preserved pins, MAIN20414 and
+experiment20425_final; verified protected keys still exist after cleanup.
+Receipts/downloads: Saved/MimicKitSlowLoco/crawl-relaunch-20261102/.
+Main rollback package: Saved/MimicKitSlowLoco/crawl-only-experiment-20261102/.
+Preserve stopped5xs589fdlcb7nr andvpv6saq7zyooak/disks; no restart alongside this pod.
+Capacity automation was deleted after the earlier launch; no allocation required.
 
 **November 2 crawl bonus follow-up — stall persists; ANALYSIS ONLY.**
 User still sees no attempt to crawl with two passive legs. After~240updates/

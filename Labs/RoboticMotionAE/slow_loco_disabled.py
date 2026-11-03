@@ -9,6 +9,8 @@ from omni_walk import phase_at
 from flat_com import expanded_band,band_loss
 from util import torch_util as q
 from disabled_limb_rules import LIMBS,limb_bodies,valid_codes,crawl_rate,cohorts
+from crawl_jiggle import HandJiggle,SPEC as JIGGLE_SPEC
+from crawl_jiggle_termination import JiggleTermination,SPEC as JIGGLE_TERMINATION_SPEC
 
 @torch.jit.script
 def crawl_forward_bonus(velocity: torch.Tensor, target: torch.Tensor):
@@ -34,6 +36,11 @@ class DisabledSlowLocoEnv(SlowLocoEnv):
         self._injured=self._cohort>0
         self._target_radii_sq[self._injured] *= 4.
         self._pelvis_window.radius[self._injured] *= 2.
+        # Explicit moving-crawl pelvis tolerance; all other spheres stay unchanged.
+        crawl_pelvis = self._injured & (self._fixed_motion_ids == 0)
+        pelvis_column = next(i for i,p in enumerate(self._termination_points) if p['body']=='pelvis')
+        self._target_radii_sq[crawl_pelvis, pelvis_column] = .55**2
+        self._pelvis_window.radius[crawl_pelvis] = .55
         n=self.get_num_envs(); names=self._kin_char_model.get_body_names()
         self._codes=torch.zeros(n,dtype=torch.long,device=self._device)
         self._rates=torch.ones(n,device=self._device)
@@ -87,6 +94,14 @@ class DisabledSlowLocoEnv(SlowLocoEnv):
         self._crawl_forward_values = torch.zeros(n, device=self._device)
         self._crawl_forward_totals = torch.zeros(5, device=self._device)
         self._crawl_previous_xy = self._engine.get_body_pos(self._get_char_id())[:, self._pelvis_id, :2].clone()
+        self._jiggle_hand_ids=[names.index(b) for b in JIGGLE_SPEC['bodies']]
+        self._hand_jiggle=HandJiggle(n,self._device)
+        self._crawl_jiggle_values=torch.zeros(n,device=self._device)
+        self._jiggle_totals=torch.zeros(5,device=self._device)
+        self._jiggle_angular_ids=[names.index(b) for b in JIGGLE_TERMINATION_SPEC['angular_bodies']]
+        self._jiggle_previous_body_rot=self._engine.get_body_rot(self._get_char_id())[:,self._jiggle_angular_ids].clone()
+        self._jiggle_termination=JiggleTermination(n,self._device,len(self._jiggle_angular_ids))
+        self._jiggle_failure_totals=torch.zeros(3,device=self._device)
         self.motion_sampling['cohort_counts']={('vanilla' if k==0 else f'perturbed_{k}'):
             int((self._cohort==k).sum()) for k in range(4)}
         self.motion_sampling['by_motion_cohort']={name:[int(((self._fixed_motion_ids==m)&(self._cohort==k)).sum())
@@ -97,6 +112,8 @@ class DisabledSlowLocoEnv(SlowLocoEnv):
         self._limb_enabled[ids]=self._flags_by_code[codes]
         self._arm_enabled[ids]=self._flags_by_code[codes,:2]
         self._mse_body_enabled[ids]=self._body_by_code[codes]
+        self._body_friction_scale[ids[:,None],self._friction_body_ids[None,:]]=torch.where(
+            self._body_by_code[codes].squeeze(-1),1.,.5)
         self._motor_enabled_binary[ids]=self._motor_by_code[codes]
         self._target_termination_enabled[ids]=self._termination_by_code[codes]
         exempt=(self._fixed_motion_ids[ids]==2)|(self._fixed_motion_ids[ids]==3)
@@ -189,6 +206,19 @@ class DisabledSlowLocoEnv(SlowLocoEnv):
 
     def _update_reward(self):
         super()._update_reward()
+        char = self._get_char_id()
+        pos=self._engine.get_body_pos(char)
+        relative=pos[:,self._jiggle_hand_ids]-pos[:,self._pelvis_id:self._pelvis_id+1]
+        rot=self._engine.get_body_rot(char)[:,self._jiggle_hand_ids]
+        cost,linear,angular=self._hand_jiggle.update(relative,rot,self._engine.get_timestep())
+        active = (self._motion_ids == 0) & (self._codes == 12) & self._injured
+        body_rot=self._engine.get_body_rot(char)[:,self._jiggle_angular_ids]
+        body_omega=q.quat_to_exp_map(q.quat_mul(body_rot,q.quat_conjugate(self._jiggle_previous_body_rot)))/self._engine.get_timestep()
+        self._jiggle_previous_body_rot.copy_(body_rot)
+        self._jiggle_termination.update(self._hand_jiggle.linear[:,-1],body_omega,active)
+        self._crawl_jiggle_values.zero_()
+        self._jiggle_totals.add_(torch.stack((self._crawl_jiggle_values.sum(),
+            (linear*active).sum(),(angular*active).sum(),(self._reward_buf*active).sum(),active.sum())))
         # Physical pelvis-origin velocity, matching the recorded body-origin MSE
         # velocities. The independent bonus is never exponentiated with pose loss.
         char = self._get_char_id(); b = self._pelvis_id
@@ -213,18 +243,45 @@ class DisabledSlowLocoEnv(SlowLocoEnv):
             (torch.linalg.vector_norm(target, dim=-1)*active).sum(), active.sum())))
         self._reward_buf.add_(self._crawl_forward_values)
 
+    def _update_done(self):
+        super()._update_done()
+        from envs.base_env import DoneFlags
+        detected=self._jiggle_termination.failed
+        fresh=detected & (self._done_buf!=DoneFlags.FAIL.value)
+        self._done_buf[fresh]=DoneFlags.FAIL.value
+        # The superclass already charged simultaneous sphere failures: never double-charge.
+        self._reward_buf.sub_(fresh.to(self._reward_buf.dtype)*self._failure_penalty_by_row)
+        active=(self._motion_ids==0)&(self._codes==12)&self._injured
+        self._jiggle_failure_totals.add_(torch.stack((detected.sum(),fresh.sum(),active.sum())))
+
     def _reset_envs(self, ids):
         super()._reset_envs(ids)
         if hasattr(self, '_crawl_previous_xy'):
             self._crawl_previous_xy[ids] = self._engine.get_body_pos(self._get_char_id())[ids, self._pelvis_id, :2]
             self._crawl_forward_values[ids] = 0.
+        if hasattr(self,'_hand_jiggle'):
+            pos=self._engine.get_body_pos(self._get_char_id())[ids]
+            rot=self._engine.get_body_rot(self._get_char_id())[ids][:,self._jiggle_hand_ids]
+            self._hand_jiggle.reset(ids,pos[:,self._jiggle_hand_ids]-pos[:,self._pelvis_id:self._pelvis_id+1],rot)
+            self._crawl_jiggle_values[ids]=0.
+            self._jiggle_termination.reset(ids)
+            self._jiggle_previous_body_rot[ids]=self._engine.get_body_rot(self._get_char_id())[ids][:,self._jiggle_angular_ids]
 
     def take_reward_diagnostics(self):
-        values = self._crawl_forward_totals.cpu().tolist()
-        self._crawl_forward_totals.zero_()
+        values = self._jiggle_totals.cpu().tolist()
+        self._jiggle_totals.zero_()
         if not values[-1]: return {}
-        return dict(zip(('crawl_forward', 'crawl_pose', 'crawl_forward_speed_m_s', 'crawl_target_speed_m_s'),
+        result=dict(zip(('crawl_jiggle_penalty','crawl_linear_cancellation_m_s','crawl_angular_cancellation_rad_s','crawl_pose'),
                         (v/values[-1] for v in values[:-1])))
+        failures=self._jiggle_failure_totals.cpu().tolist();self._jiggle_failure_totals.zero_()
+        if failures[-1]:
+            result.update(crawl_jiggle_termination_per_1000_ticks=1000*failures[0]/failures[-1],
+                          crawl_jiggle_new_failure_per_1000_ticks=1000*failures[1]/failures[-1])
+        forward=self._crawl_forward_totals.cpu().tolist();self._crawl_forward_totals.zero_()
+        if forward[-1]:
+            result.update(zip(('crawl_forward','crawl_pose','crawl_forward_speed_m_s','crawl_target_speed_m_s'),
+                              (v/forward[-1] for v in forward[:-1])))
+        return result
 
     def select_disabled_replay_worlds(self,limit,selection_round):
         if self._crawl_only_experiment:
@@ -245,6 +302,8 @@ class DisabledSlowLocoEnv(SlowLocoEnv):
             for i,p in enumerate(self._termination_points)}
         label='vanilla' if count==0 else f'perturbed {count} disabled'
         return dict(row_type=label,disabled_limb_count=len(disabled),disabled_limbs=disabled,
+            crawl_jiggle_termination=dict(JIGGLE_TERMINATION_SPEC,enabled=name=='crawl' and code==12 and count>0),
+            crawl_jiggle_penalty=dict(JIGGLE_SPEC,enabled=False),
             crawl_forward_reward=dict(enabled=name=='crawl' and code==12 and count>0, maximum=5.,
                 form='signed_displacement_v1' if self._crawl_only_experiment else 'clipped_velocity_v1',
                 target_velocity_xy_m_s=(self._crawl_cycle_velocity*self._rates[w]).cpu().tolist(),

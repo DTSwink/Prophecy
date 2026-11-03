@@ -29,80 +29,10 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QLabe
 from audio_engine import (APP_ID, HERE, DEFAULT_SOURCE, DEFAULT_TARGET, DATA_DIR, Settings,
                           load_audio, render, save_render, atomic_json, output_stem, Cancelled, RenderCache)
 from visual_audio import analyze, frequency_color
+from creative_audio import trim_duration
 
-BG, PANEL, FIELD = '#10151d', '#19212d', '#111923'
-TEXT, MUTED, LINE, TEAL, GOLD = '#eff4f9', '#98a9bc', '#2e3d50', '#68e0c3', '#ffbd77'
+from studio_theme import STYLE, MUTED
 
-STYLE = f'''
-QWidget {{ color:{TEXT}; font-family:'Segoe UI'; font-size:13px; }}
-QMainWindow, QScrollArea, QWidget#canvas {{ background:{BG}; }}
-QFrame#panel {{ background:{PANEL}; border:1px solid {LINE}; border-radius:10px; }}
-QLabel#muted {{ color:{MUTED}; font-size:12px; }}
-QLabel#section {{ color:{TEAL}; font-size:11px; font-weight:700; letter-spacing:1px; }}
-QLabel#title {{ font-size:24px; font-weight:700; }}
-QLabel#clipTitle {{ font-size:19px; font-weight:600; }}
-QPushButton {{ background:#253345; border:1px solid #3a4a5e; border-radius:6px; padding:8px 12px; font-weight:600; }}
-QPushButton:hover {{ background:#33465b; border-color:{TEAL}; }}
-QPushButton:pressed {{ background:#405568; }}
-QPushButton:disabled {{ color:#66758a; border-color:#293546; background:#1b2634; }}
-QPushButton#primary {{ background:{TEAL}; color:#102a27; border:0; font-size:15px; padding:12px; }}
-QPushButton#primary:hover {{ background:#99eed9; }}
-QPushButton#primary:disabled {{ background:#304c49; color:#79908c; }}
-QPushButton#preview {{ color:{GOLD}; border-color:#755d45; }}
-QLineEdit, QComboBox, QDoubleSpinBox {{ background:{FIELD}; border:1px solid {LINE}; border-radius:5px; padding:6px; selection-background-color:#336b65; }}
-QDoubleSpinBox QLineEdit {{ border:0; padding:0; background:transparent; }}
-QDoubleSpinBox {{ padding:4px; }}
-QDoubleSpinBox:disabled {{ color:#8191a5; }}
-QLineEdit:focus, QDoubleSpinBox:focus {{ border-color:{TEAL}; }}
-QTabWidget::pane {{ border:0; background:{BG}; }}
-QTabBar::tab {{ background:{BG}; color:{MUTED}; border:0; padding:10px 14px; margin-bottom:7px; }}
-QTabBar::tab:selected {{ color:{TEAL}; border-bottom:2px solid {TEAL}; }}
-QTabBar::tab:hover {{ color:{TEXT}; }}
-QComboBox QAbstractItemView {{ background:{PANEL}; selection-background-color:#34564f; }}
-QListWidget {{ background:{FIELD}; border:1px solid {LINE}; border-radius:6px; padding:4px; outline:0; }}
-QListWidget::item {{ padding:10px 6px; border-radius:4px; }}
-QListWidget::item:selected {{ background:#254b47; color:#b5ffec; }}
-QListWidget::item:hover {{ background:#253345; }}
-QSlider::groove:horizontal {{ height:5px; background:#35465a; border-radius:2px; }}
-QSlider::sub-page:horizontal {{ background:{TEAL}; border-radius:2px; }}
-QSlider::handle:horizontal {{ background:#e4fff8; width:13px; margin:-5px 0; border-radius:6px; }}
-QSlider::groove:vertical {{ width:5px; background:#35465a; border-radius:2px; }}
-QSlider::handle:vertical {{ background:{GOLD}; height:15px; margin:0 -6px; border-radius:6px; }}
-QSlider:disabled {{ opacity:.4; }}
-QCheckBox {{ spacing:7px; }}
-QCheckBox::indicator {{ width:15px; height:15px; border-radius:3px; border:1px solid #587086; background:{FIELD}; }}
-QCheckBox::indicator:checked {{ background:{TEAL}; border-color:{TEAL}; image:url({(HERE / 'check.svg').as_posix()}); }}
-QScrollArea {{ border:0; }}
-QScrollBar:vertical {{ background:{BG}; width:10px; margin:0; }}
-QScrollBar::handle:vertical {{ background:#3d5064; min-height:35px; border-radius:5px; }}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height:0; }}
-QSplitter::handle {{ background:{BG}; width:9px; }}
-QProgressBar {{ background:{FIELD}; border:0; border-radius:3px; max-height:5px; }}
-QProgressBar::chunk {{ background:{TEAL}; }}
-QWidget {{ font-size:12px; }}
-QFrame#surface {{ background:#101621; border:1px solid #283247; border-radius:9px; }}
-QFrame#strip {{ background:#161e2d; border:1px solid #263145; border-radius:7px; }}
-QFrame#eqStrip {{ background:#141c2a; border:0; border-radius:6px; }}
-QDialog {{ background:#101621; }}
-QLabel#clipTitle {{ font-size:15px; font-weight:600; }}
-QLabel#muted {{ font-size:11px; color:#8393ad; }}
-QPushButton {{ padding:5px 9px; border-radius:5px; background:#202c40; border:1px solid #35425a; }}
-QPushButton#primary {{ padding:7px 15px; font-size:12px; background:#a0b8fc; color:#14213d; }}
-QPushButton#primary:hover {{ background:#c4d2ff; }}
-QPushButton#preview {{ color:#bbcaff; border-color:#5c6f9c; background:#25324e; }}
-QLineEdit, QComboBox {{ padding:5px; }}
-QDoubleSpinBox {{ padding:3px; font-size:11px; }}
-QDoubleSpinBox QLineEdit {{ padding:0; border:0; }}
-QSlider::groove:horizontal {{ height:3px; background:#344159; }}
-QSlider::handle:horizontal {{ width:10px; margin:-4px 0; border-radius:5px; background:#c0d0f7; }}
-QSlider::sub-page:horizontal {{ background:#819cd2; }}
-QSlider::handle:vertical {{ background:#bba9fb; }}
-QListWidget::item {{ padding:9px 4px; font-size:11px; }}
-QListWidget::item:selected {{ background:#2b3b59; color:#e1eaff; }}
-QScrollBar:horizontal {{ height:7px; background:#101621; }}
-QScrollBar::handle:horizontal {{ background:#3d5064; border-radius:3px; }}
-QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal {{ width:0; }}
-'''
 
 
 def label(text, kind=None):
@@ -135,6 +65,32 @@ def panel(title=None, subtitle=None):
     return frame, layout
 
 
+class StatusLabel(QLabel):
+    """One top-bar message area; warnings survive transport/progress updates."""
+    def __init__(self):
+        super().__init__()
+        self.message='Choose a WAV to begin.';self.problem='';self.tone='warning'
+        self.setWordWrap(True);self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setFixedHeight(36)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Fixed)
+        self.refresh()
+
+    def setText(self,text):
+        self.message=text.replace('\n',' ');self.refresh()
+
+    def set_problem(self,text,tone='warning'):
+        self.problem=text.replace('\n',' ');self.tone=tone;self.refresh()
+
+    def clear_problem(self):
+        self.problem='';self.refresh()
+
+    def refresh(self):
+        text=self.problem or self.message
+        super().setText(text)
+        color=('#ffb0bd' if self.tone=='error' else '#efc38a') if self.problem else MUTED
+        self.setStyleSheet(f'color:{color};font-size:11px;')
+
+
 class Control(QWidget):
     changed = Signal()
 
@@ -147,6 +103,7 @@ class Control(QWidget):
         layout.setSpacing(7)
         row = QHBoxLayout()
         row.addWidget(label(title))
+        self.reset_button=button('↺',lambda:self.set_value(self.default),'knobReset')
         row.addStretch()
         self.spin = QDoubleSpinBox()
         self.spin.setRange(low, high)
@@ -161,7 +118,9 @@ class Control(QWidget):
         self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setRange(round(low*self.factor), round(high*self.factor))
         self.slider.setSingleStep(1)
-        layout.addWidget(self.slider)
+        slider_row=QHBoxLayout();slider_row.setSpacing(3)
+        slider_row.addWidget(self.slider,1);slider_row.addWidget(self.reset_button)
+        layout.addLayout(slider_row)
         self.spin.valueChanged.connect(self.from_spin)
         self.slider.valueChanged.connect(self.from_slider)
         self.set_value(default)
@@ -226,9 +185,14 @@ class Player:
         self.paused = False
         self.anchors = deque(maxlen=128)
         self.pending = None
+        self.seek_requests = deque(maxlen=1)
 
     def snapshot(self):
         """Follow the device's DAC clock, rather than its queued write position."""
+        try:
+            return self.samples,self.rate,self.seek_requests[-1]
+        except IndexError:
+            pass
         if not self.stream or self.paused or not self.anchors:
             return self.samples, self.rate, self.index
         now = self.stream.time
@@ -253,6 +217,7 @@ class Player:
             self.stream.close()
             self.stream = None
         self.anchors.clear()
+        self.seek_requests.clear()
         self.finished = False
         self.pending = None
 
@@ -264,7 +229,11 @@ class Player:
 
     def pause(self):
         position = self.position()
-        samples = self.pending if self.pending is not None else self.samples
+        samples = self.samples
+        pending=self.pending
+        if pending is not None:
+            samples,index=pending
+            if index is not None:position=index/self.rate
         self.close_stream()
         self.samples = samples
         self.index = min(len(self.samples)-1, round(position*self.rate))
@@ -277,19 +246,27 @@ class Player:
         seconds = min(max(0, seconds), (len(self.samples)-1)/self.rate)
         if self.paused:
             self.index = round(seconds*self.rate)
+        elif self.stream and self.stream.active:
+            # Coalesce mouse drags; consume the latest position on the existing
+            # device callback instead of aborting/reopening the stream per pixel.
+            self.seek_requests.append(round(seconds*self.rate))
+            self.finished = False
         else:
             self.play(self.samples, self.rate, seconds)
 
-    def replace_samples(self, samples, rate):
+    def replace_samples(self, samples, rate, seconds=None):
         if self.stream:
             if rate != self.rate:
                 divisor = math.gcd(rate,self.rate)
                 samples = resample_poly(samples,self.rate//divisor,rate//divisor,axis=0).astype(np.float32)
             # Applied atomically at the next callback, without stopping the device.
-            self.pending = samples
+            index=None if seconds is None else min(len(samples)-1,max(0,round(seconds*self.rate)))
+            if index is not None:self.seek_requests.clear()
+            self.pending = (samples,index)
         else:
             position, paused = self.position(), self.paused
-            self.play(samples, rate, position, paused)
+            self.play(samples, rate, position if seconds is None else seconds, paused)
+        return samples
 
     def play(self, samples, rate, seconds=0, paused=False):
         self.close_stream()
@@ -304,8 +281,15 @@ class Player:
             if status.output_underflow:
                 self.underflow = True
             if self.pending is not None:
-                self.samples, self.pending = self.pending, None
+                replacement,self.pending=self.pending,None
+                self.samples,index=replacement
+                if index is not None:self.index=index
                 self.index = self.index % len(self.samples) if self.loop else min(self.index,len(self.samples)-1)
+            try:
+                self.index = min(len(self.samples)-1,self.seek_requests.popleft())
+                self.anchors.clear()
+            except IndexError:
+                pass
             self.anchors.append((timing.outputBufferDacTime,self.index,self.samples,self.rate))
             outdata.fill(0)
             filled = 0
@@ -378,7 +362,7 @@ class FolderPane(QFrame):
         self.count = label('', 'muted')
         layout.addWidget(self.count)
         note = label('Double-click a saved WAV to remix it.\nEvery loaded sound starts with fresh controls.' if output
-                     else 'Select a WAV to edit.\nOriginal files are always preserved.', 'muted')
+                     else 'Select a WAV to edit.\nGenerating preserves the source audio.', 'muted')
         note.setWordWrap(True)
         layout.addWidget(note)
         self.refresh()
@@ -402,8 +386,14 @@ class FolderPane(QFrame):
         self.show_path()
         try:
             iterator = self.folder.rglob('*') if self.recursive.isChecked() else self.folder.iterdir()
+            def creation_order(path):
+                info = path.stat()
+                # Python 3.10 on Windows exposes creation time as st_ctime;
+                # newer Python versions expose it explicitly as st_birthtime.
+                created = getattr(info, 'st_birthtime_ns', info.st_ctime_ns)
+                return created, str(path.relative_to(self.folder)).casefold()
             self.files = sorted((p for p in iterator if p.suffix.lower() == '.wav' and p.is_file()),
-                                key=lambda p: str(p.relative_to(self.folder)).lower())
+                                key=creation_order)
             self.filter()
         except OSError as error:
             self.files = []
@@ -471,7 +461,7 @@ class Studio(QMainWindow):
         self.setMinimumSize(1280, 700)
         self.setAcceptDrops(True)
         from studio_layout import build
-        build(self, state, source, target, label, button, panel, Control, FolderPane)
+        build(self, state, source, target, label, button, panel, Control, FolderPane, StatusLabel)
         self.revision = 0
         self.render_cache = RenderCache()
         self.live_worker = None
@@ -508,15 +498,17 @@ class Studio(QMainWindow):
             v[key] /= 100
         if self.audio and abs(v['end']-self.audio.duration) <= .0011:
             v['end'] = self.audio.duration
-        return Settings(**v, pitch=self.pitch_spin.value(), eq=tuple(w.value() for w in self.eq_spins),
+        return Settings(**v, **self.creative.values(), pitch=self.pitch_spin.value(), eq=tuple(w.value() for w in self.eq_spins),
                         eq_frequencies=tuple(w.value() for w in self.eq_freqs), eq_q=tuple(w.value() for w in self.eq_widths),
                         normalize=self.normalize.isChecked(), normalize_db=self.normalize_target.value(),
-                        protect=self.protect.isChecked(), sample_rate=self.rate.currentData(),
-                        subtype=self.format.currentData(), channels=self.channel_mode.currentText(),
+                        protect=self.protect.isChecked(), auto_protect=True, sample_rate=48000,
+                        subtype='PCM_16', channels='Mono',
+                        clean=self.clean_button.isChecked(),clean_amount=self.clean_spin.value()/100,
                         reverse=self.reverse.isChecked(), formants=self.formants.isChecked())
 
     def reset_controls(self):
         self.resetting = True
+        self.wave.reset_navigation()
         defaults = Settings()
         for key, control in self.controls.items():
             value = getattr(defaults, key)
@@ -526,6 +518,7 @@ class Studio(QMainWindow):
                 duration = self.audio.duration if self.audio else 1
                 control.set_max(duration)
                 value = duration if key == 'end' else 0
+                control.default=value
             control.set_value(value)
         for spin in self.eq_spins:
             spin.setValue(0)
@@ -535,18 +528,32 @@ class Studio(QMainWindow):
         for spin in self.eq_widths:
             spin.setValue(.85)
         self.pitch_spin.setValue(0)
+        self.clean_button.setChecked(False);self.clean_spin.setValue(100)
         self.reverse.setChecked(False)
         self.formants.setChecked(False)
-        self.rate.setCurrentIndex(0)
-        self.format.setCurrentIndex(0)
-        self.channel_mode.setCurrentIndex(0)
         self.protect.setChecked(False)
         self.normalize.setChecked(False)
         self.normalize_target.setValue(-3)
         self.loop.setChecked(True)
         self.play_original_check.setChecked(False)
+        self.creative.reset()
         self.output_name.setText(self.audio.path.stem+'_mix' if self.audio else '')
         self.resetting = False
+        self.edited()
+
+    def reset_all(self):
+        if self.busy:return
+        self.cancel_live()
+        self.creative.clear_workspace()
+        self.reset_controls()
+        self.status.setText('Everything reset. Ready for a new edit.')
+
+    def reset_eq_band(self,index):
+        self.graph_band_changed(index,min(Settings().eq_frequencies[index],self.eq_freqs[index].maximum()),0,.85)
+
+    def clean_toggled(self,enabled):
+        self.clean_controls.setVisible(enabled);self.metadata.setVisible(not enabled)
+        if not enabled and not self.resetting:self.cancel_live()
         self.edited()
 
     def edited(self, *args):
@@ -555,24 +562,18 @@ class Studio(QMainWindow):
         self.wave.original_view = self.play_original_check.isChecked()
         self.result = None
         self.result_settings = None
-        self.preview_info.setText('Updating processed audio…')
+        self.status.clear_problem()
+        self.status.setText('Updating processed audio…' if self.audio else 'Choose a WAV to begin.')
         self.normalize_target.setEnabled(self.normalize.isChecked())
         if self.audio:
-            start, end = self.controls['start'].value(), self.controls['end'].value()
-            if end <= start:
-                sender = self.sender()
-                self.resetting = True
-                if sender is self.controls['start']:
-                    self.controls['start'].set_value(max(0, end-.001))
-                else:
-                    self.controls['end'].set_value(min(self.audio.duration, start+.001))
-                self.resetting = False
             s = self.current_settings()
-            self.wave.start, self.wave.end = s.start, s.end
+            self.wave.set_trim(s.start,s.end)
             self.wave.settings = s
             self.wave.pending = True
             self.wave.update()
-            self.trim_info.setText(f'Kept: {s.end-s.start:.3f} s  →  {(s.end-s.start)/s.speed:.3f} s at this speed, before reverb tail')
+            duration=trim_duration(s,self.audio.duration)
+            self.trim_info.setText(('Wrap: IN → file end → file start → OUT · ' if s.end<=s.start else '')+
+                                  f'Kept {duration:.3f}s → {duration/s.speed:.3f}s at this speed, before grains / reverb')
             for freq,slider,band in zip(s.eq_frequencies,self.eq_sliders,self.eq_labels):
                 color=frequency_color(freq).name()
                 if slider.property('band_color') != color:
@@ -596,6 +597,11 @@ class Studio(QMainWindow):
         show=not self.source.isVisible()
         self.source.setVisible(show)
         self.target.setVisible(show)
+        self.creative.adapt_layout()
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        if hasattr(self,'creative'):self.creative.adapt_layout()
 
     def refresh_live(self):
         if not self.audio or self.busy or self.closing:
@@ -605,7 +611,6 @@ class Studio(QMainWindow):
         s,audio,revision=self.current_settings(),self.audio,self.revision
         if self.result is not None and self.result_settings==s:
             return
-        self.live_badge.setText('UPDATING…')
 
         def work(cancel,progress):
             result=render(audio,s,cancel,progress,allow_clipping_preview=True,cache=self.render_cache)
@@ -629,15 +634,12 @@ class Studio(QMainWindow):
             if self.closing:
                 self.close();return
             if self.audio is audio and not self.busy:
-                self.wave.set_result(value[1],s)
+                self.wave.set_result(value[1],s,value[0][0],value[0][1])
                 if revision!=self.revision:
                     # Use completed audio while catching up, without rolling controls/curve back.
                     self.wave.settings=self.current_settings()
                     self.wave.pending=True
-                    self.live_badge.setText('UPDATING…')
                     self.live_timer.start(0)
-                else:
-                    self.live_badge.setText('LIVE PREVIEW')
             else:
                 self.live_timer.start(0)
 
@@ -652,12 +654,13 @@ class Studio(QMainWindow):
                 self.wave.pending=False
                 self.wave.processed=None
                 self.wave.update()
-                self.preview_info.setText(message.replace('\n',' ')[:200])
-                self.live_badge.setText('CHECK SETTINGS')
+                self.status.set_problem(message,'error')
 
         worker.signals.ready.connect(ready)
         worker.signals.done.connect(done)
         worker.signals.error.connect(error)
+        worker.signals.progress.connect(lambda message:self.status.setText(message)
+                                        if self.audio is audio and revision==self.revision and not self.busy else None)
         self.pool.start(worker)
 
     def cancel_live(self):
@@ -681,14 +684,19 @@ class Studio(QMainWindow):
         self.details.setEnabled(available)
         self.source.setEnabled(not self.busy)
         self.target.setEnabled(not self.busy)
+        self.creative.crossfade_button.setEnabled(not self.busy)
+        self.reset_button.setEnabled(not self.busy)
+        self.creative.sequence_panel.setEnabled(not self.busy)
+        self.creative.grain_panel.setEnabled(available)
+        self.creative.granular_button.setEnabled(available)
         self.generate_shortcut.setEnabled(available)
         self.progress.setVisible(self.busy)
         self.cancel_button.setVisible(self.busy)
 
-    def job(self, fn, done):
+    def job(self, fn, done, stop_playback=True):
         if self.busy:
             return
-        self.stop()
+        if stop_playback:self.stop()
         self.cancel_live()
         self.busy = True
         self.update_enabled()
@@ -728,9 +736,8 @@ class Studio(QMainWindow):
             self.status.setText('Cancelling…')
 
     def show_error(self, message):
-        self.status.setText(message.replace('\n', ' ')[:350])
-        if not message.startswith('Cancelled'):
-            QMessageBox.warning(self, 'Sound Studio', message)
+        if message.startswith('Cancelled'):self.status.setText(message)
+        else:self.status.set_problem(message,'error')
 
     def load(self, path, session=None):
         if self.busy:
@@ -739,23 +746,24 @@ class Studio(QMainWindow):
 
         def loaded(value):
             audio,analysis=value
-            self.audio = audio
-            self.clip_title.setText(audio.path.name)
-            peak = np.max(np.abs(audio.samples))
-            dbfs = 20*np.log10(max(float(peak), 1e-12))
-            self.metadata.setText(f'{audio.duration:.2f}s  ·  {audio.rate/1000:g}kHz  ·  '
-                f'{"Mono" if audio.samples.shape[1] == 1 else "Stereo"}')
-            self.wave.set_audio(audio.samples, audio.rate, analysis)
-            self.reset_controls()
-            if session:
-                self.restore_edit(session)
-            self.update_enabled()
-            self.status.setText('App refreshed. Your edit is restored.' if session else f'Loaded {audio.path.name}. All sound controls reset to defaults.')
+            self.install_audio(audio,analysis,session)
 
         def read(cancel,progress):
             audio=load_audio(path,cancel)
             return audio,analyze(audio.samples,audio.rate)
         self.job(read,loaded)
+
+    def install_audio(self,audio,analysis,session=None):
+        self.audio=audio
+        self.clip_title.setText('Stitched sequence' if audio.assembly else audio.path.name)
+        self.metadata.setText(('Sequence: ' if audio.assembly else 'Source: ')+f'{audio.duration:.2f}s  ·  {audio.rate/1000:g}kHz  ·  '+
+                              ('Mono' if audio.samples.shape[1]==1 else 'Stereo'))
+        self.wave.set_audio(audio.samples,audio.rate,analysis)
+        self.wave.sequence_markers=audio.assembly['markers'] if audio.assembly else []
+        self.reset_controls()
+        if session:self.restore_edit(session)
+        self.update_enabled()
+        self.status.setText('App refreshed. Your edit is restored.' if session else f'Loaded {audio.path.name}. All sound controls reset to defaults.')
 
     def play_processed_at(self, seconds):
         if self.play_mode:
@@ -777,13 +785,14 @@ class Studio(QMainWindow):
         original = self.play_original_check.isChecked()
         self.wave.original_view = original
         if not self.play_mode:
-            self.wave.update()
+            self.wave.clear_playback()
             return
         if original:
             self.player.replace_samples(self.audio.samples,self.audio.rate)
             self.play_mode,self.play_start = 'original',0
         elif self.result is not None and not self.result[2].get('export_blocked'):
-            self.player.replace_samples(self.result[0],self.result[1])
+            actual=self.player.replace_samples(self.result[0],self.result[1])
+            self.wave.remember_render(actual,self.result_settings)
             self.play_mode,self.play_start = 'processed',0
         else:
             self.status.setText('Playing original until a valid processed preview is ready.')
@@ -877,27 +886,36 @@ class Studio(QMainWindow):
             self.wave.show_playback(samples,rate,index,self.play_mode,self.play_start,self.player.paused)
 
     def accept_result(self, result, settings, analysis=None, update_display=True):
+        # Preserve the source position when trim changes, rather than retaining
+        # an elapsed output time that points at a different source sample.
+        position=None
+        if self.play_mode=='processed' and self.player.samples is not None:
+            samples,rate,index=self.player.snapshot()
+            previous=self.wave.timeline(samples)
+            if (previous.start,previous.end)!=(settings.start,settings.end):
+                position=self.wave.timeline(settings=settings).output_position(previous.source_position(index/rate))
+        self.wave.remember_render(result[0],settings)
         self.result, self.result_settings = result, settings
         if update_display:
-            self.wave.set_result(analysis if analysis is not None else analyze(result[0],result[1]),settings)
-        self.live_badge.setText('LIVE PREVIEW')
+            self.wave.set_result(analysis if analysis is not None else analyze(result[0],result[1]),settings,result[0],result[1])
         if self.play_mode and not self.play_original_check.isChecked():
             if result[2].get('export_blocked'):
                 self.status.setText('Current settings would clip; playing the last valid preview.')
             else:
-                self.player.replace_samples(result[0],result[1])
+                actual=self.player.replace_samples(result[0],result[1],position)
+                self.wave.remember_render(actual,settings)
                 self.play_mode,self.play_start = 'processed',0
                 self.sync_transport()
                 self.playback_tick()
         _, rate, metrics = result
-        self.preview_info.setText(f'Rendered {metrics["duration"]:.3f} s  ·  {rate/1000:g} kHz  ·  '
-            f'Peak {metrics["peak_dbfs"]:.1f} dBFS  ·  Est. true peak {metrics["estimated_true_peak_dbtp"]:.1f} dBTP'
-            + (f'  ·  Protection {metrics["protection_gain_db"]:.1f} dB' if metrics['protection_gain_db'] else ''))
+        self.status.clear_problem()
+        self.status.setText(f'{metrics["duration"]:.2f} s  ·  48 kHz / 16-bit / Mono  ·  Peak {metrics["peak_dbfs"]:.1f} dBFS')
+        if settings.clean and settings.clean_amount:
+            self.status.setText(f'Clear strong {settings.clean_amount*100:g}%  ·  '+self.status.message)
         if metrics.get('export_blocked'):
-            self.preview_info.setText('CLIPPING  ·  '+metrics['export_blocked']+'  ·  Graph shows the unclipped float signal.')
-            self.preview_info.setStyleSheet('color:#f1aa8b;font-size:11px;')
-        else:
-            self.preview_info.setStyleSheet('color:#91a4c2;font-size:11px;')
+            self.status.set_problem(metrics['export_blocked'],'error')
+        elif metrics['protection_gain_db']:
+            self.status.set_problem(f'Level reduced by {-metrics["protection_gain_db"]:.1f} dB to prevent clipping.')
 
     def preview(self):
         if self.play_mode:
@@ -950,7 +968,7 @@ class Studio(QMainWindow):
             self.status.setText(f'Saved {destination.name} · Double-click it in Your mixes to remix.')
             self.save_preferences()
 
-        self.job(work, done)
+        self.job(work, done,stop_playback=False)
 
     def save_preferences(self):
         atomic_json(self.state_dir/'preferences.json', {'source':str(self.source.folder), 'target':str(self.target.folder)})
@@ -969,37 +987,6 @@ class Studio(QMainWindow):
             identity['small_icon_handle'] = send(int(self.winId()), 0x7F, 0, 0)
             identity['large_icon_handle'] = send(int(self.winId()), 0x7F, 1, 0)
         atomic_json(self.state_dir/'app-identity.json', identity)
-
-    def guide(self):
-        QMessageBox.information(self, 'Quick guide',
-            'Choose a WAV on the left. Every sound setting automatically renders a new processed '
-            'waveform and spectrum while dragging. The EQ curve follows immediately; the audio updates as renders finish.\n\n'
-            'EQ is always above the canvas. Each frequency has its own colour. Click the spectrum '
-            'to place the nearest band; drag horizontally for frequency and vertically for gain. '
-            'Wheel over the graph changes the selected band’s width Q. Double-click a band to reset it. '
-            'The white line uses the right-hand EQ dB scale; the coloured spectrum uses the left-hand level scale. '
-            'L controls every frequency to its left; H controls every frequency to its right. '
-            'Drag either to the bottom for CUT (zero gain). Near the neutral line, dragging snaps to 0 dB. '
-            'The dashed spectrum is the original.\n\n'
-            'The large waveform shows the actual processed sound, coloured by local spectral centroid. '
-            'The view is fixed at 64×. During playback a local spectrum and scrolling waveform follow the audible position. '
-            'View magnification never changes the audio.\n\n'
-            'Drag IN / OUT on the small source strip to trim. Click the processed waveform to play '
-            'from that point. One Play button pauses/resumes. Tick Play original to bypass all processing; '
-            'untick to hear your saved settings again. Playback volume is 100%. '
-            'Space pauses/resumes everywhere; Left/Right seek 0.25 seconds. Pitch is at the side; fades, speed, reverb, polish, '
-            'compression and gain are below. Compression defaults off; raising it reduces loud/quiet differences '
-            'with linked stereo and no automatic makeup gain. Gain adjusts the final level. '
-            'Trim / extra effects opens precise trims, low cut, denoise, room size and Q.\n\n'
-            'Peak normalize changes level; Protect peaks only acts above −1 dBTP. Both affect the '
-            'display. If an unprotected integer export would clip, the graph shows the float signal '
-            'and saving asks you to lower gain or enable protection.\n\n'
-            'Name your mix and Generate (Ctrl+Enter). Existing files receive a number. Double-click '
-            'a saved mix to remix with fresh defaults. Folder choices persist; originals stay intact. '
-            'Defaults preserve the source rate, format and samples, with zero fades and all effects off. '
-            'Processing is local. Polish is optional EQ/compression, not AI restoration. '
-            'Noise reduction can remove detail. The true-peak meter is a 4× estimate. '
-            'Supported: mono/stereo WAV, 8–192 kHz, up to 256 MB decoded samples.')
 
     def dragEnterEvent(self, event):
         if not self.busy and event.mimeData().hasUrls():
@@ -1020,6 +1007,7 @@ class Studio(QMainWindow):
                    'play_original':self.play_original_check.isChecked(),
                    'folders_visible':self.source.isVisible(),
                    'size':[self.width(),self.height()],'maximized':self.isMaximized()}
+        session.update(self.creative.session_fields())
         path = self.state_dir/'refresh-session.json'
         try:
             atomic_json(path,session)
@@ -1038,6 +1026,7 @@ class Studio(QMainWindow):
         try:
             for key,control in self.controls.items():
                 value = getattr(settings,key)
+                if key=='end' and value is None:value=self.audio.duration
                 if key in ('speed','reverb','room','polish','compression'):
                     value *= 100
                 control.set_value(value)
@@ -1045,17 +1034,17 @@ class Studio(QMainWindow):
                 for widget,value in zip(widgets,values):
                     widget.setValue(value)
             self.pitch_spin.setValue(settings.pitch)
+            self.clean_button.setChecked(settings.clean);self.clean_spin.setValue(round(settings.clean_amount*100))
             self.reverse.setChecked(settings.reverse)
             self.formants.setChecked(settings.formants)
             self.protect.setChecked(settings.protect)
             self.normalize.setChecked(settings.normalize)
             self.normalize_target.setValue(settings.normalize_db)
-            self.rate.setCurrentIndex(self.rate.findData(settings.sample_rate))
-            self.format.setCurrentIndex(self.format.findData(settings.subtype))
-            self.channel_mode.setCurrentText(settings.channels)
             self.loop.setChecked(session['loop'])
             self.play_original_check.setChecked(session.get('play_original',False))
             self.output_name.setText(session['output_name'])
+            self.creative.restore(settings)
+            self.creative.restore_session(session)
         finally:
             self.resetting = False
         self.edited()
@@ -1120,11 +1109,13 @@ def main():
     if session:
         width,height=session['size']
         window.resize(min(width,screen.width()),min(height,screen.height()))
-        window.source.setVisible(session['folders_visible'])
-        window.target.setVisible(session['folders_visible'])
+        window.source.show()
+        window.target.show()
         if session['maximized']:
             window.showMaximized()
-        if session['audio']:
+        if session.get('sequence'):
+            QTimer.singleShot(100,lambda:window.creative.restore_workspace(session))
+        elif session['audio']:
             QTimer.singleShot(100,lambda:window.load(Path(session['audio']),session))
     elif args.open:
         QTimer.singleShot(100, lambda: window.load(args.open))

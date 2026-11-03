@@ -1,5 +1,68 @@
 # Bodyflip Lab
 
+**November 3 CURRENT: vanilla shared Foot IK runtime restored.** The user asked
+whether the rollback was really to the original Foot IK lab. It was not: the
+first rollback still retained the older captureSustainable acquisition guard.
+That guard is now removed. All11 shared runtime files match committed HEAD,
+including the accepted later port corrections from dbc4401e; surface.js itself
+also matches76614437. The HTTP shared-foot-ik.js bundle was checked to contain
+that original surface solver with no guard. Bodyflip integration, jump/backflip
+and user tuning remain; no wall-step workaround remains in canonical FootIK.
+The existing Bodyflip target projection is still part of the host integration;
+matching solver source is not a claim of identical final rendered poses between
+the two labs. Jiggle is unresolved. Do not restore pre-bent wall arrival or
+change the incoming pose to hide it: contact should stay stable, with the knee
+bending on the wall when necessary. No native port or push.
+
+
+**Earlier November 3 rollback (superseded by vanilla restoration above):**
+The user wants the leg to bend as needed AFTER contacting the wall, and chiefly
+wants a stable contact without jiggle. They did not request a pre-bent landing
+or an anticipated wall pose. Do not restore that approach.
+
+Restored the runtime immediately before the latest attempt: surface.js from
+Saved/Diagnostics/surface-before-wall-lock.js; removed the added wall roll/yaw,
+swing-carrier and early-stance changes; removed terrainTarget projection bypass
+and preparation handoff; removed the terrain-mode-only NN forearm return fit.
+The Bodyflip + Foot IK mode, scene, settings and previous integration remain.
+This restores the earlier reach-ahead acquisition guard as part of the exact
+rollback; that guard was also rejected as a fix and the jiggle is UNRESOLVED.
+The contact regression therefore remains expected to fail on the missing first
+right material pin. Test thresholds restored, including2mm at jump contact.
+Previous passing verification and first-wall recordings describe the reverted
+attempt, not current success. No new replacement fix, Unreal port or Git push.
+
+**Bodyflip + Foot IK mode, November 3 (LAB ONLY):** Added a separate mode and
+wallrun/backflip preset. It uses the canonical FootIKLab surface/coupled NN
+implementation, served from the Bodyflip server, then passes actual world pose
+and movement to existing support/push/spin. Other modes do not run terrain IK.
+Mode timelines retain their own platforms and spin settings; prior setup is
+preserved. Wall controls sit on the left between return and pose controls.
+
+Default: 90-degree wall, run phase .58, support marker .65 s, backflip command
+320 deg/s, 0-2.2 s loop at half speed. With saved tuning: push/release .70625 s,
+before original slide entry .73333 s; right toe landing 1.65 s. Wall loading
+uses posed-body collision rather than an upright capsule. On landing only the
+invisible root is rebased onto the support plane; physical bones stay in world
+space. These two corrections are restricted to the new terrain adapter.
+
+verify-terrain-mode.mjs (--saved also passes): 529 frames at240Hz, finite poses,
+reverse seeks, successful wall push/foot landing, no terrain IK during flight,
+mode restoration, displayed handoff position gaps below2mm (contact1.44mm;
+release/landing below.02mm). 363 ordinary Run/Walk/Space poses exactly match HEAD.
+Scene33, playback16 and arrow13 checks pass. The old capsule standing-jump test
+still fails, reproduced on HEAD; not counted as a new regression or fixed.
+Browser loads the shared compressed frames and plays the selected new mode.
+Numerical/UI checks are not user acceptance of dynamic appearance.
+
+Scope: shared wall locomotion into Bodyflip, then its existing grounded NN
+return; repeated re-entry from a landing into a new wallrun is not yet a new
+causal surface session. Initial terrain generation retains FootIKLab's five-
+second limit (explicit error for longer locomotion-only timelines). Unreal,
+Blueprints/assets and native packages were not changed or rebuilt; no Git push.
+Evidence: Saved/Diagnostics/BodyflipFootIK/verification.json; original live
+settings backup: Saved/Diagnostics/bodyflip-before-footik-mode.json.
+
 **Accepted lab port, November 3 (built and verified; source-only checkpoint):**
 Current normal-kick solver and live saved scene/settings are ported. Four jab/hook
 cutoffs now match typed C++ defaults. Native settings use the validated

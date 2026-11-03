@@ -168,7 +168,8 @@ class FBodyflipAgentExercise : public IAutomationLatentCommand
     AProphecyAgent* Agent=nullptr;
     UPrimitiveComponent* FloorCollider=nullptr;
     bool CheckedAdmission=false;
-    int32 Stage=0,Mode=0,Ticks=0,Checked=0;
+    int32 Stage=0,Mode=0,Ticks=0,Checked=0,FootDiagnostic=0;
+    TArray<TSharedPtr<FJsonValue>> FootMaterials;
     double Began=FPlatformTime::Seconds();
     FTransform Space;
     FTransform FloorSpace;
@@ -452,6 +453,7 @@ class FBodyflipAgentExercise : public IAutomationLatentCommand
         Report->SetStringField(TEXT("status"),Failed?TEXT("failed"):TEXT("completed"));Report->SetStringField(TEXT("error"),Error.IsEmpty()&&Failed?TEXT("Automation assertions failed; see the matching test log"):Error);
         Report->SetNumberField(TEXT("stage"),Stage);Report->SetNumberField(TEXT("mode"),Mode);Report->SetNumberField(TEXT("ticks"),Ticks);Report->SetNumberField(TEXT("checkedFrames"),Checked);Report->SetNumberField(TEXT("checkedBodies"),PhysicalBones.Num());Report->SetNumberField(TEXT("elapsedSeconds"),FPlatformTime::Seconds()-Began);
         Report->SetNumberField(TEXT("floorDropCm"),FloorDropCm);Report->SetArrayField(TEXT("frames"),Trace);Report->SetArrayField(TEXT("physicsAssetBodies"),BodyInventory);
+        Report->SetNumberField(TEXT("footDiagnostic"),FootDiagnostic);Report->SetArrayField(TEXT("footMaterials"),FootMaterials);
         if(IsPhysicalCase()&&!IsHandCase())Report->SetArrayField(TEXT("trackingContacts"),HandContacts);
         if(IsThrowCase())
         {
@@ -484,7 +486,8 @@ class FBodyflipAgentExercise : public IAutomationLatentCommand
         }
         FString Json;FJsonSerializer::Serialize(Report,TJsonWriterFactory<>::Create(&Json));const FString Folder=FPaths::ProjectSavedDir()/TEXT("Diagnostics/BodyflipPort20261030");IFileManager::Get().MakeDirectory(*Folder,true);
         const TCHAR* File=FloorDropCm>0?(Mode==8?TEXT("agent-air-saved-jolt.json"):Mode==3?TEXT("agent-air-big-throw-jolt.json"):TEXT("agent-air-small-throw-jolt.json")):Mode==7?TEXT("agent-saved-kinematic.json"):Mode==8?TEXT("agent-saved-jolt.json"):Mode==0?TEXT("agent-kinematic.json"):Mode==1?TEXT("agent-jolt.json"):Mode==3?TEXT("agent-big-throw-jolt.json"):Mode==4?TEXT("agent-small-throw-jolt.json"):Mode==5?TEXT("agent-hand-left-jolt.json"):Mode==6?TEXT("agent-hand-both-jolt.json"):TEXT("agent-space.json");
-        if(!FFileHelper::SaveStringToFile(Json,*(Folder/File)))Test->AddError(TEXT("Could not save partial Bodyflip agent diagnostic report"));
+        const FString Output=FootDiagnostic?FString::Printf(TEXT("agent-foot-diagnostic-%d.json"),FootDiagnostic):FString(File);
+        if(!FFileHelper::SaveStringToFile(Json,*(Folder/Output)))Test->AddError(TEXT("Could not save partial Bodyflip agent diagnostic report"));
     }
     void Cleanup()
     {
@@ -542,7 +545,7 @@ class FBodyflipAgentExercise : public IAutomationLatentCommand
         return true;
     }
 public:
-    explicit FBodyflipAgentExercise(FAutomationTestBase* In,int32 InMode=0,double InFloorDropCm=0):Test(In),Mode(InMode),FloorDropCm(InFloorDropCm){}
+    explicit FBodyflipAgentExercise(FAutomationTestBase* In,int32 InMode=0,double InFloorDropCm=0,int32 InFootDiagnostic=0):Test(In),Mode(InMode),FootDiagnostic(InFootDiagnostic),FloorDropCm(InFloorDropCm){}
     ~FBodyflipAgentExercise(){Cleanup();}
     virtual bool Update() override
     {
@@ -623,6 +626,26 @@ public:
                     return Fail(PhysicalFailure(TEXT("Validate admitted native rig")));
             }
             InitialYaw=float(Agent->GetActorRotation().Yaw);
+            // Controlled diagnostics only: preserve restitution, drives, shapes and
+            // every non-foot material. Mode 3 isolates just the foot/foot pair.
+            if(FootDiagnostic)
+            {
+                for(const FName Bone:{FName(TEXT("foot_l")),FName(TEXT("foot_r"))})
+                {
+                    FProphecyJoltBodyHandle Handle;FProphecyJoltBodyMaterial Before,After;
+                    if(!Agent->GetJoltCharacterComponent()->GetBodyHandle(Bone,Handle)||!Physics->ReadBodyMaterial(Handle,Before).IsSuccess())return Fail(TEXT("Read diagnostic foot material"));
+                    if(FootDiagnostic==2)
+                    {
+                        FProphecyJoltMaterialUpdate Update;Update.Handle=Handle;Update.Material=Before;Update.Material.Friction=0;Update.Material.FrictionCombineMode=1; // Minimum
+                        if(!Physics->UpdateBodyMaterials(MakeArrayView(&Update,1)).IsSuccess())return Fail(TEXT("Apply zero foot friction"));
+                    }
+                    if(!Physics->ReadBodyMaterial(Handle,After).IsSuccess())return Fail(TEXT("Verify diagnostic foot material"));
+                    auto Row=MakeShared<FJsonObject>();Row->SetStringField(TEXT("bone"),Bone.ToString());Row->SetNumberField(TEXT("beforeFriction"),Before.Friction);Row->SetNumberField(TEXT("afterFriction"),After.Friction);Row->SetNumberField(TEXT("beforeCombine"),Before.FrictionCombineMode);Row->SetNumberField(TEXT("afterCombine"),After.FrictionCombineMode);Row->SetNumberField(TEXT("restitution"),After.Restitution);FootMaterials.Add(MakeShared<FJsonValueObject>(Row));
+                    Test->TestEqual(TEXT("Foot diagnostic preserves restitution"),After.Restitution,Before.Restitution);
+                    if(FootDiagnostic==2)Test->TestEqual(TEXT("Zero friction applied to actual native foot"),After.Friction,0.f);
+                }
+                if(FootDiagnostic==3&&!Agent->SetJoltBodyPairSelfCollisionEnabled(TEXT("foot_l"),TEXT("foot_r"),false,Error))return Fail(Error);
+            }
             FString Settings=TEXT("{\"mode\":\"idle\",\"trimOut\":1.2,\"ramps\":false,\"aim\":false,\"spinLag\":0.6,\"platforms\":[{\"id\":\"floor\",\"position\":[0,-0.2,0],\"size\":[20,0.4,20],\"rotation\":[0,0,0,1]}],\"jumpEvents\":[{\"id\":\"push\",\"time\":0.1,\"jumpPercent\":35,\"flip\":120,\"twist\":30,\"spinVersion\":2,\"attack\":\"KickL\"}]}");
             if(IsThrowCase())
             {
@@ -831,6 +854,15 @@ bool FProphecyBodyflipPhysicalHandBothTest::RunTest(const FString&)
 {
     ADD_LATENT_AUTOMATION_COMMAND(FBodyflipAgentExercise(this,6));return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyBodyflipFootBaselineTest,"Prophecy.Bodyflip.FootDiagnostic.Baseline",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyBodyflipFootBaselineTest::RunTest(const FString&)
+{ADD_LATENT_AUTOMATION_COMMAND(FBodyflipAgentExercise(this,8,0,1));return true;}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyBodyflipFootFrictionTest,"Prophecy.Bodyflip.FootDiagnostic.ZeroFriction",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyBodyflipFootFrictionTest::RunTest(const FString&)
+{ADD_LATENT_AUTOMATION_COMMAND(FBodyflipAgentExercise(this,8,0,2));return true;}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyBodyflipFootPairTest,"Prophecy.Bodyflip.FootDiagnostic.NoFootPair",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FProphecyBodyflipFootPairTest::RunTest(const FString&)
+{ADD_LATENT_AUTOMATION_COMMAND(FBodyflipAgentExercise(this,8,0,3));return true;}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyBodyflipSavedKinematicTest,"Prophecy.Bodyflip.SavedSetup.Kinematic",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FProphecyBodyflipSavedKinematicTest::RunTest(const FString&)
 {ADD_LATENT_AUTOMATION_COMMAND(FBodyflipAgentExercise(this,7));return true;}

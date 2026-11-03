@@ -1,0 +1,12 @@
+{
+ "/Game/Megaplant_Library/Tree_Hornbeam/Materials/MI_Tree_Hornbeam_01_Bark": "/ProceduralVegetationEditor/SampleAssets/Materials/MasterMaterials/MA_Foliage_Trees.MA_Foliage_Trees",
+ "/Game/Megaplant_Library/Tree_Hornbeam/Materials/MI_Tree_Hornbeam_01_Foliage": "/ProceduralVegetationEditor/SampleAssets/Materials/MasterMaterials/MA_Foliage_Trees.MA_Foliage_Trees",
+ "/Game/Fab/Megascans/Plants/Wild_Grass_vlkhcbxia/High/vlkhcbxia_tier_1/Materials/MI_vlkhcbxia": "/Fab/Materials/Standard/M_MS_Foliage.M_MS_Foliage",
+ "/Game/Fab/Megascans/Plants/Wild_Grass_vlkhcbxia/High/vlkhcbxia_tier_1/Materials/MI_vlkhcbxia_Billboard": "/Fab/Materials/Standard/M_MS_Billboard.M_MS_Billboard",
+ "/Game/Fab/Megascans/Plants/Thatching_Grass_uddmcgbia/Medium/uddmcgbia_tier_2/Materials/MI_uddmcgbia": "/Fab/Materials/Standard/M_MS_Foliage.M_MS_Foliage",
+ "/Game/Fab/Megascans/Plants/Thatching_Grass_uddmcgbia/Medium/uddmcgbia_tier_2/Materials/MI_uddmcgbia_Billboard": "/Fab/Materials/Standard/M_MS_Billboard.M_MS_Billboard",
+ "/Game/Fab/Megascans/Plants/Violet_Wood_Sorrel_uchkajuia/Medium/uchkajuia_tier_2/Materials/MI_uchkajuia": "/Fab/Materials/Standard/M_MS_Foliage.M_MS_Foliage",
+ "/Game/Fab/Megascans/Plants/Violet_Wood_Sorrel_uchkajuia/Medium/uchkajuia_tier_2/Materials/MI_uchkajuia_Billboard": "/Fab/Materials/Standard/M_MS_Billboard.M_MS_Billboard",
+ "/Game/Fab/Megascans/Plants/Matted_Pratia_uegjcflia/Medium/uegjcflia_tier_2/Materials/MI_uegjcflia": "/Fab/Materials/Standard/M_MS_Foliage.M_MS_Foliage",
+ "/Game/Fab/Megascans/Plants/Matted_Pratia_uegjcflia/Medium/uegjcflia_tier_2/Materials/MI_uegjcflia_Billboard": "/Fab/Materials/Standard/M_MS_Billboard.M_MS_Billboard"
+}

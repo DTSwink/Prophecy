@@ -1,4 +1,12 @@
 """Serve only the newest ten dated comparisons; preserve all historical logs."""
+
+# These local I/O/viewer services do not need numerical worker pools.
+# Set before NumPy/SciPy/TensorBoard imports: otherwise each process reserves
+# hundreds of MB for threads on Windows. This does not change GPU training.
+import os
+for _thread_variable in ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS'):
+    os.environ[_thread_variable] = '1'
+
 import argparse
 import json
 import re
@@ -6,6 +14,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from local_process import ServiceLock, stop_child_tree
 
 ROOT = Path(__file__).resolve().parents[2]
 DATED_RUN = re.compile(r'^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}(?:-\d{2})?_')
@@ -19,6 +28,11 @@ def main():
     args = parser.parse_args()
     if args.limit < 1:
         parser.error('--limit must be positive')
+    with ServiceLock(ROOT/'Saved/MimicKit'/f'tensorboard-{args.port}.lock'):
+        serve(args)
+
+
+def serve(args):
     process = None
     previous = None
     try:
@@ -32,8 +46,7 @@ def main():
                           key=lambda p: p.name, reverse=True)[:args.limit]
             if runs != previous:
                 if process is not None:
-                    process.terminate()
-                    process.wait(timeout=15)
+                    stop_child_tree(process)
                     process = None
                 if runs:
                     command = [sys.executable, '-m', 'tensorboard.main',
@@ -49,8 +62,7 @@ def main():
             time.sleep(15)
     finally:
         if process is not None and process.poll() is None:
-            process.terminate()
-            process.wait(timeout=15)
+            stop_child_tree(process)
 
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@ G=Geometry();LOCK=threading.Lock()
 BASE=pickle.loads((ARMS/'sitting.pkl').read_bytes())['frames'][20].astype(float)
 ORIGINAL=pickle.loads((OLD/'before/motions/sitting.pkl').read_bytes())['frames'][20].astype(float)
 BASE_SHA=hashlib.sha256((ARMS/'sitting.pkl').read_bytes()).hexdigest()
+LAST_REQUEST=time.monotonic()
 def frame(value):
     a=np.asarray(value,dtype=float)
     if a.shape!=(40,) or not np.isfinite(a).all() or np.abs(a).max()>1000:raise ValueError('Expected 40 finite pose coordinates')
@@ -36,6 +37,10 @@ def model():
         saved=json.loads((OUT/'current.json').read_text()) if (OUT/'current.json').exists() else None,
         reference_fk=audit(BASE))
 class Handler(SimpleHTTPRequestHandler):
+    def handle_one_request(self):
+        global LAST_REQUEST
+        LAST_REQUEST=time.monotonic()
+        return super().handle_one_request()
     def log_message(self,*args):pass
     def json(self,data,status=200):
         body=json.dumps(data,allow_nan=False).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
@@ -67,6 +72,19 @@ class Handler(SimpleHTTPRequestHandler):
             return self.json(dict(saved=True,path=version.relative_to(ROOT).as_posix(),current='Saved/MimicKitSlowLoco/pose-editor/current.json',validation=report))
         except Exception as e:self.json(dict(error=str(e)),400)
 if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--idle-timeout',type=float,default=1800,
+        help='Exit after this many seconds without requests (default: 30 minutes).')
+    args=parser.parse_args()
+    if args.idle_timeout<=0:parser.error('--idle-timeout must be positive')
     server=ThreadingHTTPServer(('127.0.0.1',8871),partial(Handler,directory=str(ROOT)))
+    server.timeout=min(5,args.idle_timeout)
+    server.daemon_threads=True
     print('Pose editor http://127.0.0.1:8871/ ; training untouched',flush=True)
-    server.serve_forever()
+    try:
+        while time.monotonic()-LAST_REQUEST<args.idle_timeout:
+            server.handle_request()
+    finally:
+        server.server_close()
+        print('Pose editor idle; exiting. Saved poses are retained.',flush=True)

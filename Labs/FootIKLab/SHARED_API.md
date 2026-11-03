@@ -3,6 +3,51 @@
 Bodyflip consumes this lab's source directly. Keep foot-placement changes in
 `surface.js` / `footik.js`, not a second implementation in Bodyflip.
 
+November3 F16–19 follow-up: `createFeet` adds a bounded pelvis accommodation
+for thigh-direction pursuit near a different support plane. It solves both
+legs to the existing ankle targets with the existing joint/sole constraints;
+held shoe rotations and material points remain fixed. The contact planner
+keeps its reference pose separately so its hip forecast does not count this
+posture change as root velocity. Final shoe geometry owns support reporting.
+No correction on unchanged ground. Reset/disable/empty terrain clear history.
+API1, inputs, settings and dependencies are unchanged. Hosts must use the full
+returned pose, as the existing Bodyflip adapter does. No native package update.
+
+November3 thigh-arrival follow-up: shared feet spread clearance against an
+approaching new plane over the swing path, then use a small damped pelvis
+translation to absorb part of the tangential velocity lost on capture.
+This is applied before leg IK; material pins and source bone lengths remain
+exact. Upper-body local articulation is unchanged. Reset, disabled IK and empty
+terrain clear it. Coplanar ground does not excite it. API1, step arguments,
+dependencies, UI/settings and NN contracts are unchanged. Hosts must retain
+the returned pose/pelvis delta, as the existing Bodyflip adapter already does.
+No post-IK rotation filter or contact-acquisition gate. This supersedes the
+older statement that incoming clearance/upper-body translation never change;
+it does not restore the rejected landing-pose planner. No native changes.
+
+November3 wall-entry follow-up: surface shoe orientation anticipates an
+approaching different plane within the existing landing window. The free-foot
+rate bound now applies to terrain correction while carrying NN ankle motion.
+Surface heading/heel-toe axes use transport instead of a singular forward-ray
+projection. `K.createPinYaw`'s returned function has an optional sixth argument
+`bodyHeading` after `dt`; existing callers keep their exact behavior. Shared
+`createFeet`/API1 inputs and settings are unchanged. The surface-only Python
+decoder uses the existing signed-hinge FK contract for derived calf frames;
+predicted positions/axes and recurrent tensors are unchanged. This decoder
+contract is local to Foot IK; it does not change Bodyflip's checkpoint runtime.
+No knee pre-bend, acquisition delay or hand-motion change is part of this follow-up.
+
+November3: shared feet capture the current ankle, retain one source-preserving
+soft reach allowance across pin/release, and use a short hip forecast only for
+rolling an existing contact. No anticipatory arrival pose/acquisition gate.
+Actual ankle constraints now reuse the pure `slide-joints.js` rig helper lazily
+from `createFeet`. This supersedes the older host-only dependency statements
+below for that helper alone. API1 and inputs/settings remain unchanged.
+`slide-entry.js` and `slide-arms.js` are still not loaded by legacy shared feet.
+Bodyflip's November3 full-surface integration already bundles all three plus
+`surface-coupling.js`; no host or bundle edit was needed here. The standalone
+slide hand fit uses actual collider extent, preserving its existing motion.
+
 October30 F82/F123-131: host slide-arms.js now uses a continuous wall-gradient
 search at all correction sizes and retains history before clearance entry.
 Entry acceleration limiting fades as contact settles. Shared API unchanged.
@@ -180,10 +225,13 @@ Empty surface lists release pins and return the free baseline pose safely.
 Foot IK's standalone platform editor (`platforms.js`) is not a solver dependency.
 
 The Bodyflip server's `/shared-foot-ik.js` bundles the current files on every
-request: `recovery.js`, `support.js`, `terrain.js`, `footik.js`, `surface.js`.
+request: `recovery.js`, `support.js`, `terrain.js`, `footik.js`, `surface.js`,
+`slide-joints.js`, `slide-entry.js`, `slide-arms.js`, `surface-coupling.js`.
 They execute in an isolated CommonJS scope; they cannot replace Bodyflip's
 similarly named globals. No build, copied bundle, Foot IK server, live-state
 sharing or background watcher is involved. Refresh Bodyflip after a source edit.
+The legacy adapter loads shared feet and rig limits; only the full-surface
+host invokes the coupled root/NN and slide behavior.
 Its diagnostics expose `flight.footIKSource` (SHA256 of the loaded sources).
 
 Coordinate changes to this API or additions to the dependency list with

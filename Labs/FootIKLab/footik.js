@@ -193,14 +193,14 @@ function plantedRoll(p,l,hit){
 // roll samples, including their material-pivot transfers, into the turned frame.
 function createPinYaw(normal=[0,1,0],limitDegrees=45){
  let turn=[0,0,0,1],shift=[0,0,0],total=0;
- return (sample,p,l,clear=()=>true,dt=1/120)=>{
+ return (sample,p,l,clear=()=>true,dt=1/120,bodyHeading=null)=>{
   const map=v=>add(rotate(turn,v),shift);
   let foot=map(sample.foot),point=map(sample.contact);
   let rotation={footQ:qm(turn,sample.rotation.footQ),toeQ:qm(turn,sample.rotation.toeQ)};
   const forward=rotate(rotation.footQ,[0,Math.sign(l.toeLocal[1])||1,0]);
   const up=rotate(rotation.footQ,[l.side==='L'?1:-1,0,0]);
   // The lateral axis retains a heading even when the toes point straight down.
-  const heading=unit(cross(normal,cross(forward,up))),body=rotate(p.q[l.pelvis],[0,-1,0]);
+  const heading=unit(cross(normal,cross(forward,up))),body=bodyHeading||rotate(p.q[l.pelvis],[0,-1,0]);
   const desired=sub(body,mul(normal,dot(body,normal)));
   if(length(desired)<1e-5)return {...sample,foot,contact:point,rotation,yaw:total};
   const error=Math.atan2(dot(normal,cross(heading,unit(desired))),dot(heading,unit(desired)));
@@ -1141,6 +1141,6 @@ function prepare(run,input,host={}){
  }
  return {frames,terrain,settings,metrics,speed,duration:run.duration,fps,...(host.capture?{checkpoint:{plans,planned,legs,base,raw}}:{}),sample:t=>frames[clamp(Math.round(t*fps),0,count-1)]};
 }
-const api={defaults,sanitize,commandYaw,rootHeading,decode,travelAt,at,prepare,geometry,stableLeg,solve,yawPose,createPinYaw};
+const api={defaults,sanitize,commandYaw,rootHeading,decode,travelAt,at,prepare,geometry,stableLeg,solve,yawPose,createPinYaw,softReach};
 if(typeof module!=='undefined')module.exports=api;else root.FootIK=api;
 })(globalThis);

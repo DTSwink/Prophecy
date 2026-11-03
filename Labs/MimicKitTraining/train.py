@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--seconds',type=int,default=6600)
     parser.add_argument('--benchmark',action='store_true')
     parser.add_argument('--profile',action='store_true',help='Profile three updates after warmup, then remove instrumentation')
+    parser.add_argument('--replay-interval-seconds',type=float,default=None,help='Wall-clock evaluation/checkpoint cadence; overrides iteration cadence')
     parser.add_argument('--output-interval',type=int,default=100,help='PPO updates between evaluation, TensorBoard points and checkpoints')
     parser.add_argument('--action-noise',type=float,help='Fixed Gaussian standard deviation in normalized action units')
     parser.add_argument('--gae-lambda',type=float,help='Explicit GAE lambda override, including resumed training')
@@ -382,6 +383,10 @@ def main():
                             old['tracking_reward_form']='reciprocal_sum'
                         assert 'adaptive_motion_rows' not in new
                         old.pop('adaptive_motion_rows',None)
+                    if name=='engine_config.yaml' and 'transfer_ground_friction_multipliers' in new:
+                        # User-approved, named ground-grip change; all other config stays checked.
+                        assert new['transfer_ground_friction_multipliers']=={b:3. for b in ('right_hand','left_hand','right_lower_arm','left_lower_arm')}
+                        old['transfer_ground_friction_multipliers']=new['transfer_ground_friction_multipliers']
                     if name=='engine_config.yaml' and 'uefn_motor_torque_caps_nm' in new:
                         # Explicit motor-only resume; the engine validates named increases.
                         old['uefn_motor_torque_caps_nm']=new['uefn_motor_torque_caps_nm']
@@ -848,6 +853,16 @@ def main():
     agent._train_iter=iteration
     agent._rollout_test=evaluate
     agent._output_train_model=lambda it,*unused:snapshot(it,'upstream output interval')
+    if a.replay_interval_seconds is not None:
+        assert a.evaluate and a.replay_interval_seconds > 0
+        next_output=[0.0]
+        def output_due():
+            now=time.monotonic()
+            if now < next_output[0]:return False
+            next_output[0]=now+a.replay_interval_seconds
+            return True
+        agent._output_due=output_due
+
     atomic_json(directory/'owner.json',dict(name=a.name,directory=str(directory),pid=os.getpid()))
     try:
         agent.train_model(a.max_samples if a.max_samples is not None else float('inf'),str(directory),False,'tb')

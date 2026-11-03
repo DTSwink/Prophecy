@@ -61,9 +61,32 @@ private:
 	// step factories
 	void AddWaitShaders(float MinSeconds);
 	void AddWait(float Seconds);
-	void AddShot(const FString& Name, float Settle = 0.6f);
+	void AddShot(const FString& Name, float Settle = 0.6f, bool bStream = true);
 	void AddCall(TFunction<void()> Fn);
 
+	// video recording (fixed 30 fps, JPEG frames written from the screenshot callback)
+	bool bRecording = false;
+	int32 FrameIndex = 0;
+	FDelegateHandle ShotHandle;
+	FVector CamSmoothLoc = FVector::ZeroVector;
+	FVector CamSideSmooth = FVector::RightVector;
+	FVector CamLookSmooth = FVector::ZeroVector;
+	int32 FollowBee = INDEX_NONE;
+	void OnShotCaptured(int32 W, int32 H, const TArray<FColor>& Colors);
+	void AddRecord(float Seconds, TFunction<void(float)> CamFn);
+	void BuildGarden(bool bPatch);
+	void AddSurfaceProps(const FVector& C);
+	void AddSpeckles(const FVector& C, float Radius, int32 Count);
+	FString SurfaceTally(const FVector& C, float Radius) const;
+	FString MemoryJson() const;
+	int32 FindBeeWhere(const FVector& Near, float MaxDist, TFunctionRef<bool(int32)> Pred) const;
+	void AddCostAB(const FString& Name, const TCHAR* Command, TFunction<void()> Undo = nullptr);
+	void BuildVideoScene();
+	void BuildSizeScene();
+
+	void BuildTrajScene();
+	void AddShotsFromFile(const FString& Path, int32 Part);
+	FString TrajCsv;
 	void BuildModelScene();
 	void BuildSwarmScene();
 	void BuildMapScene();

@@ -1,5 +1,41 @@
 # Foot IK native integration
 
+**November 3 CURRENT: vanilla shared Foot IK runtime restored.** The user asked
+whether the rollback was really to the original Foot IK lab. It was not: the
+first rollback still retained the older captureSustainable acquisition guard.
+That guard is now removed. All11 shared runtime files match committed HEAD,
+including the accepted later port corrections from dbc4401e; surface.js itself
+also matches76614437. The HTTP shared-foot-ik.js bundle was checked to contain
+that original surface solver with no guard. Bodyflip integration, jump/backflip
+and user tuning remain; no wall-step workaround remains in canonical FootIK.
+The existing Bodyflip target projection is still part of the host integration;
+matching solver source is not a claim of identical final rendered poses between
+the two labs. Jiggle is unresolved. Do not restore pre-bent wall arrival or
+change the incoming pose to hide it: contact should stay stable, with the knee
+bending on the wall when necessary. No native port or push.
+
+
+**Earlier November 3 rollback (superseded by vanilla restoration above):**
+The user wants the leg to bend as needed AFTER contacting the wall, and chiefly
+wants a stable contact without jiggle. They did not request a pre-bent landing
+or an anticipated wall pose. Do not restore that approach.
+
+Restored the runtime immediately before the latest attempt: surface.js from
+Saved/Diagnostics/surface-before-wall-lock.js; removed the added wall roll/yaw,
+swing-carrier and early-stance changes; removed terrainTarget projection bypass
+and preparation handoff; removed the terrain-mode-only NN forearm return fit.
+The Bodyflip + Foot IK mode, scene, settings and previous integration remain.
+This restores the earlier reach-ahead acquisition guard as part of the exact
+rollback; that guard was also rejected as a fix and the jiggle is UNRESOLVED.
+The contact regression therefore remains expected to fail on the missing first
+right material pin. Test thresholds restored, including2mm at jump contact.
+Previous passing verification and first-wall recordings describe the reverted
+attempt, not current success. No new replacement fix, Unreal port or Git push.
+
+**November 3 lab integration:** Bodyflip now has a separate shared-solver wallrun
+mode and wall-jump/backflip preset. Initial integration reused the canonical solver;
+see [Bodyflip handoff](BodyflipNative.md). This is not a native package update.
+
 ## Current state — October 30
 
 The accepted lab and setup were pushed as `76614437`. The saved setup is

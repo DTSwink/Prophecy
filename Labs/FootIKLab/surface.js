@@ -90,10 +90,20 @@ function shoePose(p,l,target,rotation){const points=p.points.slice(),q=p.q.slice
 function sole(p,l,n){return S.lowestOffset(p,l,n);}
 function fit(p,l,target,rotation,surface){const shaped=shoePose(p,l,target,rotation),offset=sole(shaped,l,surface.normal),point=surface.closest(add(target,offset));return {target:sub(point,offset),point,offset};}
 function capture(p,l,target,rotation,surface,id){
- const fitted=fit(p,l,target,rotation,surface),pose=shoePose(p,l,fitted.target,rotation),frame=S.footFrame(pose,l.foot,l.toe,l.side),axis=unit(cross(surface.normal,frame.forward));
+ const fitted=fit(p,l,target,rotation,surface),pose=shoePose(p,l,fitted.target,rotation),frame=S.footFrame(pose,l.foot,l.toe,l.side);
+ // Transport the shoe's forward axis into the contact plane. Projecting its
+ // unaligned forward ray is singular when the toe points into a new wall;
+ // a tiny lateral component then turns heel/toe roll into a sideways swivel.
+ const alignedForward=rotate(R.fromTo(frame.up,surface.normal),frame.forward),axis=unit(cross(surface.normal,alignedForward));
  const terminal={pose,foot:fitted.target,rotation},positive=S.roll(terminal,{...l,plant:{right:axis}},surface,85),negative=S.roll(terminal,{...l,plant:{right:mul(axis,-1)}},surface,45);
  const pitch=Math.atan2(dot(frame.forward,surface.normal),dot(frame.up,surface.normal))*180/Math.PI;
- return {surface,id,pose,rotation,pitch,angle:0,sample:angle=>angle>=0?positive(angle/85):negative(-angle/45)};
+ const localUp=rotate(qinv(rotation.footQ),frame.up);
+ return {surface,id,pose,rotation,pitch,angle:0,sample:angle=>{
+  const sample=angle>=0?positive(angle/85):negative(-angle/45);
+  // Reach assistance may use the sole edge, but must not roll a material
+  // contact through that edge onto the top of the shoe.
+  return {...sample,valid:sample.valid&&dot(rotate(sample.rotation.footQ,localUp),surface.normal)>=-1e-6};
+ }};
 }
 function constrain(p,l,target,rotation,surfaces,reachRatio=.985,fixedCorners=null){
  const hip=p.points[l.hip],reach=l.reach*reachRatio,minimum=Math.min(l.reach*.27,length(sub(p.points[l.foot],hip)));let result=target.slice();
@@ -140,21 +150,106 @@ function intent(run,raw,legs,fps,speed){
   active=gaitIntent(p,l,v,speed,active).stance;return active;});});
 }
 function createMetrics(){return {maxPenetration:0,maxReachError:0,maxRequestedReachExcess:0,maxContactDrift:0,maxRootAcceleration:0,maxFootSpeed:0,maxRelativeFootSpeed:0,maxKneeStep:0,maxAnkleStep:0,maxRelativeAnkleDegrees:0,ankleReleases:0,wallContactFrames:0,contactFrames:0,flightFrames:0,maxBodyTilt:0,maxGravityResidual:0,reachRollPositive:0,reachRollNegative:0,maxPinAngleStep:0};}
+// Posture compliance at a change of support plane. Keep the contact planner's
+// reference separate: its hip forecast must not interpret a posture correction
+// as new root velocity. The returned pose still solves both feet and joint
+// limits; it is not an interpolation of the already solved limb transforms.
+function createArrivalPosture(names,parents,terrain){
+ let previous=null,angularVelocity=[[0,0,0],[0,0,0]];
+ const dt=1/120;
+ function step(pose,baseline,feet,surfaceQ,jointLimits,metrics){
+  const legs=['L','R'].map(side=>S.leg(pose,names,side));
+  if(previous){
+   let desired=[0,0,0],total=0;
+   for(let side=0;side<2;side++){
+    const l=legs[side];let influence=0;
+    for(const plane of terrain.surfaces){
+     const turn=smooth((1-dot(plane.normal,rotate(surfaceQ,up)))/.35);
+     if(!turn)continue;
+     const gap=length(sub(plane.closest(pose.points[l.foot]),pose.points[l.foot]));
+     influence=Math.max(influence,turn*(1-smooth(gap/.8)));
+    }
+    if(influence<1e-5)continue;
+    const current=unit(sub(pose.points[l.knee],pose.points[l.hip])),old=unit(sub(previous.points[l.knee],previous.points[l.hip]));
+    const omega=40,delta=R.qlog(R.fromTo(old,current));
+    const velocity=add(angularVelocity[side],mul(sub(mul(delta,omega*omega),mul(angularVelocity[side],2*omega)),dt));
+    const direction=unit(add(mul(current,1-influence),mul(rotate(R.qexp(mul(velocity,dt)),old),influence)));
+    // Closest hip translation that permits this thigh direction with the
+    // original calf length and ankle target. Weight the near contact most;
+    // an airborne opposite leg must not cancel its load accommodation.
+    const knee=add(pose.points[l.hip],mul(direction,l.upper)),v=sub(pose.points[l.foot],knee),weight=influence**4;
+    desired=add(desired,mul(unit(v),(length(v)-l.lower)*weight));total+=weight;
+   }
+   if(total>0){
+    desired=bounded(mul(desired,1/total),.06);
+    const before=pose;
+    const attempt=offset=>{
+     let trial={...before,points:before.points.map((v,j)=>j?add(v,offset):v)};
+     for(let side=0;side<2;side++){
+      const l=legs[side],contact=feet[side].contact;
+      let point=before.points[l.foot],rotation={footQ:before.q[l.foot],toeQ:before.q[l.toe]};
+      let solved=solvePole(trial,l,point,parents,rotation);
+      const allowance=jointLimits.project(l.foot,baseline.q[l.knee],baseline.q[l.foot]).correctionRad;
+      for(let pass=0;pass<16;pass++){
+       const limited=jointLimits.project(l.foot,solved.q[l.knee],solved.q[l.foot]);
+       if(limited.correctionRad<=allowance+1e-6)break;
+       // A held heel/toe owns both its point and rotation. Reduce the pelvis
+       // correction if it would violate that ankle, never detach the pin.
+       if(contact)return null;
+       const footQ=qslerp(limited.q,rotation.footQ,allowance/limited.correctionRad),delta=qm(footQ,qinv(rotation.footQ));
+       rotation={footQ,toeQ:qm(delta,rotation.toeQ)};
+       const reach=Math.max(K.softReach(l.reach,l.reach),length(sub(baseline.points[l.foot],baseline.points[l.hip])))/l.reach;
+       point=constrain(trial,l,point,rotation,terrain.surfaces,reach);solved=solvePole(trial,l,point,parents,rotation);
+      }
+      if(length(sub(solved.points[l.foot],point))>1e-7||penetration(solved,l,terrain.surfaces)>1e-4||jointLimits.project(l.foot,solved.q[l.knee],solved.q[l.foot]).correctionRad>allowance+1e-6)return null;
+      trial=solved;
+     }
+     return trial;
+    };
+    if(length(desired)>1e-9){
+     let result=attempt(desired),amount=1;
+     for(let pass=0;!result&&pass<6;pass++){amount*=.5;result=attempt(mul(desired,amount));}
+     if(result)pose=result;
+    }
+   }
+  }
+  if(previous){
+   angularVelocity=legs.map(l=>mul(R.qlog(R.fromTo(unit(sub(previous.points[l.knee],previous.points[l.hip])),unit(sub(pose.points[l.knee],pose.points[l.hip])))),1/dt));
+   for(const l of legs){
+    metrics.maxKneeStep=Math.max(metrics.maxKneeStep,length(R.qlog(qm(pose.q[l.knee],qinv(previous.q[l.knee]))))*180/Math.PI);
+    metrics.maxAnkleStep=Math.max(metrics.maxAnkleStep,length(R.qlog(qm(pose.q[l.foot],qinv(previous.q[l.foot]))))*180/Math.PI);
+   }
+  }
+  previous=pose;return pose;
+ }
+ return {step,reset(){previous=null;angularVelocity=[[0,0,0],[0,0,0]];}};
+}
 // Shared contact/leg solver. Call step in chronological order at120Hz.
 // Root motion and the terrain query belong to the host; all foot rules live here.
 function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
  const fresh=()=>({pin:null,released:null,lastTarget:null,lastRotation:null,lastVelocity:[0,0,0]});
  const footState=[fresh(),fresh()],events=[];
- let serial=0,previous=null;
+ const arrival=createArrivalPosture(names,parents,terrain);
+ let jointLimits;
+ let serial=0,previous=null,load={x:[0,0,0],v:[0,0,0]};
  function step({baseline,terrainPose,source:p,sourceLegs,stance,untilPlant,time,frame=time*60,normal,surfaceQ,height,velocity,terrainWeight=1,enabled=s.enabled,wallExpired=false,steep=false,allowPins=true,pelvisShift=null}){
   const fps=120,dt=1/fps,feet=[],supports=[];let pose=baseline;
-  if(!terrain.surfaces.length){for(let side=0;side<2;side++){const state=footState[side],l=sourceLegs[side];if(state.pin)events.push({frame,type:'release',side:l.side,surface:state.pin.surface.id,reason:'surface-removed'});state.pin=null;state.released=null;state.lastTarget=null;state.lastRotation=null;feet.push({side:l.side,state:'SWING',target:baseline.points[l.foot],contact:null,error:0,penetration:0,soleGap:Infinity});}previous=baseline;return {pose:baseline,feet,supports};}
+  if(!terrain.surfaces.length){for(let side=0;side<2;side++){const state=footState[side],l=sourceLegs[side];if(state.pin)events.push({frame,type:'release',side:l.side,surface:state.pin.surface.id,reason:'surface-removed'});state.pin=null;state.released=null;state.lastTarget=null;state.lastRotation=null;feet.push({side:l.side,state:'SWING',target:baseline.points[l.foot],contact:null,error:0,penetration:0,soleGap:Infinity});}arrival.reset();load={x:[0,0,0],v:[0,0,0]};previous=baseline;return {pose:baseline,feet,supports};}
   // Move hip anchors and torso before solving the legs. Targets/carrier remain
   // the original NN feet, so this posture edit cannot translate material pins.
-  if(enabled&&pelvisShift&&length(pelvisShift)>0)pose={...baseline,points:baseline.points.map((v,i)=>i?add(v,pelvisShift):v)};
+  // A fast foot stopping on a new plane briefly loads the pelvis. Absorb a
+  // little of that velocity change before returning to the authored pose;
+  // filtering the leg after IK would instead move its material contact.
+  if(!enabled)load={x:[0,0,0],v:[0,0,0]};
+  const omega=35,decay=Math.exp(-omega*dt),loadRate=add(load.v,mul(load.x,omega));
+  load.x=mul(add(load.x,mul(loadRate,dt)),decay);load.v=mul(sub(load.v,mul(loadRate,omega*dt)),decay);
+  if(enabled&&length(load.x)>1e-10)pose={...baseline,points:baseline.points.map((v,i)=>i?add(v,load.x):v)};
+  if(enabled&&pelvisShift&&length(pelvisShift)>0)pose={...pose,points:pose.points.map((v,i)=>i?add(v,pelvisShift):v)};
   for(let side=0;side<2;side++){
-   const supportCount=supports.length;
+   const supportCount=supports.length;let acquired=false;
    const state=footState[side],l=S.leg(pose,names,side===0?'L':'R'),sourceLeg=sourceLegs[side],sourceFrame=S.footFrame(p,sourceLeg.foot,sourceLeg.toe,sourceLeg.side);
+   const sourceReach=length(sub(baseline.points[l.foot],baseline.points[l.hip]));
+   const safeReach=Math.max(K.softReach(l.reach,l.reach),sourceReach),reachRatio=safeReach/l.reach;
    // Carry the source's stabilized anatomical hinge with its thigh. Rebuilding
    // it from the tilted pelvis reverses knees; a straight leg's geometric
    // cross-product alone is undefined and can flip at the next bent sample.
@@ -165,8 +260,21 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
    const carrier=state.lastBaseline?mul(sub(baseline.points[l.foot],state.lastBaseline),fps):velocity;
    let target=add(baseline.points[l.foot],mul(sub(terrainPose.points[l.foot],baseline.points[l.foot]),terrainWeight)),rotation={footQ:qslerp(baseline.q[l.foot],terrainPose.q[l.foot],terrainWeight),toeQ:qslerp(baseline.q[l.toe],terrainPose.q[l.toe],terrainWeight)};
    const desired=terrain.pick(target),surface=desired.surface,tooSteep=surface.id==='incline'&&steep,canAttach=enabled&&allowPins&&!(tooSteep&&wallExpired);
-   const sourcePitch=Math.asin(clamp(sourceFrame.forward[1],-1,1)),heading=rotate(surfaceQ,unit([sourceFrame.forward[0],0,sourceFrame.forward[2]]));
-   const contactRotation=footRotation(pose,l,surface.normal,heading,0),captureFrom=state.lastTarget||target,captureRotation=state.lastRotation||rotation;
+   const sourcePitch=Math.asin(clamp(sourceFrame.forward[1],-1,1));
+   // Carry heading into the new tangent plane before aligning the shoe.
+   // Merely projecting the old forward ray onto a perpendicular wall turns
+   // its small toe-out component into an almost sideways landing direction.
+   const surfaceTurn=R.fromTo(rotate(surfaceQ,up),surface.normal),heading=rotate(surfaceTurn,rotate(surfaceQ,unit([sourceFrame.forward[0],0,sourceFrame.forward[2]])));
+   // Acquire the contact at this tick's ankle, not the previous displayed
+   // ankle. Reusing lastTarget pulled a fast wall step backwards on capture.
+   const contactRotation=footRotation(pose,l,surface.normal,heading,0),captureRotation=state.lastRotation||rotation;
+   let captureFrom=target;
+   if(state.lastTarget){
+    const relative=state.lastRelativeVelocity||[0,0,0],want=bounded(mul(sub(target,add(state.lastTarget,mul(carrier,dt))),30),s.gait==='run'?8:5);
+    const next=add(relative,bounded(sub(want,relative),(s.gait==='run'?110:80)*dt));
+    captureFrom=add(state.lastTarget,mul(add(carrier,next),dt));
+   }
+   captureFrom=constrain(pose,l,captureFrom,captureRotation,terrain.surfaces,reachRatio);
    const fitted=fit(pose,l,captureFrom,captureRotation,surface);
    let surfaceRemoved=state.pin&&!terrain.surfaces.some(s=>s.id===state.pin.surface.id);
    if(surfaceRemoved&&state.lastContact){
@@ -182,13 +290,14 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
    if(state.pin&&(!stance[side]||!canAttach||surfaceRemoved)){
     state.released={time,point:state.lastTarget,rotation:state.lastRotation,velocity:state.lastVelocity};events.push({frame:frame,type:'release',side:l.side,surface:state.pin.surface.id,reason:!allowPins?'root-speed':surfaceRemoved?'surface-removed':!canAttach?'support-budget':'gait'});state.pin=null;
    }
-   const d=dot(sub(target,fitted.target),surface.normal),reach=length(sub(fitted.target,pose.points[l.hip])),captureDistance=length(sub(captureFrom,fitted.target));
+   const captureProbe=state.lastTarget||target,probeFit=fit(pose,l,captureProbe,captureRotation,surface);
+   const d=dot(sub(target,fitted.target),surface.normal),reach=length(sub(fitted.target,pose.points[l.hip])),captureDistance=length(sub(captureProbe,probeFit.target));
    // With no requested surface correction, acquire the NN's actual contact
    // rather than pulling a still-airborne shoe several centimetres down. The
    // acquisition envelope grows continuously with the requested terrain delta.
    const captureRadius=.005+Math.min(.03,length(sub(terrainPose.points[l.foot],baseline.points[l.foot]))*terrainWeight);
    if(!state.pin&&stance[side]&&canAttach&&captureDistance<captureRadius&&reach<l.reach*.9999&&(!state.released||time-state.released.time>.12)){
-    state.pin=capture(pose,l,fitted.target,captureRotation,surface,++serial);state.pin.yaw=K.createPinYaw(surface.normal,s.footYawLimit??45);state.released=null;events.push({frame:frame,type:'plant',side:l.side,surface:surface.id});
+    state.pin=capture(pose,l,fitted.target,captureRotation,surface,++serial);state.pin.yaw=K.createPinYaw(surface.normal,s.footYawLimit??45);state.released=null;acquired=true;events.push({frame:frame,type:'plant',side:l.side,surface:surface.id});
    }
    let contact=null;
    if(state.pin){
@@ -199,11 +308,16 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
     // AND this reach correction share one300deg/s budget.
     // The former94% target forced roughly40 degrees of knee bend even when
     // the NN was legitimately extended. Preserve its extension allowance.
-    const preferredReach=Math.max(l.reach*.985,length(sub(baseline.points[l.foot],baseline.points[l.hip])));
-    if(best>preferredReach){
+    const preferredReach=safeReach;
+    // Roll an existing material contact before the knee reaches its straight
+    // singularity. The short hip forecast only chooses the pivot direction;
+    // it never changes the incoming pose, contact acquisition or root path.
+    const hipNow=pose.points[l.hip],hipVelocity=previous?mul(sub(hipNow,previous.points[l.hip]),fps):velocity,nextHip=add(hipNow,mul(hipVelocity,.06));
+    const forecastDistance=r=>Math.max(length(sub(r.foot,hipNow)),length(sub(r.foot,nextHip)));
+    if(forecastDistance(roll)>preferredReach){
      const natural=pin.angle,lo=Math.max(-44,previousAngle-maxAngleStep),hi=Math.min(70,previousAngle+maxAngleStep),goal=preferredReach,angles=[lo,hi,natural];
      for(let a=Math.ceil(lo*2)/2;a<hi;a+=.5)angles.push(a);
-     const candidates=angles.map(angle=>{const r=pin.sample(angle);return {angle,r,distance:length(sub(r.foot,pose.points[l.hip]))};}).filter(c=>c.r.valid&&c.distance<best-1e-8);
+     const candidates=angles.map(angle=>{const r=pin.sample(angle);return {angle,r,distance:forecastDistance(r)};}).filter(c=>c.r.valid&&c.distance<forecastDistance(roll)-1e-8);
      candidates.sort((a,b)=>a.distance<=goal&&b.distance<=goal?Math.abs(a.angle-natural)-Math.abs(b.angle-natural):a.distance<=goal?-1:b.distance<=goal?1:a.distance-b.distance);
      for(const candidate of candidates){
       const test=K.solve(pose,l,candidate.r.foot,parents,candidate.r.rotation),relative=qm(qinv(test.q[l.knee]),test.q[l.foot]),sourceRelative=qm(qinv(sourceLeg.kneeQ),sourceLeg.footQ);
@@ -213,10 +327,11 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
      }
     }
     metrics.maxPinAngleStep=Math.max(metrics.maxPinAngleStep,Math.abs(pin.angle-previousAngle));
-    roll=pin.yaw(roll,pose,l,r=>penetration(shoePose(pose,l,r.foot,r.rotation),l,terrain.surfaces)<1e-5);
+    const bodyForward=rotate(p.q[l.pelvis],[0,-1,0]),bodyHeading=rotate(surfaceTurn,rotate(surfaceQ,unit([bodyForward[0],0,bodyForward[2]])));
+    roll=pin.yaw(roll,pose,l,r=>penetration(shoePose(pose,l,r.foot,r.rotation),l,terrain.surfaces)<1e-5,dt,bodyHeading);
     best=length(sub(roll.foot,pose.points[l.hip]));
     const yawBlocked=roll.blocked&&Math.abs(roll.yawError)>(s.footYawLimit??45);
-    if(!roll.valid||best>l.reach*.995||yawBlocked){state.released={time,point:state.lastTarget||roll.foot,rotation:state.lastRotation||roll.rotation,velocity:state.lastVelocity};events.push({frame:frame,type:'release',side:l.side,surface:pin.surface.id,reason:yawBlocked?'yaw-clearance':'reach'});state.pin=null;}
+    if(!roll.valid||best>safeReach||yawBlocked){state.released={time,point:state.lastTarget||roll.foot,rotation:state.lastRotation||roll.rotation,velocity:state.lastVelocity};events.push({frame:frame,type:'release',side:l.side,surface:pin.surface.id,reason:yawBlocked?'yaw-clearance':'reach'});state.pin=null;}
     else {target=roll.foot;rotation=roll.rotation;contact={surface:pin.surface.id,point:roll.contact,local:pin.surface.local(roll.contact),normal:pin.surface.normal,localPoint:rotate(qinv(rotation.footQ),sub(roll.contact,target)),stanceId:pin.id,angle:pin.angle,valid:true};if(roll.yaw)Object.assign(contact,{yaw:roll.yaw,yawError:roll.yawError,pivotKind:roll.pivotKind});supports.push({normal:pin.surface.normal,surface:pin.surface,point:roll.contact});}
    }
    if(!state.pin){
@@ -224,7 +339,33 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
     // turns its sole to the surface. No late world-rotation snap on release.
     const b=1-smooth(Math.max(0,d)/.20),natural={footQ:baseline.q[l.foot],toeQ:baseline.q[l.toe]};
     rotation={footQ:qslerp(natural.footQ,rotation.footQ,b),toeQ:qslerp(natural.toeQ,rotation.toeQ,b)};
-    if(canAttach){const landing=1-smooth(untilPlant[side]/.14);rotation={footQ:qslerp(rotation.footQ,contactRotation.footQ,landing),toeQ:qslerp(rotation.toeQ,contactRotation.toeQ,landing)};}
+    if(canAttach){
+     // A newly encountered plane owns landing orientation immediately. The
+     // gait's downward-foot clock is in its old ground frame and can report
+     // infinity while this shoe is already approaching a wall. Fade this
+     // geometric cue away once the gait frame agrees with the contact plane.
+     const changedPlane=smooth(clamp((1-dot(rotate(surfaceQ,up),surface.normal))/(1-Math.cos(Math.PI/12)),0,1));
+     const approach=changedPlane*(1-smooth(Math.max(0,d)/.20)),landing=Math.max(1-smooth(untilPlant[side]/.14),approach);
+     rotation={footQ:qslerp(rotation.footQ,contactRotation.footQ,landing),toeQ:qslerp(rotation.toeQ,contactRotation.toeQ,landing)};
+     // The nearest plane can still be the floor while the swinging toe is
+     // about to meet a wall. Sweep its existing motion over the same landing
+     // window, preparing orientation only; contact/reach keep their own rules.
+     let upcoming=null,arrival=.14;
+     const corners=S.footPoints(shoePose(pose,l,target,rotation),l.foot,l.toe,l.side);
+     for(const plane of terrain.surfaces){
+      if(dot(plane.normal,surface.normal)>Math.cos(Math.PI/12))continue;
+      const closing=-dot(carrier,plane.normal);if(closing<=1e-5)continue;
+      for(const offset of corners){const point=add(target,offset),gap=dot(sub(point,plane.origin),plane.normal),eta=gap/closing;
+       if(eta<0||eta>=arrival)continue;
+       const hit=add(point,mul(carrier,eta));if(length(sub(hit,plane.closest(hit)))>1e-5)continue;
+       upcoming=plane;arrival=eta;
+      }
+     }
+     if(upcoming){
+      const turn=R.fromTo(rotate(surfaceQ,up),upcoming.normal),forward=rotate(turn,rotate(surfaceQ,unit([sourceFrame.forward[0],0,sourceFrame.forward[2]]))),anticipated=footRotation(pose,l,upcoming.normal,forward,0),w=1-smooth(arrival/.14);
+      rotation={footQ:qslerp(rotation.footQ,anticipated.footQ,w),toeQ:qslerp(rotation.toeQ,anticipated.toeQ,w)};
+     }
+    }
     if(state.released&&state.released.point){
      if(state.released.deltaFoot===undefined){state.released.deltaFoot=qm(state.released.rotation.footQ,qinv(rotation.footQ));state.released.deltaToe=qm(state.released.rotation.toeQ,qinv(rotation.toeQ));}
      const elapsed=time-state.released.time,u=clamp(elapsed/.18,0,1),w=1-smooth(u);
@@ -236,11 +377,29 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
     // Collision is solved against shoe volume on the actual plane; never lift
     // along world Y on an inclined surface.
     const shaped=shoePose(pose,l,target,rotation),points=S.footPoints(shaped,l.foot,l.toe,l.side);
+    // Spread the new plane's clearance correction over the swing approach.
+    // This vanishes at the plane and outside the short closing window; it
+    // cannot offset a held pin or alter the NN on its existing ground plane.
+    if(canAttach&&!stance[side])for(const plane of terrain.surfaces){
+     const turn=smooth((1-dot(plane.normal,rotate(surfaceQ,up)))/(1-Math.cos(Math.PI/12)));
+     if(!turn)continue;
+     const closing=-dot(carrier,plane.normal),buffer=Math.min(.3,Math.max(0,closing*.12));
+     if(!buffer)continue;
+     let gap=Infinity;const [x0,x1,z0,z1]=plane.bounds;
+     for(const offset of points){const local=plane.local(add(target,offset));if(local[0]>=x0&&local[0]<=x1&&local[2]>=z0&&local[2]<=z1)gap=Math.min(gap,local[1]);}
+     if(gap>0&&gap<buffer)target=add(target,mul(plane.normal,turn*gap*(1-gap/buffer)**2));
+    }
     const depth=Math.min(...points.map(o=>dot(sub(add(target,o),surface.closest(add(target,o))),surface.normal)));
     if(depth<0&&!wallExpired&&(!surface.finiteSlab||surface.local(target)[1]>=-surface.box.dims[1]))target=add(target,mul(surface.normal,-depth+.001));
    }
    if(!enabled){target=baseline.points[l.foot];rotation={footQ:baseline.q[l.foot],toeQ:baseline.q[l.toe]};contact=null;}
-   if(!contact&&state.lastRotation){for(const key of ['footQ','toeQ']){const angle=length(R.qlog(qm(rotation[key],qinv(state.lastRotation[key])))),limit=600*Math.PI/180*dt;if(angle>limit)rotation[key]=qslerp(state.lastRotation[key],rotation[key],limit/angle);}}
+   if(!contact&&state.lastRotation){for(const [key,index] of [['footQ',l.foot],['toeQ',l.toe]]){
+    // Limit the added terrain turn, not the NN's own ankle swing. A world
+    // rotation cap lagged behind the running gait before it even met the wall.
+    const carried=state.lastBaselineRotation?qm(qm(baseline.q[index],qinv(state.lastBaselineRotation[key])),state.lastRotation[key]):state.lastRotation[key];
+    const angle=length(R.qlog(qm(rotation[key],qinv(carried)))),limit=600*Math.PI/180*dt;
+    if(angle>limit)rotation[key]=qslerp(carried,rotation[key],limit/angle);
+   }}
    metrics.maxRequestedReachExcess=Math.max(metrics.maxRequestedReachExcess,length(sub(target,pose.points[l.hip]))-l.reach*.985);
    if(!contact){
     if(state.lastTarget){
@@ -248,7 +407,7 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
      const nextVelocity=add(relative,bounded(sub(want,relative),(s.gait==='run'?110:80)*dt));
      target=add(state.lastTarget,mul(add(carrier,nextVelocity),dt));state.lastRelativeVelocity=nextVelocity;
     }
-    target=constrain(pose,l,target,rotation,terrain.surfaces,Math.max(.985,length(sub(baseline.points[l.foot],baseline.points[l.hip]))/l.reach));
+    target=constrain(pose,l,target,rotation,terrain.surfaces,reachRatio);
    }else state.lastRelativeVelocity=sub(state.lastVelocity,carrier);
    const solveTarget=(point,rot)=>solvePole(pose,l,point,parents,rot,previous,state,dt);
    let solved=solveTarget(target,rotation);
@@ -257,9 +416,28 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
    if(ankleDifference>ankleLimit){
     if(contact){supports.pop();state.pin=null;contact=null;metrics.ankleReleases++;events.push({frame:frame,type:'release',side:l.side,surface:surface.id,reason:'ankle-limit'});}
     const blend=ankleLimit/ankleDifference;rotation={footQ:qslerp(naturalFoot,rotation.footQ,blend),toeQ:qslerp(naturalToe,rotation.toeQ,blend)};
-    target=constrain(pose,l,target,rotation,terrain.surfaces,Math.max(.985,length(sub(baseline.points[l.foot],baseline.points[l.hip]))/l.reach));solved=solveTarget(target,rotation);
+    target=constrain(pose,l,target,rotation,terrain.surfaces,reachRatio);solved=solveTarget(target,rotation);
    }
-   if(contact&&penetration(solved,l,terrain.surfaces)>1e-4){supports.pop();state.pin=null;contact=null;events.push({frame:frame,type:'release',side:l.side,surface:surface.id,reason:'shoe-collision'});target=constrain(pose,l,target,rotation,terrain.surfaces,Math.max(.985,length(sub(baseline.points[l.foot],baseline.points[l.hip]))/l.reach));solved=solveTarget(target,rotation);}
+   if(contact&&penetration(solved,l,terrain.surfaces)>1e-4){supports.pop();state.pin=null;contact=null;events.push({frame:frame,type:'release',side:l.side,surface:surface.id,reason:'shoe-collision'});target=constrain(pose,l,target,rotation,terrain.surfaces,reachRatio);solved=solveTarget(target,rotation);}
+   // Ground alignment must obey the actual calf-relative ankle constraint.
+   // A world-space shoe can be close to the NN shoe and still fold through
+   // the calf after leg IK. Alternate ankle projection and sole clearance.
+   // Preserve any residual already present in the NN, rather than modifying
+   // its untouched flat gait merely because the reference rig differs.
+   if(enabled){
+    jointLimits||=(typeof module!=='undefined'?require('./slide-joints.js'):root.SlideJoints).build(undefined,names,parents);
+    const allowance=jointLimits.project(l.foot,baseline.q[l.knee],baseline.q[l.foot]).correctionRad;
+    // Earlier wall alignment can need several tiny coupled leg/ankle repairs.
+    // Stop at the existing tolerance; leave room for convergence near contact.
+    for(let pass=0;pass<16;pass++){
+     const limited=jointLimits.project(l.foot,solved.q[l.knee],solved.q[l.foot]);
+     if(limited.correctionRad<=allowance+1e-6)break;
+     if(contact){supports.pop();state.pin=null;contact=null;metrics.ankleReleases++;events.push({frame,type:'release',side:l.side,surface:surface.id,reason:'ankle-limit'});}
+     const footQ=qslerp(limited.q,rotation.footQ,allowance/limited.correctionRad),delta=qm(footQ,qinv(rotation.footQ));
+     rotation={footQ,toeQ:qm(delta,rotation.toeQ)};
+     target=constrain(pose,l,target,rotation,terrain.surfaces,reachRatio);solved=solveTarget(target,rotation);
+    }
+   }
    pose=solved;
    const actual=pose.points[l.foot],error=length(sub(actual,target));
    const depth=penetration(pose,l,terrain.surfaces);
@@ -275,7 +453,12 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
      if(gap>=-1e-4&&gap<=.002){supports.push({normal:plane.normal,surface:plane,point:plane.closest(point)});break;}
     }
    }
-   const v=state.lastTarget?mul(sub(actual,state.lastTarget),fps):[0,0,0];metrics.maxFootSpeed=Math.max(metrics.maxFootSpeed,length(v));metrics.maxRelativeFootSpeed=Math.max(metrics.maxRelativeFootSpeed,length(sub(v,velocity)));state.lastVelocity=v;state.lastTarget=actual;state.lastRotation=rotation;state.lastBaseline=baseline.points[l.foot];
+   if(contact&&acquired){
+    const n=contact.normal,weight=smooth((1-dot(rotate(surfaceQ,up),n))/.5);
+    const rollVelocity=mul(sub(actual,fitted.target),fps),impact=sub(state.lastVelocity,rollVelocity),tangent=sub(impact,mul(n,dot(impact,n)));
+    load.v=bounded(sub(load.v,mul(tangent,.5*weight)),4);
+   }
+   const v=state.lastTarget?mul(sub(actual,state.lastTarget),fps):[0,0,0];metrics.maxFootSpeed=Math.max(metrics.maxFootSpeed,length(v));metrics.maxRelativeFootSpeed=Math.max(metrics.maxRelativeFootSpeed,length(sub(v,velocity)));state.lastVelocity=v;state.lastTarget=actual;state.lastRotation=rotation;state.lastBaseline=baseline.points[l.foot];state.lastBaselineRotation={footQ:baseline.q[l.foot],toeQ:baseline.q[l.toe]};
    // Constraint projection is not swing momentum; only a held pin supplies
    // the relative velocity to carry into departure.
    if(contact)state.lastRelativeVelocity=sub(v,carrier);
@@ -290,9 +473,31 @@ function createFeet({names,parents,terrain,settings:s,metrics=createMetrics()}){
    state.lastContact=contact;
    feet.push({side:l.side,state:contact?(Math.abs(contact.angle)>1?'ROLL':'PIN'):'SWING',target:actual,contact,error,penetration:depth,soleGap:dot(sub(actual,surface.closest(actual)),surface.normal)});
   }
-  previous=pose;return {pose,feet,supports};
+  previous=pose;
+  if(enabled){
+   const refined=arrival.step(pose,baseline,feet,surfaceQ,jointLimits,metrics);
+   if(refined!==pose){
+    pose=refined;supports.length=0;
+    for(let side=0;side<2;side++){
+     const l=sourceLegs[side],foot=feet[side];foot.target=pose.points[l.foot];foot.penetration=penetration(pose,l,terrain.surfaces);
+     const nearest=terrain.pick(foot.target).surface;foot.soleGap=dot(sub(foot.target,nearest.closest(foot.target)),nearest.normal);
+     metrics.maxPenetration=Math.max(metrics.maxPenetration,foot.penetration);
+     metrics.maxRelativeAnkleDegrees=Math.max(metrics.maxRelativeAnkleDegrees,length(R.qlog(qm(qm(qinv(pose.q[l.knee]),pose.q[l.foot]),qinv(qm(qinv(l.kneeQ),l.footQ)))))*180/Math.PI);
+     if(foot.contact){const c=foot.contact;supports.push({normal:c.normal,surface:footState[side].pin.surface,point:c.point});continue;}
+     // Free-shoe ankle repair can move its sole slightly. Report support only
+     // where the final shoe actually touches, not at the pre-refinement shoe.
+     const corners=S.footPoints(pose,l.foot,l.toe,l.side).map(o=>add(pose.points[l.foot],o));
+     for(const plane of terrain.surfaces){
+      const [x0,x1,z0,z1]=plane.bounds,points=corners.filter(v=>{const a=plane.local(v);return a[0]>=x0&&a[0]<=x1&&a[2]>=z0&&a[2]<=z1;});if(!points.length)continue;
+      const point=points.reduce((a,b)=>dot(a,plane.normal)<dot(b,plane.normal)?a:b),gap=dot(sub(point,plane.closest(point)),plane.normal);
+      if(gap>=-1e-4&&gap<=.002){supports.push({normal:plane.normal,surface:plane,point:plane.closest(point)});break;}
+     }
+    }
+   }
+  }else arrival.reset();
+  return {pose,feet,supports};
  }
- return {step,metrics,events,reset(){footState.splice(0,2,fresh(),fresh());previous=null;}};
+ return {step,metrics,events,reset(){footState.splice(0,2,fresh(),fresh());arrival.reset();previous=null;load={x:[0,0,0],v:[0,0,0]};}};
 }
 function createRootMotion({s,terrain,height,speed,gravity=9.81,enabled=true,metrics=createMetrics(),events=[]},saved=null){
  const dt=1/120,steep=terrain.slope.normal[1]<.45;

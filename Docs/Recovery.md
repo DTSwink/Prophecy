@@ -1,5 +1,27 @@
 # Restoring Prophecy
 
+## November 4 workspace and ProphecyAmbient checkpoint
+
+User requested a Git backup before further cleanup. Includes the current on-disk
+repository source, tools, tests, journals, SoundStudio and MetaSounds apps,
+Bodyflip/FootIK lab work, training scripts, and ProphecyAmbient birds, bumblebees,
+leaves and wind. All 74 authored Unreal asset files in the four module folders
+under Content/Prophecy/Creatures/{Birds,Bumblebee} and Ambient/{Leaves,Wind} are
+explicitly included, as are their source exports and existing edited foliage
+materials. Saved/WindTest/overlay_revert.json preserves the wind rollback recipe.
+The module registration and build targets are already tracked.
+
+This is an on-disk recovery checkpoint, not a new full build/test certification
+or a capture of unsaved editor state. Existing validation remains in topic docs.
+No editor/lab/training processes are restarted or stopped by this backup.
+Unreal's engine/plugins, other ignored marketplace Content, local environments,
+training datasets/checkpoints outside tracked files, audio libraries in Documents,
+and the separate Documents/Cursor/temp projects are NOT included. Do not delete
+those on the assumption this Git backup replaces them. In particular the ambient
+wind system references engine ProceduralVegetationEditor assets; keep required
+engine plugins installed. The refreshed snapshot manifest verifies committed bytes.
+
+
 ## November 2 complete workspace checkpoint and Bodyflip port
 
 The user requested all current repository work, including the accepted Bodyflip

@@ -6,6 +6,7 @@ ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'Saved/MimicKitSlowLoco';P=OUT
 os.environ['MIMICKIT_STATE_DIR']=str(OUT)
 sys.path.insert(0,str(ROOT/'Labs/MimicKitTraining'))
 import cloud
+from local_process import ServiceLock
 write=lambda p,x:Path(p).write_text(json.dumps(x,indent=2))
 sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
 FAR=253402300799
@@ -75,12 +76,13 @@ print(json.dumps(dict(guard_pids=existing)))
 def status():
     print(cloud.ssh('cd /workspace/mimickit_trial; tail -n 8 setup.log; test ! -f runtime-cache-restored.json || cat runtime-cache-restored.json',timeout=25))
 
-def launch(resume=None,replay_rows=8,run_kind="unperturbed"):
+def launch(resume=None,replay_rows=8,run_kind="unperturbed",replay_interval_seconds=None):
     assert json.loads((OUT/'preflight.json').read_text())['passed']
     name=datetime.now().strftime('%Y%m%d_%H%M%S')+'_uefn_slowloco_'+run_kind+'_2048'
     args=['--name',name,'--worlds','2048','--control-mode','vel','--absolute-walk','--evaluate',
           '--equipment-omni','/workspace/mimickit_trial/prepared','--replay-rows',str(replay_rows),'--seconds',str(FAR-int(time.time())),
           '--output-interval','100']
+    if replay_interval_seconds is not None:args += ['--replay-interval-seconds',str(replay_interval_seconds)]
     if resume is not None:args += ['--resume',str(resume)]
     code='''from pathlib import Path
 import json,subprocess,hashlib,time
@@ -115,6 +117,8 @@ r=Path('/workspace/mimickit_trial');d=r/'runs'/NAME
 s=json.loads((d/'status.json').read_text());b=json.loads((d/'backup_status.json').read_text())
 receipt=json.loads((r/(NAME+'-launch.json')).read_text())
 assert s['state']=='training' and s['iteration']>=10 and time.time()-s['updated_unix']<180
+assert not (d/'finished.json').exists(), 'Trainer has already finished'
+assert not b['key'].endswith('_final.zip'), 'Final checkpoint indicates completed shutdown'
 for key in ('pid','exit_guard_pid'):
  assert NAME.encode() in (Path('/proc')/str(receipt[key])/'cmdline').read_bytes()
 assert not (d/'failure.json').exists() and not (d/'backup_errors.json').exists()
@@ -135,12 +139,24 @@ print(json.dumps(dict(status=s,backup=b,receipt=receipt)))
     print(json.dumps(dict(iteration=live['status']['iteration'],samples=live['status']['samples'],backup_verified=True,until_stopped=True)),flush=True)
 
 def observe():
+    with ServiceLock(OUT/'observer-launch.lock'):
+        _observe()
+
+def _observe():
     name=json.loads((OUT/'active_run.json').read_text())['run']
     stamp=datetime.strptime(name[:15],'%Y%m%d_%H%M%S').strftime('%Y-%m-%d_%H-%M-%S')
     source=Path('C:/Users/singerie/Documents/Cursor/stepper/training/runs')/('mimickit_'+name)
     manifest=dict(output=str(ROOT/'Saved/MimicKit/TensorBoardRuns'),runtime_control=dict(path=str(OUT/'runtime_control.json'),pod_id=cloud.state()['pod_id']),
         runs=[dict(name=stamp+'_slow_loco_'+('disabled_curriculum' if 'disabled_curriculum' in name else 'unperturbed')+'_2048',objective='uefn_omni_absolute_walk',sources=[str(source)])])
+    manifest['owner_run']=name
     path=OUT/(name+'-dashboard.json');write(path,manifest);receipts={}
+    # Retire both launcher and worker, including orphaned historical observers.
+    # This only touches local observers in this state directory, never the pod.
+    cleanup=subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',
+        str(ROOT/'Labs/MimicKitTraining/stop_observers.ps1'),'-StateDir',str(OUT)],
+        capture_output=True,text=True,timeout=90,creationflags=subprocess.CREATE_NO_WINDOW)
+    if cleanup.returncode:
+        raise RuntimeError('Observer cleanup failed: '+cleanup.stderr)
     for kind,args in [('bridge',['--name',name]),('dashboard',[str(path)])]:
         with (OUT/(name+'-'+kind+'.log')).open('ab') as log:
             proc=subprocess.Popen([sys.executable,str(ROOT/'Labs/MimicKitTraining'/(kind+'.py'))]+args,

@@ -1,10 +1,11 @@
 'use strict';
 // Offline Bodyflip integration: no service calls, inference, physics worker,
-// editor, browser, or user-state writes. Slide helpers must remain host-only.
+// editor, browser, or user-state writes. The pure rig-limit helper is shared;
+// slide entry planning and arm simulation must remain host-only.
 const assert=require('node:assert/strict'),Module=require('node:module');
-const originalLoad=Module._load;let checks=0;
+const originalLoad=Module._load;let checks=0,jointLimitsLoaded=false;
 const check=(value,message)=>{assert.ok(value,message);checks++;};
-Module._load=function(request,...args){if(/(?:^|[/\\])slide-(?:entry|joints|arms)\.js$/.test(request))throw Error('Bodyflip shared IK loaded host-only '+request);return originalLoad.call(this,request,...args);};
+Module._load=function(request,...args){if(/(?:^|[/\\])slide-(?:entry|arms)\.js$/.test(request))throw Error('Bodyflip shared IK loaded host-only '+request);if(/(?:^|[/\\])slide-joints\.js$/.test(request))jointLimitsLoaded=true;return originalLoad.call(this,request,...args);};
 try{
  const Surface=require('./surface.js'),R=require('../BodyflipLab/recovery.js'),S=require('../BodyflipLab/support.js'),Capsule=require('../BodyflipLab/capsule.js'),IK=require('../BodyflipLab/foot-ik.js'),Flight=require('../BodyflipLab/flight.js'),Bank=require('./test-bank.cjs');
  check(Surface.apiVersion===1,'Shared API version unchanged');
@@ -26,5 +27,6 @@ try{
   check(active>200&&contacts>0,'Shared terrain IK and contacts active');check(boneError<1e-8,'Bone lengths retained');check(minGap>-.0001,'Shoes clear surface');check(kneeStep<15,'Bounded knee motion');
   const exact=JSON.stringify(adapted.sample(1.123));adapted.sample(.2);adapted.sample(2.4);check(JSON.stringify(adapted.sample(1.123))===exact,'Reverse seeking deterministic');cases.push({gait,approach,active,contacts,boneError,minGap,kneeStep});
  }
- console.log(JSON.stringify({passed:true,checks,hostHelpersLoaded:false,cases}));
+ check(jointLimitsLoaded,'Shared ankle placement uses the canonical rig limits');
+ console.log(JSON.stringify({passed:true,checks,hostHelpersLoaded:false,jointLimitsLoaded,cases}));
 }finally{Module._load=originalLoad;}

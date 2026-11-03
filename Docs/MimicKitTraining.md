@@ -1,53 +1,124 @@
 # MimicKit humanoid trial
 
-**November 2 isolated crawl trial — NOT RUNNING; awaiting authorized replacement capacity.**
-Capacity automation ACTIVE: launch-isolated-crawl-experiment-on-rtx-4000-ada,
-every60seconds, explicitly authorized after replacement unavailability. Follow
-this current section, not historical instructions below. Reconcile provider and
-local receipts before allocating; exactly ONE replacement at <=$0.28/h, check
-Community and Secure. Stay quiet while unavailable/unchanged. Notify verified
-launch, meaningful failure or required user action only. Pause this schedule
-once launch is fully verified, on unresolved setup failure or user cancellation.
-Keep setup bounded20minutes with BOTH local/remote controls identical. If setup
-cannot complete, stop only owned replacement and confirm provider EXITED.
-Never allocate another pod over an existing replacement. Existing original
-5xs589fdlcb7nr and stopped vpv6saq7zyooak/disk must be left untouched.
-Working directory C:/Users/singerie/Documents/Unreal Projects/Prophecy; Python
-Saved/Robotics/env/Scripts/python.exe. Upload main20414 with replacement helper;
-use deploy_crawl_only_experiment.py for this trial, NOT old disabled-curriculum
-launch helpers. After setup preflight/stage/launch/audit/verify, check local
-TB8035 reward cards and8021 replay, then report verified launch and pause.
+**Journal routing:** [Standalone training journal](../TrainingJournal.md) owns training status and experiment history.
+Do not append training-only updates to ProjectJournal.md; reserve it for actual
+Unreal integration and native compatibility notes. This topic keeps technical details.
 
-Main final20414 is safe locally and persistent; exact original main source/configs
-are archived for rollback. Main checkpoint SHA
+**November 3 current training:** Crawl pelvis radius55cm, recenters every200ticks; latest21779
+resumed and advancing on the retained pod. See [training journal](../TrainingJournal.md)
+and [slow-loco handoff](../Labs/RoboticMotionAE/SlowLocoPolicy.md) for verified state.
+
+**November 2 user cancellation — PRE-GRIP CRAWL RESTORED AND VERIFIED RUNNING.**
+User cancelled grip3/elbow150 branch and requested the previous learner back,
+keeping five-minute replays. Restore PRE-CHANGE20726_final (not new branch weights),
+SHA49dd4d875e5c9b17dee0d0a4b233c8ade3a232fc9b19012b8ea4f6b3d45165b9.
+Run `20261102_232738_uefn_slowloco_disabled_curriculum_crawl_signed5_restored_2048`, trainer4979/guard4980.
+Retained same pod9snbu59mla2xcd ($0.28/hour). Source is byte-identical to previous220414
+package except train.py/base_agent.py replay cadence hooks. All three configs
+match20726 checkpoint exactly. Ground friction returns to1; elbows return to70Nm.
+No new GPU/sweeps. Main20414 remains protected and paused. Source inventory,
+exact previous engine/env/agent configs,160obs,restored optimizers/normalizer,
+8 independent replay reconstructions and persistent checkpoint SHA readback pass.
+20727->20737 verified; both setup controls released to until-stopped, then live
+training log advances to20741/1359347712samples. TB8035 run23-27-38 and replayer8021
+serve the restored run. Five-minute output flag verified; cadence implementation
+is unchanged from the preceding observed5m13s interval. Cancelled branch final
+checkpoint retained persistently for possible later use; none of its weights used.
+Source SHAfcd3f0fc8369004cf633677d2d672703e2d6addab459ffa6e7f73006c5123650.
+Receipts: Saved/MimicKitSlowLoco/restore-crawl-baseline-20261102/.
+
+**November 2 grip/elbow experiment — CANCELLED BY USER; historical verification below.**
+Run `20261102_231246_uefn_slowloco_disabled_curriculum_crawl_grip3_elbow150_2048` on retained RTX4000Ada
+pod9snbu59mla2xcd ($0.28/hour), trainer4313/guard4314.
+Resumed latest20726_final; actor/critic optimizer/normalizer continuation checked
+by training resume path. Advancing20727->20737/1359085568samples verified.
+Hands AND forearms ground friction x3; elbows70->150Nm. Shoulders, wrists,
+dead-limb mass, reward, curriculum and all other settings unchanged.
+Output evaluation/checkpoint cadence now300wall-clock seconds at PPO boundaries;
+publication includes evaluation time and bridge polling. This is not an iteration
+approximation. Source SHAd2fa7aeeefd8cf49dfb0f89e1f6828a6797e28701c76c3e2a91709cec7d85b3d.
+32-world/32tick actual-checkpoint smoke checked finite simulation, exact solver
+manifold friction on all four intended bodies, unchanged self/other contacts and
+150Nm elbow envelopes. No sweeps/new GPUs. First launch failed a strict resume
+config comparison before updates; bounded setup guard retained GPU. Added exact
+named x3 allowance and relaunched from same20726. Source inventory,160-observation model, optimizer/normalizer restore,8 independent
+replay loss reconstructions and persistent checkpoint SHA readback all pass.
+Both setup controls released to until-stopped. Post-release20737->20747 and
+1359740928samples verified. Replay20727->20743 generated312.892seconds apart
+(5m13s); both captures are served by replayer8021. TB8035 lists23-12-46 run.
+Only the retained GPU is used; no improvement in learned crawling is claimed.
+Latest20726 downloaded and SHA verified: 49dd4d875e5c9b17dee0d0a4b233c8ade3a232fc9b19012b8ea4f6b3d45165b9.
+Main20414 remains separately preserved and SHA reverified; never resume main
+from experimental weights. Receipts: Saved/MimicKitSlowLoco/grip3-elbow150-20261102/.
+
+**November 2 crawl traction investigation — EXTRA TRIALS CANCELLED; ANALYSIS ONLY.**
+User explicitly rejected further trial launches and requested simple mechanical
+analysis. Sent SIGTERM ONLY to owned queue2839/2840 and trial2841/2842;
+confirmed nvidia-smi shows ONLY original trainer1276, live20576/1348534272samples.
+No new GPU allocated; no production physics/reward/source/settings changed.
+Do not restart this queue or launch further tests without a new user instruction.
+Remote cancelled.json and local cancelled-and-analysis.json supersede any old
+adaptation-current.json/runner instructions. The four-way adaptation comparison
+was NOT completed; do not claim adapted-policy results or a winning setup.
+
+Recorded evidence retained under Saved/MimicKitSlowLoco/crawl-traction-20261102
+and the same directory on /workspace/mimickit_trial. Pinned20426 replay includes
+row3/227ticks. Initial positions match exactly; matched rerun trajectories are
+not bit-identical (up to2.8cm first30frames). Frozen-policy probes measure slip
+response ONLY, not learnability; fixed IK pulls are short strokes, not gait proof.
+
+Simple conservative static estimate for matched row3, frames150–210:
+hands support262.8N (right236.7,left26.1), legs304.2N, forearms200.3N.
+If palms anchor while other surfaces resist at mu1, break-even palm mu is
+(304.2+200.3)/262.8=1.92. Using proportional hand load allocation and frame169
+joint lever arms plus arm gravity gives right elbow~97Nm versus current70Nm;
+shoulder local components peak~65Nm versus100Nm, wrist~26Nm versus50Nm.
+This excludes helpful forearm contact moments and is NOT an exact capacity
+certificate or globally minimal modification. Targeted candidate, NOT DEPLOYED:
+palm friction2.0, elbow cap100Nm, keep dead-leg mass, shoulder100 and wrist50.
+A20% dead-leg mass reduction removes only4.9kg/~48N; it is less targeted than
+fixing palm grip and the loaded elbow. Recommendation must not be described as
+proven to generate sustained crawling. Helpers and raw probe traces retained.
+
+**November 2 isolated crawl experiment — resumed after setup-deadline shutdown.**
+Current run `20261102_220414_uefn_slowloco_disabled_curriculum_crawl_only_signed5_2048`
+on the SAME Secure RTX4000Ada pod `9snbu59mla2xcd` at $0.28/hour;
+trainer1276/exitguard1277, bridge58068/dashboard29400. No extra GPU allocated.
+Resumed experiment20425_final with actor/critic optimizers and160-observation
+normalizer restored. Exact experimental source/settings retained: all2048 rows
+moving crawl, both legs passive/code12, both arms enabled,50% target playback;
+signed displacement bonus5 outside exp(-loss), failure penalty500, pelvis sphere
+0.8m resetting130ticks. Source SHA
+f81a30bc10656a74b80da46222455a847decddc70902b4d85254b7973f6c0299.
+
+The previous21-39-50 run stopped gracefully at20425 because the bounded setup
+deadline reached its165-second shutdown reserve before verification released it.
+It was NOT a storage-full crash. The old verification accepted a process during
+final shutdown; that did not prove continuing training. The pod remained paid.
+Verification now rejects finished.json and final-checkpoint backup receipts;
+require advancing statuses AFTER releasing both setup controls, not just before.
+Post-release advancing status verified at20516 /1344602112samples.
+Current source hashes,160obs,8 independent replay loss reconstructions and new
+persistent checkpoint SHA readback pass. Both controls now until-stopped.
+TB8035 run22-04-14 has the four crawl reward/speed cards; replayer8021 serves8 rows.
+This proves run health, NOT learned improvement.
+
+MAIN REMAINS PAUSED at20414. Resume the main run later from MAIN20414 and archived
+main-source.zip/configs, NEVER experimental weights. Main checkpoint SHA
 cd4e1569da103b8ab07e2cbd265e0b21415e41e138e0402b984a74837320f99f.
-Trial2048 rows all moving crawl/code12/both legs passive, existing random starts,
-50% target speed and signed displacement bonus passed full GPU preflight:
-three finite PPO updates from20414,36864 termination boundaries,8 independent
-replay reconstructions. Reward zero at rest,5 at target,negative backward/large
-lateral error; no positive credit for zero-net rocking. Existing physics,
-500failure penalty,0.8m pelvis sphere/130tick windows preserved.
-Production launch20-56-23 FAILED before training: train.py resume guard lacked
-explicit allowance for slow_loco_crawl_only_experiment. Agent also armed only
-remote setup watchdog, leaving local guard in until-stopped mode. Local fallback
-stopped podvpv6saq7zyooak on failure. Provider confirms EXITED; same-host restart
-refused for no free GPU. No experiment checkpoint was promoted.
-Config exception is now implemented and exact YAML delta checked. Launch helper
-now requires identical local/remote bounded setup guards, matching pod and price.
-Corrected source790d41c8f061b26d496738d2e924394b8e85dcf1f80f2a5ac721d817207acd1a
-is locally and persistently verified, NOT installed on running hardware.
-User AUTHORIZED ONE replacement RTX4000Ada <=$0.28/h. Initial Community and Secure
-attempts both unavailable; no replacement allocated. Preserve both stopped pods
-and their disks; never restart them alongside a replacement or touch other pods.
-Helpers: replace_crawl_experiment_pod.py allocate/upload_resume;
-deploy_slow_policy.py setup; deploy_crawl_only_experiment.py preflight/stage/
-launch/audit/verify. Allocation helper reconciles named replacements first.
-Before launch require actual-checkpoint2048world preflight on new GPU, both setup
-guards armed and same deadline, two advancing finite statuses,160obs/flags,
-8 independent live replays, persistent readback and telemetry, then release
-setup deadline. Main resumes later from MAIN20414 plus main-source.zip, never
-experimental weights. Receipts/rollback.json: Saved/MimicKitSlowLoco/
-crawl-only-experiment-20261102/. Do not claim launch until deployment-verified.json.
+Main source SHA5f07346b7b396477ff80d2b312732caf7a2a5e5551f111110248310022429032.
+Main20414 was downloaded AGAIN and hash/ZIP verified before deleting anything;
+it exists both in preserved-latest and crawl-relaunch-20261102 locally.
+Experiment20425_final also downloaded/hash/ZIP verified, SHA
+b2ac50804f77cc9422908145543cdca3648382fb9192d963f48713858d2d77dd.
+Removed82 intermediate persistent checkpoint archives,2775938677bytes(2.59GiB),
+and2 matching local pod intermediates(61504182bytes). Retained all final archives,
+each run's latest_verified checkpoint, local preserved pins, MAIN20414 and
+experiment20425_final; verified protected keys still exist after cleanup.
+Receipts/downloads: Saved/MimicKitSlowLoco/crawl-relaunch-20261102/.
+Main rollback package: Saved/MimicKitSlowLoco/crawl-only-experiment-20261102/.
+Preserve stopped5xs589fdlcb7nr andvpv6saq7zyooak/disks; no restart alongside this pod.
+Capacity automation was deleted after the earlier launch; no allocation required.
 
 **November 2 moving-crawl legs-only — VERIFIED RUNNING.**
 Moving crawl (`crawl`, not `crawl_idle`) now always has both arms enabled.

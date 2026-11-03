@@ -3,6 +3,145 @@
 Independent kinematic terrain-placement prototype, created October 25, 2026
 from the Bodyflip Lab renderer, cached NN gait banks and leg solver.
 
+## November 3 F16–19 thigh continuity follow-up
+
+The earlier clearance/impact response still let the thigh accelerate sharply
+into the wall pin and immediately reverse. Shared feet now also solve a small
+pelvis accommodation for a damped thigh-direction pursuit near a different
+support plane. Both legs are re-solved to their existing ankle targets. Held
+heel/toe points and shoe rotations remain fixed; free ankles are repaired with
+the existing joint/sole constraints. Infeasible pelvis corrections are reduced,
+never paid for by dropping a pin. The added translation is bounded to6cm and
+vanishes on unchanged ground. No frame numbers, acquisition delay or new UI.
+
+The contact planner retains its own reference pose for hip forecasting, so the
+posture adjustment is not mistaken for root velocity. Final shoe geometry is
+used for support reporting. Reset/disable/empty terrain clear pursuit history;
+the NN and slide-arm algorithms remain unchanged.
+
+Fresh saved-scene rollout: peak right-thigh step5.62→3.83deg per120Hz tick;
+largest angular-velocity change597→231deg/s over F12–21. The first pin remains
+F18.5 for four ticks. Left-calf axial rotation stays below0.93deg, wall-facing
+shoe preparation is retained, and added ankle-limit error is below0.000004deg.
+237 targeted checks,757 checks/60 terrain cases and2,723 shared-adapter checks
+pass. Split generation is exact; actual renderer comparisons were inspected.
+Evidence: `Saved/Diagnostics/FootIKWall20261103/arrival-*`; rejected trials
+removed. Live tuning/camera/playhead, native runtime and Unreal were untouched.
+The root transport investigation was not part of this change.
+
+## November 3 thigh approach and contact smoothing
+
+The F18–19 complaint was a rapid right-thigh turn followed by an immediate
+reversal when the wall pin took over. Sole clearance arrived late, then the
+tangential foot velocity dropped at capture. Shared `createFeet` now spreads
+new-plane clearance through the last0.12s of a closing swing, feeding the
+existing bounded residual filter. The envelope vanishes at the plane and
+outside that window; acquisition, material pivots and ankle limits remain.
+
+On successful first contact, half the lost tangential foot velocity excites a
+small critically damped pelvis translation (35/s response, 4m/s maximum response
+velocity). It decays before leg IK, preserving fixed pins and bone lengths.
+Torso articulation, root physics and NN logic are unchanged; changed actual
+contacts can still change the subsequent causal trajectory. Reset, disabled IK
+and empty terrain clear it. An unchanged ground plane produces no response.
+
+Saved scene: peak thigh step7.61→5.62°/120Hz; peak angular-velocity change
+1110→597°/s. First pin remains F18.5 and lasts four ticks instead of three.
+The additional pelvis response peaks at3.35cm. Earlier fixes remain: left
+calf axial step0.86° at F18–28; right sole has30.90° left to turn at F16.
+
+`verify-wall-entry-rotation.cjs` now checks a fresh217-frame causal rollout:
+237 checks including exact split replay, contact timing/drift, ankle limits,
+earlier fixes and later slide-hand windows. `verify-surface.mjs` passes757
+checks/60 cases: torso articulation is checked relative to the pelvis, with
+the new translation separately bounded and absent on unchanged terrain.
+`verify-shared-slide-isolation.cjs` passes2,723 checks. Approach and slide
+render sheets were inspected. Small `thigh-*` evidence remains in the existing
+`Saved/Diagnostics/FootIKWall20261103`; discarded experiments were removed.
+The sections below describe earlier revisions. No native port, live tuning,
+server restart or push; Refresh picks up the solver fingerprint.
+
+## November 3 wall-entry rotation follow-up
+
+F18–28's left calf twist was in the derived decoder frame, while the predicted
+knee position and hinge direction stayed stable. The surface-only decoder now
+uses the existing `signed_hinge_normal_v1` FK contract on a shallow copy of its
+lower clip. It preserves predicted thighs, feet, all joint positions and the
+recurrent policy; the shared checkpoint runtime is not mutated. Same-input
+comparison of 16 policy steps gives exactly zero position/predicted-axis error
+and identical recurrent tensors. The separate retained-stream reference uses
+that declared output representation (maximum error 3.73e-6).
+
+The right shoe's old world rotation cap also slowed the NN's own swing. It now
+carries the NN rotation and bounds only the added terrain turn. An approaching
+non-coplanar surface can cue shoe orientation during the existing 0.14s landing
+window, before it becomes the nearest plane. This changes orientation, not
+the incoming knee pose or contact acquisition. Heading and heel/toe roll axes
+are transported onto the surface; projecting a toe aimed into a wall had
+amplified tiny sideways components. Shared pin yaw accepts an optional explicit
+body heading, avoiding a false backwards heading during a floor-to-wall turn.
+Material pivots, reach checks and ankle constraints remain; the latter now allow
+up to 16 early-exiting coupled repairs instead of stopping at six prematurely.
+
+`verify-wall-entry-rotation.cjs`: 82 checks on the saved F0–33 trim. Left calf
+axial rotation peaks fall 17.68 -> 0.90 degrees per 120Hz tick at F18–28. Right
+sole angle to wall normal at F16 falls 83.70 -> 28.23 degrees. Pins remain exact,
+no added ankle-limit violation, split preparation is exact, and eight ordinary
+flat/stair/down/disabled comparisons are unchanged. `verify-surface.mjs` keeps
+its 697 checks / 60 cases; its yaw measurement now uses the shoe lateral axis,
+which remains defined when the toe points into the surface. The Bodyflip
+legacy adapter passes 2,723 checks. Rendered before/after frames were inspected.
+
+Evidence: `Saved/Diagnostics/FootIKWall20261103/entry-*`, including the compact
+decoder proof and accepted `entry-carried` replay. No live settings, native
+runtime, Blueprint, Unreal build or push changed. Refresh loads these changes.
+
+## November 3 wall-run contact corrections (earlier)
+
+Investigated the imported Bodyflip Scene 2 at F19, F27, F67 and F85 using its
+actual recurrent NN replies. The first wall plant captured the previous tick's
+ankle, then changed its allowed reach on release. Shared feet now capture the
+current predicted ankle, use one source-preserving soft reach allowance for
+both states, and roll an existing heel/toe contact before it becomes fully
+extended. The brief hip forecast only chooses a retained contact's roll;
+it does not pre-bend the arriving leg or delay contact acquisition. Rolling
+cannot continue through the sole edge onto the top of the shoe.
+
+The old ankle check bounded deviation from the NN shoe, not the actual
+calf-relative joint. Surface feet now use the existing Jolt-frame ankle
+projection from `slide-joints.js`, alternating it with sole/reach clearance.
+Any residual already present in the source NN is retained. The separate
+ordinary flat/stair/down solver and NN/checkpoints are unchanged.
+
+The slide hand fitter aimed a virtual palm marker at the wall even when wrist
+limits tilted a different corner of the hand box into it. Late wall repair
+then kicked the shoulder sideways. The fit now uses the actual hand-box
+extent along the wall normal while retaining its tangential palm target.
+Existing friction, free-arm movement, contact/release and yaw easing remain.
+No broad arm filter or torso avoidance was reintroduced.
+
+`verify-wall-run-regressions.cjs` passes 817 checks on the 265-frame current
+clip: first material pin retained, pin drift below 1e-14 m, no additional
+locomotion ankle-limit error, exact split-generation parity, and eight exact
+ordinary terrain/disabled comparisons. Right calf's largest 120 Hz rotation
+step around F19 falls 7.90 -> 4.72 degrees. Right hand relative acceleration
+peaks fall 353.68 -> 7.32 m/s2 around F67 and 134.44 -> 12.78 around F85;
+whole-slide hand travel remains comparable. Actual arm collider clearance is
+at least 1.90 mm. Side/front contact sheets were rendered and inspected.
+`verify-surface.mjs`: 697 checks / 60 cases. Bodyflip legacy shared adapter:
+2,723 checks; root unchanged and no slide host loaded by shared feet.
+
+Evidence and original source bytes: `Saved/Diagnostics/FootIKWall20261103/`.
+The current clip still exposes the existing slide/floor foot overlap after
+the wall descent (3.8 cm before, 4.4 cm now with the changed contact trajectory);
+these checks do not claim that separate slide-floor issue is fixed. A longer
+turning NN replay timed out and is not counted as passing; its shorter 2.2s
+window and an 82-degree walk passed with fresh policy replies, as did a backward
+parallel walk and side run through their saved trim bounds. Browser control was
+unavailable; visual inspection used the lab renderer in an isolated, closed
+test browser. Refresh the live viewer to load the source changes. No live
+tuning, native runtime, Blueprint, Unreal build or Git push in this task.
+
 ## Restore accepted slide movement/contact — October29
 
 ### October30 lossless solve optimization

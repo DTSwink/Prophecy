@@ -5,6 +5,7 @@ The remaining finite-step articulation difference is measured, not hidden.
 """
 import json
 import numpy as np
+import warp as wp
 import newton
 from uefn_engine import UefnNewtonEngine
 from sequential_contact_adapter import SequentialContactAdapter
@@ -22,6 +23,7 @@ class ContactTransferEngine(UefnNewtonEngine):
             seed_iterations=self._seed_iterations,position_iterations=self._projection_iterations,
             physics_hz=240,policy_hz=30,bounded_sequential=self._bounded_sequential,
             relaxation=1. if self._bounded_sequential else .5)
+        self._ground_grip=dict(config.get('transfer_ground_friction_multipliers',{}))
         self._capture_failures=bool(config.get('transfer_capture_failures',False))
         self._floor_aware_projection=bool(config.get('transfer_floor_aware_projection',False))
         super().__init__(config,*args,**kwargs)
@@ -41,6 +43,16 @@ class ContactTransferEngine(UefnNewtonEngine):
         if self._bounded_sequential:
             from bounded_contact_gpu import make_iteration
             self.transfer_contact.iterate_kernel=make_iteration(self.transfer_contact.p.nv)
+        if self._ground_grip:
+            factors=np.ones(s.mj_model.nbody,dtype=np.float32)
+            for body,value in self._ground_grip.items():
+                value=float(value)
+                if not np.isfinite(value) or value<=0:raise ValueError('Invalid ground friction: '+body)
+                matches=[i for i in range(1,s.mj_model.nbody) if s.mj_model.body(i).name.endswith(body)]
+                if len(matches)!=1:raise ValueError('Unknown/ambiguous ground-friction body: '+body)
+                factors[matches[0]]=value
+            self.transfer_contact.ground_friction_factors=wp.array(factors,device=self._device)
+            self.ground_friction_report=dict(self._ground_grip)
         self.transfer_contact.install()
         if self._capture_failures:
             from solver_capture import SolverFailureCapture

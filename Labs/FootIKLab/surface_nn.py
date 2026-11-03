@@ -1,5 +1,6 @@
 """One causal policy stream; shared JS owns the root physics and foot solver."""
 import hashlib
+import copy
 import json
 import math
 import os
@@ -27,9 +28,17 @@ class DecodeStep(torch.nn.Module):
     def __init__(self, owner):
         super().__init__()
         self.owner = owner
+        # The policy predicts the thigh and foot, not an independent calf
+        # twist. Transport its signed hinge normal when deriving that frame:
+        # the legacy projected-forward pole changes hemisphere during folds.
+        # Keep this decoder contract local to surface locomotion; never mutate
+        # the shared checkpoint runtime or its recurrent state.
+        self.runtime = copy.copy(owner.runtime)
+        self.runtime.lower_clip = copy.copy(owner.runtime.lower_clip)
+        self.runtime.lower_clip.leg_rotation_contract = 'signed_hinge_normal_v1'
 
     def forward(self, lower, upper, pelvis, roots, bases, headings):
-        return decode_policy_rows(self.owner, self.owner.runtime, -1.0, lower, upper,
+        return decode_policy_rows(self.owner, self.runtime, -1.0, lower, upper,
                                   pelvis, roots, bases, headings, torch.zeros(1, dtype=torch.long))
 
 
@@ -180,7 +189,12 @@ def run_surface(owner, request):
         reference_request = dict(gait=request['gait'], policy='run', direction=request['direction'],
                                  names=['root', *source['names']], frames=count, roots=source['roots'][:count+9],
                                  rootYawDegrees=source['rootYawDegrees'][:count+9], seeds=request['seeds'])
-        expected = resume_in_course(owner, reference_request)
+        # Compare recurrence with the same declared output representation.
+        # Only derived calf frames use the surface signed-hinge contract;
+        # the shared owner and its actual policy stream remain unchanged.
+        reference_owner = copy.copy(owner)
+        reference_owner.runtime = DecodeStep(owner).runtime
+        expected = resume_in_course(reference_owner, reference_request)
         probe = Stream(owner, True)
         reference_error = 0.0
         for i in range(count-1):

@@ -1,16 +1,22 @@
 """Bodyflip-only loopback server. No editor, training, or other lab routes."""
-import argparse, base64, json, threading, time
+import argparse, base64, json, threading, time, importlib.util
 from collections import OrderedDict
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse
-from shared_foot_ik import bundle as foot_ik_bundle
+from shared_foot_ik import bundle as foot_ik_bundle, SOURCE as FOOT_ROOT
+_spec=importlib.util.spec_from_file_location("bodyflip_shared_foot_nn", FOOT_ROOT/"nn_service.py")
+foot_nn=importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(foot_nn)
 from run_bank import read_run
 from resume_service import resume
 ROOT=Path(__file__).resolve().parent
 LOCK=threading.Lock()
 NN_LOCK=threading.Lock()
 RUN_CACHE=OrderedDict()
+class LabServer(ThreadingHTTPServer):
+    request_queue_size = 64
+
 class Handler(SimpleHTTPRequestHandler):
     extensions_map={**SimpleHTTPRequestHandler.extensions_map,'.mjs':'text/javascript','.js':'text/javascript','.wasm':'application/wasm','.svg':'image/svg+xml'}
     def __init__(self,*a,**kw): super().__init__(*a,directory=str(ROOT),**kw)
@@ -23,9 +29,14 @@ class Handler(SimpleHTTPRequestHandler):
         raw=json.dumps(value,allow_nan=False).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
     def do_GET(self):
         path=urlparse(self.path).path
-        if path=='/health': return self.reply({'app':'bodyflip-lab','root':str(ROOT),'apiVersion':6})
+        if path=='/health': return self.reply({'app':'bodyflip-lab','root':str(ROOT),'apiVersion':7})
         if path=='/shared-foot-ik.js':
             raw=foot_ik_bundle();self.send_response(200);self.send_header('Content-Type','text/javascript; charset=utf-8');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw);return
+        if path.startswith('/foot-ik/'):
+            name=path[len('/foot-ik/'):]
+            allowed={'surface.js','surface-coupling.js','surface_driver.cjs','surface_nn.py','footik.js','support.js','recovery.js','slide-joints.js','slide-entry.js','slide-arms.js'}
+            if name not in allowed: return self.reply({'error':'Unknown shared source'},404)
+            raw=(FOOT_ROOT/name).read_bytes();self.send_response(200);self.send_header('Content-Type','text/plain');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw);return
         if path=='/state':
             with LOCK:
                 p=ROOT/'state.json';return self.reply(json.loads(p.read_text(encoding='utf-8')) if p.exists() else {})
@@ -37,6 +48,8 @@ class Handler(SimpleHTTPRequestHandler):
             size=int(self.headers.get('Content-Length','0'))
             if size<=0 or size>8000000: raise ValueError('Invalid payload size')
             data=json.loads(self.rfile.read(size));path=urlparse(self.path).path
+            if path=='/foot-ik/resume':
+                return self.reply(foot_nn.resume(data))
             if path=='/resume':
                 if data.get('gait') not in ('run','walk'): raise ValueError('Unknown landing gait')
                 return self.reply(resume(data))
@@ -65,4 +78,4 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as e: self.reply({'error':str(e)},400)
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=8876);a=p.parse_args()
-    ThreadingHTTPServer(('127.0.0.1',a.port),Handler).serve_forever()
+    LabServer(('127.0.0.1',a.port),Handler).serve_forever()

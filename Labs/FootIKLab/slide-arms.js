@@ -64,6 +64,13 @@ function create({names,parents,joints,referenceLocal}){
    const lateral=tangent(outward,n),base=add(add(plane.project(shoulder),mul(unit(lateral),.10+.06*front)),mul(wallUp,-.08+.15*front));
    const requestedPoint=plane.closest(add(add(base,handShift),frictionOffset));
    const nearest=plane.closest(shoulder),shoulderOut=unit(add(mul(outward,.7),mul(wallUp,-.5)));
+   // The palm marker is not always the hand collider's lowest
+   // point after wrist limits tilt it. Fit its actual support extent along
+   // the wall normal, retaining the requested palm location tangentially.
+   const handOffset=q=>{
+    const x=dot(rotate(q,[a.sign,0,0]),n),y=dot(rotate(q,[0,1,0]),n),z=dot(rotate(q,[0,0,1]),n);
+    return x*.0725-y*.0025-Math.abs(x)*.0725-Math.abs(y)*.0225-Math.abs(z)*.045;
+   };
    function fit(t,orientation=handQ){
     const point=add(nearest,mul(sub(requestedPoint,nearest),t));
     let wrist=sub(point,palmOffset(orientation,a.sign)),braced,valid,armLocal;
@@ -77,7 +84,9 @@ function create({names,parents,joints,referenceLocal}){
      const pole=unit(tangent(add(mul(prior,.98),mul(authored,.02)),axis));
      braced=joints.solveArm(copy(pose),a.side,add(shoulder,mul(axis,Math.max(0,safe))),pole,orientation);
      const solved=legalArm(braced,a);armLocal=solved.local;valid=solved.pose;
-     const palm=add(valid.points[a.c],palmOffset(valid.q[a.c],a.sign)),error=sub(point,palm);
+     const palm=add(valid.points[a.c],palmOffset(valid.q[a.c],a.sign));let error=sub(point,palm);
+     const clearance=dot(sub(valid.points[a.c],point),n)+handOffset(valid.q[a.c]);
+     error=add(error,mul(n,.002-clearance-dot(error,n)));
      if(length(error)<.0003)break;
      // Fit against the actually constrained wrist and shoulder, not the
      // unconstrained request that may no longer have the same palm offset.
@@ -85,7 +94,8 @@ function create({names,parents,joints,referenceLocal}){
     }
     // Plane distance alone accepted palms that missed the requested target
     // sideways by14cm. Reach fitting must measure the full point error.
-    const palm=add(valid.points[a.c],palmOffset(valid.q[a.c],a.sign)),gap=length(sub(palm,point));
+    const palm=add(valid.points[a.c],palmOffset(valid.q[a.c],a.sign)),clearance=dot(sub(valid.points[a.c],point),n)+handOffset(valid.q[a.c]);
+    const gap=Math.hypot(length(tangent(sub(palm,point),n)),clearance-.002);
     return {point,local:armLocal,gap,valid};
    }
    let best=fit(1);

@@ -29,7 +29,10 @@ def verify(path):
             if 'crawl_forward_reward' in row:
                 spec=row['crawl_forward_reward']
                 active=row['motion_name']=='crawl' and row['disabled_limb_code']==12 and row['cohort_index']>0
-                assert spec['enabled']==active and spec['maximum']==5.
+                if row.get('crawl_jiggle_penalty',{}).get('enabled',False):
+                    assert not spec['enabled']
+                    active=False
+                else:assert spec['enabled']==active and spec['maximum']==5.
                 target=np.asarray(spec['target_velocity_xy_m_s'])
                 velocity=velocities[:,row['names'].index('pelvis'),:2]
                 if spec.get('form')=='signed_displacement_v1':
@@ -40,7 +43,26 @@ def verify(path):
                     bonus=5.*np.maximum(0.,1.-np.sqrt(((velocity-target)**2).sum(-1))/np.linalg.norm(target)) if active else np.zeros(len(data))
                 assert np.allclose(bonus,np.asarray(row['frame_crawl_forward_reward'])[1:],atol=2e-5)
                 expected_reward+=bonus
-            assert np.allclose(expected_reward,data[:,2],atol=1e-5)
+            if 'crawl_jiggle_penalty' in row:
+                from crawl_jiggle import recorded_cost
+                spec=row['crawl_jiggle_penalty']
+                cost=recorded_cost(z['pose'+suffix].astype(np.float64),[row['names'].index(n) for n in spec['bodies']],row['names'].index('pelvis'),float(row['fps']))
+                if not spec['enabled']:cost[:]=0.
+                assert np.allclose(cost,np.asarray(row['frame_crawl_jiggle_penalty']),atol=2e-4,rtol=2e-4)
+                expected_reward-=cost[1:]
+            assert np.allclose(expected_reward,data[:,2],atol=2e-4,rtol=2e-4),(row['replay_row_label'],float(np.max(abs(expected_reward-data[:,2]))))
+            if 'crawl_jiggle_termination' in row:
+                from crawl_jiggle_termination import recorded_detection
+                full=z['pose'+suffix].astype(np.float64)
+                angular_ids=[row['names'].index(b) for b in row['crawl_jiggle_termination'].get('angular_bodies',['right_hand','left_hand'])]
+                flags,streak=recorded_detection(full,[row['names'].index(b) for b in ('right_hand','left_hand')],row['names'].index('pelvis'),row['fps'],angular_ids)
+                if not row['crawl_jiggle_termination']['enabled']:flags[:]=False;streak[:]=0
+                assert np.array_equal(flags,row['frame_crawl_jiggle_terminated'])
+                assert np.array_equal(streak,row['frame_crawl_jiggle_streak'])
+                hits=np.flatnonzero(flags)
+                if len(hits):
+                    assert hits[0]==len(full)-1, 'Rollout continued beyond jiggle failure'
+                    assert data[-1,0]==1, 'Jiggle must be failure, not timeout'
             assert row['loco_failure_penalty'] in (100.,500.)
             checks.append(dict(label=row['replay_row_label'],motion=row['motion_name'],cohort=row['cohort_index'],
                 terminal_flag=int(data[-1,0]),terminal_reward=float(data[-1,2]),mse_max_abs_errors=error))

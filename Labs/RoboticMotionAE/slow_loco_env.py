@@ -154,6 +154,16 @@ class SlowLocoEnv(OmniWalkEnv):
             bodies = torch.tensor([body_names.index(side+'_'+part)
                 for part in ('thigh', 'shin', 'foot')], device=self._device)
             self._mse_body_enabled[world[:, None], bodies[None, :]] = False
+        # Disabled limb friction is a per-world material rule, independent of motion.
+        cpu=self._engine._solver.mj_model
+        matches=[[i for i in range(1,cpu.nbody) if cpu.body(i).name.endswith(name)]
+            for name in body_names]
+        assert all(len(ids)==1 for ids in matches), matches
+        self._friction_body_ids=torch.tensor([ids[0] for ids in matches],device=self._device,dtype=torch.long)
+        assert (self._friction_body_ids>=0).all()
+        self._body_friction_scale=wp.to_torch(self._engine.transfer_contact.body_friction_scale)
+        self._body_friction_scale[:,self._friction_body_ids]=torch.where(
+            self._mse_body_enabled.squeeze(-1),1.,.5)
         assert mask.shape == (self.get_num_envs(), 34)
         # Strength is physical-state conditioned on every row; identity only
         # controls the existing passive-leg mask, never the height multiplier.
@@ -212,7 +222,7 @@ class SlowLocoEnv(OmniWalkEnv):
         self._target_termination_enabled = torch.cat((self._target_termination_enabled,torch.ones((self.get_num_envs(),1),device=self._device,dtype=torch.bool)),dim=1)
         self.target_distances_sq = torch.zeros_like(self._target_radii_sq)
         self._pelvis_window_steps = torch.full((len(names),), 70, device=self._device, dtype=torch.long)
-        self._pelvis_window_steps[:2] = 130
+        self._pelvis_window_steps[:2] = 200
         self._pelvis_window = PeriodicPelvisTarget(self._pelvis_window_steps[self._fixed_motion_ids], self._device)
         self._pelvis_target_world = self._pelvis_window.target
 
@@ -349,6 +359,7 @@ class SlowLocoEnv(OmniWalkEnv):
             disabled_motor_dofs=self.disabled_dof_indices, perturbations=False, ae_reward=False,
             observation_contract='146 physical + 8 signed motion slots + 4 limb-enabled + 2 phase = 160',
             limb_semantics='0 = zero hip/knee/ankle motor torque, retaining contacts, mass and joint limits')
+        result['disabled_limb_friction'] = dict(multiplier=.5, enabled_multiplier=1., all_segments=True, pair_rule='minimum, applied once', contacts='ground and self', updated_on_reset=True)
         result['motion_command_encoding'] = dict(version=1, slots=self.command_slots,
             vectors={n:self._motion_onehot[i].cpu().tolist() for i,n in enumerate(self.motion_labels)},
             semantics='Original eight +1 commands unchanged; limpL_idle=-1 in limpL slot, limpR_idle=-1 in limpR slot; all other slots zero',
@@ -405,7 +416,7 @@ class SlowLocoEnv(OmniWalkEnv):
         result['target_deviation']['limp_idle_hand_radius_m'] = .20
         result['target_deviation']['limp_head_radius_m'] = 2 * self.target_radius_m
         result['target_deviation']['world_pelvis'] = dict(body='pelvis',point='body origin',axes='world XYZ, Z vertical',
-            target='original reference displacement from actual pelvis XY anchor, refreshed every70 ticks; absolute reference Z',
+            target='original reference displacement from actual pelvis XY anchor, refreshed at the per-motion interval; absolute reference Z',
             stationary_xy_motions=['limpL_idle','limpR_idle'], reset_every_ticks=70, base_radius_m=.40, radius_formula='constant 0.40 metres',
             horizontal_warmup='none; sphere checked from first tick',
             steps_by_motion=dict(zip(self.motion_labels,self._pelvis_window_steps.cpu().tolist())),

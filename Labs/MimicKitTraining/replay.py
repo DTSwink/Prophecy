@@ -210,6 +210,8 @@ def convert_arrays(meta,pose,data,frame_terms,geom,run):
             expected-=float(meta.get('loco_failure_penalty',0.))*(data[1:,0]==1)
             if 'frame_crawl_forward_reward' in meta:
                 expected+=np.asarray(meta['frame_crawl_forward_reward'])[1:]
+            if 'frame_crawl_jiggle_penalty' in meta:
+                expected-=np.asarray(meta['frame_crawl_jiggle_penalty'])[1:]
             expected-=float(meta.get('normal_getup_failure_penalty',0.))*(data[1:,0]==1)
             expected-=float(meta.get('pushed_idle_failure_penalty',0.))*(data[1:,0]==1)
             expected-=float(meta.get('idle_velocity_failure_penalty',0.))*(data[1:,0]==1)

@@ -30,9 +30,30 @@ def stage():
     report=json.loads((D/'preflight-verified.json').read_text())
     assert report['passed'] and report['worlds']==2048 and report['resumed_updates']==3
     d.bundle();shutil.copy2(OUT/'source-receipt.json',D/'source-receipt.json')
-    d.cloud.rp.scp(d.cloud.state()['connection'],OUT/'source.zip','/workspace/mimickit_trial/contact-source.zip',timeout=90)
+    expected=d.sha(OUT/'source.zip')
+    reused=remote("import hashlib,shutil;from pathlib import Path;r=Path('/workspace/mimickit_trial');p=r/'source.zip';ok=p.exists() and hashlib.sha256(p.read_bytes()).hexdigest()=="+repr(expected)+";shutil.copy2(p,r/'contact-source.zip') if ok else None;print(int(ok))").strip()=='1'
+    if not reused:
+        d.cloud.rp.scp(d.cloud.state()['connection'],OUT/'source.zip','/workspace/mimickit_trial/contact-source.zip',timeout=90)
     assert remote("import hashlib;print(hashlib.sha256(open('/workspace/mimickit_trial/contact-source.zip','rb').read()).hexdigest())").strip()==d.sha(OUT/'source.zip')
     d.write(D/'staged.json',dict(source_sha256=d.sha(OUT/'source.zip')))
+
+def stage_from_persistent():
+    receipt=json.loads((OUT/'source-receipt.json').read_text())
+    assert receipt['verified'] and d.sha(OUT/'source.zip')==receipt['sha256']
+    assert json.loads((D/'preflight-verified.json').read_text())['passed']
+    code="""from pathlib import Path
+import json,hashlib,boto3
+from botocore.config import Config
+r=Path('/workspace/mimickit_trial');info=INFO
+p=r/'contact-source.zip';control=json.loads((r/'private.json').read_text())
+if not p.exists() or hashlib.sha256(p.read_bytes()).hexdigest()!=info['sha256']:
+ client=boto3.client('s3',**control['s3'],config=Config(connect_timeout=10,read_timeout=30,retries={'total_max_attempts':2}))
+ temp=p.with_suffix('.part');client.download_file('aj7d2jzwuq',info['key'],str(temp))
+ assert hashlib.sha256(temp.read_bytes()).hexdigest()==info['sha256'];temp.replace(p)
+print('Source SHA verified')
+""".replace('INFO',repr(receipt))
+    print(d.cloud.ssh('/workspace/mimickit_trial/venv/bin/python -c '+shlex.quote(code),timeout=90))
+    d.write(D/'staged.json',dict(source_sha256=receipt['sha256']))
 
 def launch():
     # Both guards must see the same bounded setup phase before any trainer starts.

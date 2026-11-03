@@ -19,17 +19,24 @@ for(const gait of ['walk','run'])for(const direction of ['forward','backward','l
  for(const approach of ['toward','parallel'])for(const slopeAngle of direction==='forward'?[0,30,45,60,75,90]:[0,45,90]){
   const label=`${gait}${direction==='forward'?'':' '+direction} ${approach} ${slopeAngle}deg`,start=performance.now(),model=prepareBaseline(run,{gait,direction,approach,slopeAngle}),milliseconds=performance.now()-start;
   models.set(label,model);
-  let maxBoneError=0,maxRootVelocityResidual=0,maxRootPositionResidual=0,maxPinSlip=0,maxUprightError=0,upperError=0,ballistic=0,minHeadingDot=1,minRootPlaneGap=Infinity;
+  let maxBoneError=0,maxRootVelocityResidual=0,maxRootPositionResidual=0,maxPinSlip=0,maxUprightError=0,upperError=0,maxLoadOffset=0,ballistic=0,minHeadingDot=1,minRootPlaneGap=Infinity;
   const activePins=new Map();
   for(let i=0;i<model.frames.length;i++){
    const f=model.frames[i],b=f.raw;
    for(let j=2;j<run.names.length;j++)maxBoneError=Math.max(maxBoneError,Math.abs(distance(f.pose.points[j],f.pose.points[run.parents[j]])-distance(b.points[j],b.points[run.parents[j]])));
-   for(let j=1;j<run.names.length;j++)if(!/^(thigh|calf|foot|ball)_/.test(run.names[j]))upperError=Math.max(upperError,distance(f.pose.points[j],b.points[j]),rad(R.qm(f.pose.q[j],R.qinv(b.q[j]))));
+   // The new-plane contact load is a common body translation. Articulation
+   // and upright rotation must remain exactly NN-authored around the pelvis.
+   const pelvis=run.names.indexOf('pelvis'),loadOffset=R.sub(f.pose.points[pelvis],b.points[pelvis]);
+   maxLoadOffset=Math.max(maxLoadOffset,R.length(loadOffset));
+   for(let j=1;j<run.names.length;j++)if(!/^(thigh|calf|foot|ball)_/.test(run.names[j]))upperError=Math.max(upperError,distance(R.sub(f.pose.points[j],loadOffset),b.points[j]),rad(R.qm(f.pose.q[j],R.qinv(b.q[j]))));
    for(const foot of f.feet)if(foot.contact){
     const c=foot.contact,key=c.stanceId+':'+c.localPoint.map(x=>Math.round(x*1e6)).join(','),old=activePins.get(key);
     if(old)maxPinSlip=Math.max(maxPinSlip,distance(c.point,old));else activePins.set(key,c.point);
     const l=S.leg(f.pose,run.names,foot.side),nn=K.at(run,i/120),src=S.footFrame(nn,l.foot,l.toe,foot.side),shown=S.footFrame(f.pose,l.foot,l.toe,foot.side),expected=R.rotate(R.fromTo([0,1,0],c.normal),R.unit([src.forward[0],0,src.forward[2]])),project=v=>R.unit(R.sub(v,R.mul(c.normal,R.dot(v,c.normal))));
-    minHeadingDot=Math.min(minHeadingDot,R.dot(project(shown.forward),project(expected)));
+    // A toe aimed into the plane has no projected forward heading. Measure
+    // yaw from the shoe's lateral axis, as the material-pin yaw solver does.
+    const shownHeading=R.unit(R.cross(c.normal,R.cross(shown.forward,shown.up)));
+    minHeadingDot=Math.min(minHeadingDot,R.dot(shownHeading,project(expected)));
    }
    maxUprightError=Math.max(maxUprightError,Math.acos(Math.max(-1,Math.min(1,R.dot(f.surface.bodyUp,[0,1,0]))))*180/Math.PI);
    for(const surface of model.terrain.surfaces){const p=surface.local(f.surface.mass),[x0,x1,z0,z1]=surface.bounds;if(p[0]>=x0&&p[0]<=x1&&p[2]>=z0&&p[2]<=z1)minRootPlaneGap=Math.min(minRootPlaneGap,p[1]);}
@@ -51,12 +58,13 @@ for(const gait of ['walk','run'])for(const direction of ['forward','backward','l
   check(label+' material contact does not slide',model.metrics.maxContactDrift<1e-8&&maxPinSlip<5e-4);
   check(label+' contact shoe heading respects the actual directional NN',minHeadingDot>.3);
   check(label+' body retains NN articulation and upright bias',upperError<1e-8&&maxUprightError<=slopeAngle*.55+.01);
+  check(label+' contact load stays small and is absent on an unchanged ground plane',maxLoadOffset<.08&&((slopeAngle===0||approach==='parallel')?maxLoadOffset<1e-10:true));
   check(label+' knee and ankle motion remain bounded',model.metrics.maxKneeStep<20&&model.metrics.maxAnkleStep<18&&model.metrics.maxRelativeAnkleDegrees<72);
   check(label+' natural and reach roll share300deg/s total allowance',model.metrics.maxPinAngleStep<=300/120+1e-9);
   check(label+' actual incline foot contacts occur',model.metrics.wallContactFrames>0);
   if(slopeAngle>=75)check(label+' wall contact never expires on elapsed time',model.events.every(e=>e.type!=='wall-release'&&e.reason!=='support-budget')&&model.frames.every(f=>!f.surface.wallExpired));
   if(slopeAngle===45&&approach==='toward')check(label+' root physically climbs the incline',model.frames.at(-1).surface.mass[1]>3&&model.frames.at(-1).surface.mass[2]>4);
-  cases.push({gait,direction,approach,slopeAngle,milliseconds,metrics:model.metrics,maxBoneError,maxPinSlip,minHeadingDot,minRootPlaneGap,maxRootVelocityResidual,maxRootPositionResidual,maxUprightError,upperError,ballisticFrames:ballistic,wallRelease:model.events.find(e=>e.type==='wall-release')?.frame??null});
+  cases.push({gait,direction,approach,slopeAngle,milliseconds,metrics:model.metrics,maxBoneError,maxPinSlip,minHeadingDot,minRootPlaneGap,maxRootVelocityResidual,maxRootPositionResidual,maxUprightError,upperError,maxLoadOffset,ballisticFrames:ballistic,wallRelease:model.events.find(e=>e.type==='wall-release')?.frame??null});
  }
 }
 const walk=load('walk',.21),normal=models.get('walk parallel 90deg'),noGravity=prepareBaseline(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{gravity:0}),noSupport=prepareBaseline(walk,{gait:'walk',approach:'parallel',slopeAngle:90},{support:false});

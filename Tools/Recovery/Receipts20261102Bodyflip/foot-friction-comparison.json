@@ -1,0 +1,184 @@
+{
+  "date": "2026-11-03",
+  "scope": "Transient native diagnostic characters only; no gameplay tuning changed",
+  "cases": [
+    {
+      "mode": 1,
+      "label": "Original friction",
+      "materials": [
+        {
+          "bone": "foot_l",
+          "beforeFriction": 0.699999988079071,
+          "afterFriction": 0.699999988079071,
+          "beforeCombine": 0,
+          "afterCombine": 0,
+          "restitution": 0.30000001192092896
+        },
+        {
+          "bone": "foot_r",
+          "beforeFriction": 0.699999988079071,
+          "afterFriction": 0.699999988079071,
+          "beforeCombine": 0,
+          "afterCombine": 0,
+          "restitution": 0.30000001192092896
+        }
+      ],
+      "frames": 146,
+      "requestedMotionIdentical": true,
+      "feet": {
+        "foot_l": {
+          "peakAngleDeg": 21.32869295428384,
+          "peakTime": 1.5166666507720947,
+          "angleRmsDeg": 6.625760747613933,
+          "lateAngularSpeedRmsDegS": 931.371902455894,
+          "lateAngularSpeedPeakDegS": 1472.3760014997474
+        },
+        "foot_r": {
+          "peakAngleDeg": 19.792388491996338,
+          "peakTime": 1.5,
+          "angleRmsDeg": 6.480807417096803,
+          "lateAngularSpeedRmsDegS": 917.4800492368847,
+          "lateAngularSpeedPeakDegS": 1306.7969767352313
+        }
+      },
+      "lateFootPairContacts": 37,
+      "metrics": {
+        "rootMaxCm": 0,
+        "targetMaxCm": 3.972054645195637e-15,
+        "targetRotationMaxRad": 4.2146848510894035e-08,
+        "physicalMaxCm": 11.801195172205784,
+        "physicalRotationMaxRad": 0.5797957443613557,
+        "physicalSamples": 3358,
+        "segmentLengthMaxCm": 0.5260043862590678,
+        "physicalRmsCm": 1.9789738364688145,
+        "physicalRotationRmsRad": 0.07905402710915228,
+        "sawRise": false,
+        "sawSpin": true,
+        "pausedAndResumed": true
+      },
+      "sha256": "8a748026f024d4dacb28a6e8f51488aca65fdab949fb2b462e057539b5330437"
+    },
+    {
+      "mode": 2,
+      "label": "Zero foot friction",
+      "materials": [
+        {
+          "bone": "foot_l",
+          "beforeFriction": 0.699999988079071,
+          "afterFriction": 0,
+          "beforeCombine": 0,
+          "afterCombine": 1,
+          "restitution": 0.30000001192092896
+        },
+        {
+          "bone": "foot_r",
+          "beforeFriction": 0.699999988079071,
+          "afterFriction": 0,
+          "beforeCombine": 0,
+          "afterCombine": 1,
+          "restitution": 0.30000001192092896
+        }
+      ],
+      "frames": 146,
+      "requestedMotionIdentical": true,
+      "feet": {
+        "foot_l": {
+          "peakAngleDeg": 18.31464138184499,
+          "peakTime": 1.5499999523162842,
+          "angleRmsDeg": 5.439043311704128,
+          "lateAngularSpeedRmsDegS": 928.9064975001304,
+          "lateAngularSpeedPeakDegS": 1363.035978312287
+        },
+        "foot_r": {
+          "peakAngleDeg": 29.68746336969205,
+          "peakTime": 0.15000000596046448,
+          "angleRmsDeg": 10.273397456150587,
+          "lateAngularSpeedRmsDegS": 970.6154684620824,
+          "lateAngularSpeedPeakDegS": 1629.7352916633815
+        }
+      },
+      "lateFootPairContacts": 37,
+      "metrics": {
+        "rootMaxCm": 0,
+        "targetMaxCm": 3.972054645195637e-15,
+        "targetRotationMaxRad": 4.2146848510894035e-08,
+        "physicalMaxCm": 11.466540913740085,
+        "physicalRotationMaxRad": 0.5181439823663369,
+        "physicalSamples": 3358,
+        "segmentLengthMaxCm": 0.6809155440028505,
+        "physicalRmsCm": 2.0089601516781923,
+        "physicalRotationRmsRad": 0.07908859762082047,
+        "sawRise": false,
+        "sawSpin": true,
+        "pausedAndResumed": true
+      },
+      "sha256": "42490ad51306ab9f6f26c6502c932ea8f0e5eb3701c12daefd046cb3806c41d3"
+    },
+    {
+      "mode": 3,
+      "label": "Foot-to-foot collision disabled",
+      "materials": [
+        {
+          "bone": "foot_l",
+          "beforeFriction": 0.699999988079071,
+          "afterFriction": 0.699999988079071,
+          "beforeCombine": 0,
+          "afterCombine": 0,
+          "restitution": 0.30000001192092896
+        },
+        {
+          "bone": "foot_r",
+          "beforeFriction": 0.699999988079071,
+          "afterFriction": 0.699999988079071,
+          "beforeCombine": 0,
+          "afterCombine": 0,
+          "restitution": 0.30000001192092896
+        }
+      ],
+      "frames": 146,
+      "requestedMotionIdentical": true,
+      "feet": {
+        "foot_l": {
+          "peakAngleDeg": 36.34219623386118,
+          "peakTime": 1.5333333015441895,
+          "angleRmsDeg": 10.884268421971388,
+          "lateAngularSpeedRmsDegS": 864.4285058927553,
+          "lateAngularSpeedPeakDegS": 1699.0121867638518
+        },
+        "foot_r": {
+          "peakAngleDeg": 64.44031129017763,
+          "peakTime": 1.5,
+          "angleRmsDeg": 19.4946986638785,
+          "lateAngularSpeedRmsDegS": 910.7502697658807,
+          "lateAngularSpeedPeakDegS": 1705.4433196203
+        }
+      },
+      "lateFootPairContacts": 0,
+      "metrics": {
+        "rootMaxCm": 0,
+        "targetMaxCm": 3.972054645195637e-15,
+        "targetRotationMaxRad": 4.2146848510894035e-08,
+        "physicalMaxCm": 10.906458051615305,
+        "physicalRotationMaxRad": 1.1246956030236748,
+        "physicalSamples": 3358,
+        "segmentLengthMaxCm": 0.5755185097271607,
+        "physicalRmsCm": 1.973100047715315,
+        "physicalRotationRmsRad": 0.11076509718384756,
+        "sawRise": false,
+        "sawSpin": true,
+        "pausedAndResumed": true
+      },
+      "sha256": "78fb85efcb49a8c9d1a76499b7671d8f5a43709ad3887e1eb33ed56f20463105"
+    }
+  ],
+  "findings": [
+    "Original native test uses foot friction 0.7 and restitution 0.3; it does not run the user Blueprint alive-state override.",
+    "Setting actual native foot friction to zero with Minimum combine preserves the requested poses and rig exactly but does not eliminate changing foot orientation error.",
+    "Disabling the foot/foot collision pair removes its recorded contacts but does not eliminate changing foot orientation error either. Earlier attribution to that pair alone was too strong.",
+    "The fresh baseline does not reproduce the old 57.15 degree foot peak (fresh right-foot peak 19.79 degrees). Do not treat different physical runs as deterministic or claim that the lower peak itself proves an intervention worked.",
+    "The precise cause of remaining physical foot jitter is not isolated by these tests. These results reject zero foot friction or foot/foot collision removal as sufficient fixes."
+  ],
+  "build": "Normal Editor build succeeded; test-only C++ changes",
+  "automation": "All three completed 146 frames. All retain the known authored Ball pose assertion failure; no-foot-pair additionally exceeds the rotation tracking limit. Numeric thresholds unchanged.",
+  "evidence": "Saved/Diagnostics/BodyflipFootFriction20261103"
+}

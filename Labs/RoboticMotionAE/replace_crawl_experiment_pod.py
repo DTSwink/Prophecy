@@ -47,10 +47,21 @@ def allocate():
 def upload_resume():
     info=json.loads((D/'main-resume-checkpoint.json').read_text())
     assert d.sha(info['local'])==info['sha256']
-    from deploy_saved_sitting import remote
-    remote('from pathlib import Path;Path('+repr(str(Path(info['path']).parent).replace('\\','/'))+').mkdir(parents=True,exist_ok=True)')
-    d.cloud.rp.scp(d.cloud.state()['connection'],Path(info['local']),info['path'],timeout=90)
-    assert remote('import hashlib;print(hashlib.sha256(open('+repr(info['path'])+',"rb").read()).hexdigest())').strip()==info['sha256']
+    import shlex
+    code="""from pathlib import Path
+import json,hashlib,boto3
+from botocore.config import Config
+r=Path('/workspace/mimickit_trial');info=INFO
+p=Path(info['path']);p.parent.mkdir(parents=True,exist_ok=True)
+if not p.exists() or hashlib.sha256(p.read_bytes()).hexdigest()!=info['sha256']:
+ control=json.loads((r/'private.json').read_text())
+ client=boto3.client('s3',**control['s3'],config=Config(connect_timeout=10,read_timeout=30,retries={'total_max_attempts':2}))
+ temp=p.with_suffix('.part');client.download_file('aj7d2jzwuq',info['backup']['key'],str(temp))
+ assert hashlib.sha256(temp.read_bytes()).hexdigest()==info['sha256']
+ temp.replace(p)
+print('Checkpoint20414 SHA verified')
+""".replace('INFO',repr(info))
+    print(d.cloud.ssh('/workspace/mimickit_trial/venv/bin/python -c '+shlex.quote(code),timeout=120))
     d.write(D/'replacement-resume-verified.json',dict(pod=d.cloud.state()['pod_id'],path=info['path'],sha256=info['sha256']))
     print('Safe checkpoint20414 uploaded and verified',flush=True)
 
