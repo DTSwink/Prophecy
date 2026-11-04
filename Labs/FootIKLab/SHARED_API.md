@@ -3,6 +3,15 @@
 Bodyflip consumes this lab's source directly. Keep foot-placement changes in
 `surface.js` / `footik.js`, not a second implementation in Bodyflip.
 
+November4: the host Slide path carries incoming leg angular motion into its
+existing constrained corridor and checks first-tick geometry. Passing entry
+contacts do not accumulate friction before the wall-following foot target owns
+the leg. Shared `createFeet`/API1, NN, root and authored pelvis path are unchanged;
+standalone Bodyflip foot-placement callers do not load the host entry helper.
+Full-surface consumers pick up surface.js/slide-entry.js together on Refresh.
+Current Foot IK wall-scene Leg blend is1s; other hosts keep their own tuning.
+No native bundle update. Details/evidence in README's November4 entry.
+
 November3 F16–19 follow-up: `createFeet` adds a bounded pelvis accommodation
 for thigh-direction pursuit near a different support plane. It solves both
 legs to the existing ankle targets with the existing joint/sole constraints;

@@ -68,6 +68,8 @@ function create({a,b,leg:l,parents,joints,poseAt,surfaces,inspect,bodyExponent=1
 
  const tracked=[l.hip,l.knee,l.foot];let previousSolved=null;
  function remember(local){previousSolved=tracked.map(j=>local.q[j].slice());return local;}
+ // A live u=0 sample may already carry incoming locomotion velocity. Validate
+ // that geometry too; bypassing its clearance would allow a first-tick clip.
  // Once entry is complete, carry the actual legal pose rather than an offset
  // in normalized joint coordinates. The latter grows stale when the target
  // turns, and can keep folding a leg long after the obstacle has cleared.
@@ -87,7 +89,7 @@ function create({a,b,leg:l,parents,joints,poseAt,surfaces,inspect,bodyExponent=1
  let bad=false;for(let i=1;i<N;i++){const g=evaluateGeometry(nodes[i],nodes[i].wanted);if(g.penetration>.0121||g.kneePenetration>.002)bad=true;}
  // A clear entry can still turn its knee toward the wall later. Resolve that
  // as it approaches, rather than waiting for a shoe collision to trigger it.
- if(!bad){let carry=Array(7).fill(0);return {active:false,milliseconds:Date.now()-started,sample:(u,local)=>{if(u<=0)return remember(local);if(u>=1)return settledSample(local);const c=cache(u,local),base=variables(local.q[l.hip],local.q[l.knee],local.q[l.foot]),margin=.008*4*u*(1-u),seed=project(base.map((x,i)=>x+carry[i]*.92)),g=evaluateGeometry(c,seed),v=(g.min<margin||g.kneePenetration>.002)?correct(c,seed,margin,24):seed;carry=v.map((x,i)=>x-base[i]);if(!carry.some(x=>Math.abs(x)>1e-10))return remember(local);const[h,k]=rotations(v,c);local.q[l.hip]=h;local.q[l.knee]=k;local.q[l.foot]=footAt(c,v);return remember(local);},diagnostics:{maxPenetration:0}};}
+ if(!bad){let carry=Array(7).fill(0);return {active:false,milliseconds:Date.now()-started,sample:(u,local)=>{if(u>=1)return settledSample(local);const c=cache(u,local),base=variables(local.q[l.hip],local.q[l.knee],local.q[l.foot]),margin=.008*4*u*(1-u),seed=project(base.map((x,i)=>x+carry[i]*.92)),g=evaluateGeometry(c,seed),v=(g.min<margin||g.kneePenetration>.002)?correct(c,seed,margin,24):seed;carry=v.map((x,i)=>x-base[i]);if(!carry.some(x=>Math.abs(x)>1e-10))return remember(local);const[h,k]=rotations(v,c);local.q[l.hip]=h;local.q[l.knee]=k;local.q[l.foot]=footAt(c,v);return remember(local);},diagnostics:{maxPenetration:0}};}
  const keys=seed?[[0,aVars],[.2,[...aVars.slice(0,3),.4,...aVars.slice(4)]],[.5,[...aVars.slice(0,3).map((x,j)=>(x+bVars[j])*.5),.4,0,0,0]],[.8,[...bVars.slice(0,3),.4,...bVars.slice(4)]],[1,bVars]]:[[0,aVars],[.12,[...aVars.slice(0,3),1,0,0,0]],[.48,[0,0,0,1,0,0,0]],[.8,[...bVars.slice(0,3),1,0,0,0]],[1,bVars]];
  for(const c of nodes){let i=1;while(i<keys.length-1&&c.u>keys[i][0])i++;const[t0,v0]=keys[i-1],[t1,v1]=keys[i],t=(c.u-t0)/(t1-t0);c.v=v0.map((x,j)=>x+(v1[j]-x)*t);}
  let obstacleWeight=1000;
@@ -99,7 +101,7 @@ function create({a,b,leg:l,parents,joints,poseAt,surfaces,inspect,bodyExponent=1
  const slopes=offsets.map(()=>Array(7).fill(0));for(let i=1;i<N;i++)for(let j=0;j<7;j++){const a=(offsets[i][j]-offsets[i-1][j])*N,b=(offsets[i+1][j]-offsets[i][j])*N;if(a*b>0)slopes[i][j]=2*a*b/(a+b);}
  function values(u,local){if(u<=0||u>=1)return variables(local.q[l.hip],local.q[l.knee],local.q[l.foot]);const t=u*N,i=Math.min(N-1,Math.floor(t)),f=t-i,f2=f*f,f3=f2*f,base=variables(local.q[l.hip],local.q[l.knee],local.q[l.foot]);return project(base.map((x,j)=>x+(2*f3-3*f2+1)*offsets[i][j]+(f3-2*f2+f)*slopes[i][j]/N+(-2*f3+3*f2)*offsets[i+1][j]+(f3-f2)*slopes[i+1][j]/N));}
  let correction=Array(7).fill(0);
- function sample(u,local,refine=true){if(u<=0)return refine?remember(local):local;if(u>=1&&refine)return settledSample(local);let v=values(u,local);const desired=v.slice();let c;
+ function sample(u,local,refine=true){if(u<=0&&!refine)return local;if(u>=1&&refine)return settledSample(local);let v=values(u,local);const desired=v.slice();let c;
   if(refine){c=cache(u,local);const margin=.008*4*u*(1-u),seed=project(v.map((x,i)=>x+correction[i]*.92)),g=evaluateGeometry(c,seed);v=(g.min<margin||g.kneePenetration>.002)?correct(c,seed,margin,24):seed;correction=v.map((x,i)=>x-desired[i]);}
   else c={u,residual:residual.map(q=>qslerp(q,IDENT,u)),footResidual:u>=1?IDENT:qm(local.q[l.foot],qinv(joints.project(l.foot,IDENT,local.q[l.foot],false).q))};
   const[h,k]=rotations(v,c);local.q[l.hip]=h;local.q[l.knee]=k;local.q[l.foot]=footAt(c,v);return refine?remember(local):local;}

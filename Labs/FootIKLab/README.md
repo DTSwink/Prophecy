@@ -3,6 +3,41 @@
 Independent kinematic terrain-placement prototype, created October 25, 2026
 from the Bodyflip Lab renderer, cached NN gait banks and leg solver.
 
+## November 4 — slide entry retains leg momentum
+
+At Phase26%, F48 began Slide by copying F47.5 and carrying it with the root.
+Both pelvis-relative foot velocities became zero immediately; increasing the
+leg blend alone could not remove that freeze. Entry now retains the incoming
+local angular motion, using one display frame of history to avoid amplifying
+alternating 120Hz repairs. A short decaying carry eases into the existing joint
+corridor. It preserves the Jolt limits and retiring source residuals, and even
+the first live corridor sample checks actual shoe/knee clearance. The original
+corridor, root forecast and independent body/pelvis clocks remain in place.
+
+Passing shoe touches during entry no longer wind up a friction target that the
+leg is not yet following. Sliding friction takes ownership when leg entry is
+complete. The established wall/hand movements and their solver are retained;
+body balance may respond slightly differently to the changed foot contacts.
+No new controls. Saved wall scene **Leg blend s is now1.0 (was0.5)**; defaults
+and the other settings are unchanged. Viewer reloaded at pausedF48.
+
+`verify-slide-entry-momentum.cjs` passes62 checks across six recorded replays:
+reported phase at both durations, prior phase58, fresh backward, walk and turn
+cases. F48 relative velocity changes fall from770/471 to228/139m/s²; feet carry
+5.58/3.90m/s instead of stopping. Pre-slide output, physical root and authored
+pelvis positions are exact. Joint limits, fixed lengths and non-regressing
+shoe clearance pass; extending trim across entry is exact. At the new1s tuning,
+the current217-frame scene has no shoe penetration. The wall-approach suite
+passes237 checks (current hand-window peak14.77m/s²); shared isolation2723.
+Actual viewer and collider sequences inspected. Entry motion is not a claim
+that the older late wall/floor-corner clearance snaps are solved.
+
+Evidence and small source baselines: `Saved/Diagnostics/FootIKWall20261103/slide48-*`.
+The old exit/re-entry fixture exhausted its historical NN replies. An additional
+forced-impulse replay was stopped after exceeding two minutes rather than
+leaving a CPU-heavy test running; exit stress coverage is not claimed here.
+No NN/native/Blueprint/server restart or push. Shared API1 is unchanged.
+
 ## November 3 F16–19 thigh continuity follow-up
 
 The earlier clearance/impact response still let the thigh accelerate sharply

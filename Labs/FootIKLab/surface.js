@@ -801,7 +801,7 @@ function createSlidePose(names,parents,terrain,s){
   p=solve();rotation=ankle();
   return shoePose(p,l,p.points[l.foot],rotation);
  }
- function step(context,initial,previous){
+ function step(context,initial,previous,legHistory){
   if(!entry){
    const surface=terrain.allSurfaces.find(p=>p.id===context.slide.surface),n=surface.normal,w=unit(tangent(up,n)),side=unit(cross(w,n));
    const near=arms.reduce((a,b)=>length(sub(initial.points[a.c],surface.closest(initial.points[a.c])))<=length(sub(initial.points[b.c],surface.closest(initial.points[b.c])))?a:b),sign=near.side==='l'?1:-1;
@@ -819,6 +819,14 @@ function createSlidePose(names,parents,terrain,s){
     lastTime:context.time,body:{x:[0,0,0],v:bounded(angularVelocity,.5)},torso:{x:[0,0,0],v:[0,0,0]},free:{x:[0,0,0],v:bounded(mul(handVelocity,.4),.5)},
     drag:{L:contactState(2.21),R:contactState(17.63),hand:contactState(39.08)}};
    entry.legReference=legReference(1);
+   // Seed articulation from the displayed motion, before projecting the next
+   // pose. Differencing two projected poses loses motion that is returning
+   // from an incoming NN residual into the legal joint range.
+   // Use one display frame of history so alternating 120 Hz constraint repairs
+   // do not get extrapolated as a sustained leg kick. Arm history stays intact.
+   const legPrevious=legHistory||previous,previousLocal=legPrevious?R.localize(legPrevious.points,legPrevious.q,parents):entry.local;
+   entry.legVelocity=entry.local.q.map((q,j)=>mul(R.qlog(qm(q,qinv(previousLocal.q[j]))),legHistory?60:120));
+   entry.legLead=previous?1/120:0;
   }
   const e=entry,delta=sub(context.base,e.root),carry=p=>({...p,points:p.points.map(v=>add(v,delta))});
   const elapsed=context.time-context.slide.time,dt=context.time-e.lastTime;e.lastTime=context.time;
@@ -981,16 +989,17 @@ function createSlidePose(names,parents,terrain,s){
   if(!e.legPlans){
    const forecast=context.forecast(Math.ceil(legDuration*120));
    const inverseSmooth=y=>{let lo=0,hi=1;for(let k=0;k<24;k++){const mid=(lo+hi)*.5;if(smooth(mid)<y)lo=mid;else hi=mid;}return(lo+hi)*.5;};
+   const futureTime=progress=>inverseSmooth(progress)*legDuration;
    const poseAt=(progress,local)=>{local={p:local.p.slice(),q:local.q.slice()};
-    const futureCommand=context.headingAt(context.time+inverseSmooth(progress)*legDuration),futureUp=unit(add(e.w,mul(e.n,-.16*dot(futureCommand,e.n)**2))),futureHeading=unit(tangent(futureCommand,futureUp));
+    const futureCommand=context.headingAt(context.time+futureTime(progress)),futureUp=unit(add(e.w,mul(e.n,-.16*dot(futureCommand,e.n)**2))),futureHeading=unit(tangent(futureCommand,futureUp));
     const futureQ=R.fromAxes([futureUp,mul(futureHeading,-1),cross(futureUp,mul(futureHeading,-1))]);
     const parent=R.fk(local,parents).q[parents[pelvis]],residual=qm(qinv(e.desiredQ),e.pose.q[pelvis]);
-    local.q[pelvis]=qm(qinv(parent),qm(futureQ,qslerp(residual,[0,0,0,1],smooth(inverseSmooth(progress)*legDuration/s.slidePelvisBlend))));
-    const pose=R.fk(local,parents),tick=inverseSmooth(progress)*legDuration*120,i=Math.min(forecast.length-2,Math.floor(tick)),t=tick-i;
+    local.q[pelvis]=qm(qinv(parent),qm(futureQ,qslerp(residual,[0,0,0,1],smooth(futureTime(progress)/s.slidePelvisBlend))));
+    const pose=R.fk(local,parents),tick=futureTime(progress)*120,i=Math.min(forecast.length-2,Math.floor(tick)),t=tick-i;
     const future=add(forecast[i].base,mul(sub(forecast[i+1].base,forecast[i].base),t)),delta=sub(future,context.base);
     pose.points=pose.points.map(v=>add(v,delta));return pose;};
-   const bodyProgress=progress=>smooth(inverseSmooth(progress)*legDuration/s.slideBlend),pelvisProgress=progress=>smooth(inverseSmooth(progress)*legDuration/s.slidePelvisBlend);
-   const surfacesAt=(progress,live)=>live?terrain.surfaces:terrain.surfacesAt(context.time+inverseSmooth(progress)*legDuration);
+   const bodyProgress=progress=>smooth(futureTime(progress)/s.slideBlend),pelvisProgress=progress=>smooth(futureTime(progress)/s.slidePelvisBlend);
+   const surfacesAt=(progress,live)=>live?terrain.surfaces:terrain.surfacesAt(context.time+futureTime(progress));
    e.legPlans=targets.map(({l})=>E.create({a,b,leg:l,parents,joints,surfaces:surfacesAt,poseAt,bodyProgress,pelvis,pelvisProgress}));
    const score=plans=>Math.max(...plans.map(p=>{const d=p.diagnostics;return d.worst&&d.worst.u<.95?d.maxPenetration:0;}));
    if(score(e.legPlans)>.008){const leading=targets.map(({l})=>E.create({a,b,leg:l,parents,joints,surfaces:surfacesAt,poseAt,bodyProgress,pelvis,pelvisProgress,bodyExponent:4}));if(score(leading)<score(e.legPlans)){e.legPlans=leading;e.bodyExponent=4;}}
@@ -1005,6 +1014,18 @@ function createSlidePose(names,parents,terrain,s){
    for(const j of [l.hip,l.knee,l.foot,l.toe])local.q[j]=joints.blendLocal(j,a.q[j],b.q[j],u);
    for(const j of [l.knee,l.foot,l.toe])local.p[j]=R.offsetBlend(a.p[j],b.p[j],u);
   }
+  // Integrate the incoming angular velocity with a short exponential decay.
+  // Retire its accumulated displacement over the existing entry blend, with
+  // zero slope at completion. The normal corridor remains the destination;
+  // joint limits and its live shoe/knee clearance still own feasibility.
+  // Only the momentum advances from the previous displayed sample; changing
+  // the corridor's clock would also move its floor/wall collision predictions.
+  const momentumTime=Math.min(.06,legDuration*.15),carryTime=momentumTime*(-Math.expm1(-(elapsed+e.legLead)/momentumTime))*(1-u);
+  if(carryTime>1e-12)for(const {l} of targets)for(const j of [l.hip,l.knee,l.foot,l.toe]){
+   const legal=joints.project(j,identity,local.q[j],false).q,residual=qm(local.q[j],qinv(legal));
+   const carried=qm(R.qexp(mul(e.legVelocity[j],carryTime)),legal);
+   local.q[j]=qm(residual,joints.project(j,identity,carried,false).q);
+  }
   for(const plan of e.legPlans)plan.sample(u,local);
   let pose=R.fk(local,parents);const feet=[];
   // The free leg follows the constrained FK path until entry is complete;
@@ -1013,7 +1034,10 @@ function createSlidePose(names,parents,terrain,s){
    const l={...target.l};
    const actual=pose.points[l.foot],contactPoint=plane.closest(add(actual,sole(pose,l,e.n))),gap=dot(sub(add(actual,sole(pose,l,e.n)),contactPoint),e.n);
    const touching=!!wall&&Math.abs(gap)<.004;
-   e.drag[target.side].touching=touching;
+   // During entry this shoe follows the corridor, not the moving friction
+   // target. A passing brush must not wind up an unseen drag target that then
+   // kicks the leg when the wall-following controller takes over.
+   e.drag[target.side].touching=touching&&u>=1;
    feet.push({side:target.side,state:touching?'SLIDE':'REACH',target:actual,contact:null,slideContact:touching?{point:contactPoint,surface:plane.id,normal:e.n}:null,error:length(sub(actual,target.target)),penetration:penetration(pose,l,terrain.surfaces),soleGap:gap});
   }
   // Blend the incoming NN's local joints into the hinge-valid goal. Some source
@@ -1088,12 +1112,12 @@ function* simulate(run,input={},experiment={}){
    let previousSlidePose=frames.at(-1)?.pose;
    if(!slidePose){
     slidePose=createSlidePose(names,parents,terrain,s);footSolver.reset();returnPose=null;
-    // Releasing locomotion contacts must not author a different first slide
-    // pose. Carry the last displayed articulation with this tick's root.
+    // Seed from the displayed articulation and its preceding sample. Slide
+    // carries that leg velocity instead of freezing the first articulation.
     const last=frames.at(-1);
     if(last){const delta=sub(base,last.root);pose={...last.pose,points:last.pose.points.map(v=>add(v,delta))};previousSlidePose=frames.at(-2)?.pose;}
    }
-   slideResult=slidePose.step({...context,heading:K.rootHeading(run,time,s,speed),headingAt:t=>K.rootHeading(run,t,s,speed),forecast:ticks=>motion.forecast(context,[],ticks)},pose,previousSlidePose);pose=slideResult.pose;feet.splice(0,feet.length,...slideResult.feet);supports.length=0;
+   slideResult=slidePose.step({...context,heading:K.rootHeading(run,time,s,speed),headingAt:t=>K.rootHeading(run,t,s,speed),forecast:ticks=>motion.forecast(context,[],ticks)},pose,previousSlidePose,frames.at(-3)?.pose);pose=slideResult.pose;feet.splice(0,feet.length,...slideResult.feet);supports.length=0;
    metrics.slideFrames=(metrics.slideFrames||0)+1;metrics.slideHandFrames=(metrics.slideHandFrames||0)+(slideResult.hands.some(hand=>hand.touching)?1:0);
    const before=frames.at(-1)?.pose;
    for(const foot of feet){const l=S.leg(pose,names,foot.side);metrics.maxPenetration=Math.max(metrics.maxPenetration,foot.penetration);metrics.slideContactFrames=(metrics.slideContactFrames||0)+(foot.slideContact?1:0);

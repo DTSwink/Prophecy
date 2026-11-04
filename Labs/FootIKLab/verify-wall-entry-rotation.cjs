@@ -40,7 +40,10 @@ function thighMotion(m){
   await whole.extend(fixture.request.endTime);
   for(const time of [.1,.25,.33,.4,fixture.request.endTime])await split.extend(time);
   assert.deepEqual(whole.model.frames,split.model.frames);checks++;
-  assert.deepEqual(JSON.parse(JSON.stringify(whole.model.frames)),after.frames);checks++;
+  // Slide now carries entry momentum; its separate regression covers that
+  // motion. The wall approach under test must remain byte-exact.
+  const slide=after.frames.findIndex(f=>f.slide);
+  assert.deepEqual(JSON.parse(JSON.stringify(whole.model.frames.slice(0,slide))),after.frames.slice(0,slide));checks++;
  }finally{whole.close();split.close();}
  // The shared yaw helper's optional explicit heading must leave its existing
  // ordinary flat/stair/down and disabled callers exactly unchanged.
@@ -51,7 +54,7 @@ function thighMotion(m){
  const slideStart=m=>m.frames.findIndex(f=>f.slide);
  check(slideStart(after)===slideStart(arrivalBefore),'Same slide entry frame');
  let handAcceleration=0;
- for(const side of ['l','r'])for(let i=126;i<=176;i++){const j=after.names.indexOf('hand_'+side),relative=k=>R.sub(after.frames[k].pose.points[j],after.frames[k].pose.points[1]);handAcceleration=Math.max(handAcceleration,R.length(R.add(R.sub(relative(i),R.mul(relative(i-1),2)),relative(i-2)))*120**2);}
+ for(const side of ['l','r'])for(let i=126;i<=176;i++){const j=after.names.indexOf('hand_'+side),motion=whole.model.frames,relative=k=>R.sub(motion[k].pose.points[j],motion[k].pose.points[1]);handAcceleration=Math.max(handAcceleration,R.length(R.add(R.sub(relative(i),R.mul(relative(i-1),2)),relative(i-2)))*120**2);}
  check(handAcceleration<20,'Accepted slide-hand motion has no renewed F67/F85 kick');
  const report={passed:true,checks,frames:after.frames.length,thigh:{before:oldThigh,after:newThigh},firstWallPinFrame:firstPin(after)/2,pinTicks:{before:pinTicks(arrivalBefore),after:pinTicks(after)},oldAxialStepDeg:oldAxial,newAxialStepDeg:newAxial,rightSoleAngleAt16:{before:wallAngle(before,16),after:wallAngle(after,16)},addedAnkleLimitDeg:ankleError*180/Math.PI,pinDriftM:drift,handAcceleration,decoder};
  fs.writeFileSync(path.join(dir,'arrival-verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
