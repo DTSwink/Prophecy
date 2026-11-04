@@ -17,3 +17,7 @@ Preserve the user's Blueprint wiring, tuning, assets and active Play session.
 Use the existing remote Python tooling for Unreal. Private retained C++ layout
 changes require a normal build and restart, not Live Coding. See the game journal
 for the complete save/build/verification procedure and standing authorizations.
+
+For facial expressions (baked face morphs, wrinkle textures, face material/curve
+hookup), read `FaceJournal.md` first; it owns that work. Do not log it in
+ProjectJournal.md beyond a link.

@@ -2,8 +2,8 @@
   "date": "2026-10-03",
   "branch": "codex/standalone-sim",
   "note": "Git-normalized file bytes; manifest excludes itself. External assets are not backed up.",
-  "file_count": 11362,
-  "bytes": 2118249055,
+  "file_count": 11384,
+  "bytes": 2118453668,
   "files": [
     {
       "path": ".gitattributes",
@@ -25,9 +25,9 @@
     },
     {
       "path": "AGENTS.md",
-      "git_blob": "410f77f57ebd8b4d9885338e90a3815c538f3bf6",
-      "bytes": 1161,
-      "sha256": "97dc3ebdd336aa95ad3aaba33761169ec2adb60d8ab5c84abc094d6b7dc228d0"
+      "git_blob": "c1efb0d031627248bf49d7d447d89bd737383791",
+      "bytes": 1350,
+      "sha256": "47d928f95cbbbb603e0b9656ed6f39e7804ec3937b602ea667493047e5ad859e"
     },
     {
       "path": "Config/DefaultDeviceProfiles.ini",
@@ -7531,15 +7531,15 @@
     },
     {
       "path": "Content/FootIKLab/Receipt.json",
-      "git_blob": "194b3436cd09d221760b5ddae95d31a45859dd72",
+      "git_blob": "8c92b244d12f3f1e13f877cf8b2118e91ab83839",
       "bytes": 9867,
-      "sha256": "5253d47e1c1ac05056133f38b5db6ac374573300166c75b32cdc7d48bdd66735"
+      "sha256": "78d59d0f7ab79fa5869b9f7b3f212c9a0eaa3b90b086c8f2a1727a329526121e"
     },
     {
       "path": "Content/FootIKLab/Runtime.js",
-      "git_blob": "ee74c05d3d4a8502c6b037d40da1cf60dd0584d4",
-      "bytes": 483609,
-      "sha256": "704e48aa97b5c6448bf92bcfafb30275adc816900471d3f5e362c97c4ebfc98d"
+      "git_blob": "16005ebd0067035829e1db8be0551947dd39f368",
+      "bytes": 499117,
+      "sha256": "1af9282e6d578b1be12bd8d132294e1db189e35c8d4c87f59647b3e3c7925180"
     },
     {
       "path": "Content/FootIKLab/ThirdPartyNotices.txt",
@@ -15240,6 +15240,12 @@
       "sha256": "11c9f95cb9c07fdf9fe0a39b695bd79eea258c5fc27d342c281b498484f38ba8"
     },
     {
+      "path": "Docs/FaceExpressions.md",
+      "git_blob": "c31d1156922ecb2a692136184e1b12b58cd2f508",
+      "bytes": 3958,
+      "sha256": "c131dae7cbed0373ddeaa4692d82d051cd7489ccadc84f2113d7c261c4a26a65"
+    },
+    {
       "path": "Docs/FixedArmAttachments.md",
       "git_blob": "995660ad95e949e8840c48a9e308937d4e639d5a",
       "bytes": 4435,
@@ -15265,9 +15271,9 @@
     },
     {
       "path": "Docs/FootIKNative.md",
-      "git_blob": "e912faf976b856880542ad84911a2283054deb2d",
-      "bytes": 19168,
-      "sha256": "2dafa2fa1fa3803f133550afcc41dd7a475da7969a4f725f68c17108b54ee431"
+      "git_blob": "db571174c4ecdb3474ee1d2451dc4bc5861f47e3",
+      "bytes": 22014,
+      "sha256": "07a4978b9366ecb54a7d134108b1684b5d51fb141271ba64e55414f23eb6f877"
     },
     {
       "path": "Docs/FootJiggle173.md",
@@ -17304,6 +17310,42 @@
       "sha256": "e8f00b0ef99c44671ffd795c25650513be46bb58970f12f422c2572e5518719b"
     },
     {
+      "path": "Exports/FaceWrinkles/FaceWrinkles.hlsl",
+      "git_blob": "f3d5b2d5ba18b9996aacf011cf7b76e68a485df1",
+      "bytes": 2202,
+      "sha256": "d51b832962705e0a633d7b0b003cc6ef1195b7ec6619d4c0b7be50814a0a6d69"
+    },
+    {
+      "path": "Exports/FaceWrinkles/T_Face_WrinkleMasks_0.png",
+      "git_blob": "0af14db7eb029522cde77c08e4ea9a07a6e6b3a7",
+      "bytes": 27566,
+      "sha256": "6a4c96378a93bb65c296759957bffd04698c80174eb20f6c75746c436aba3742"
+    },
+    {
+      "path": "Exports/FaceWrinkles/T_Face_WrinkleMasks_1.png",
+      "git_blob": "df6c497986a5cdc1f9bcfe24db4bc04276a72676",
+      "bytes": 38942,
+      "sha256": "b2af163f500c5b3724dc4c5fb33777ad5185351d9f97350390a10fa605095e66"
+    },
+    {
+      "path": "Exports/FaceWrinkles/T_Face_WrinkleMasks_2.png",
+      "git_blob": "e46eae687837cdf82d20c5eb29b8b9ac89f34db5",
+      "bytes": 34521,
+      "sha256": "e7647bac3219ebb30bb0658e8433c648b7cd6153eeb767887e4acd607f34ec6e"
+    },
+    {
+      "path": "Exports/FaceWrinkles/T_Face_WrinkleMasks_3.png",
+      "git_blob": "a8b742edcb765c5b56b2cc00d85e57148e14ec3e",
+      "bytes": 17718,
+      "sha256": "1a2a7d088b32483f595949a5ddcc957d1c3a03c8adc400c9a7e61a04baac299a"
+    },
+    {
+      "path": "Exports/FaceWrinkles/wrinkle_layout.json",
+      "git_blob": "978dbcb1262be9da4e28b94d89ff0766166b9aa4",
+      "bytes": 1924,
+      "sha256": "8f6c54f7bad7270713a592ce46ce4b474f6085a7307f050326c36da1e860e5de"
+    },
+    {
       "path": "Exports/ImperialSpear/Angular_S_Relief_Verification.json",
       "git_blob": "7156f787613fbae1df56c2bf9082a26ad176c06a",
       "bytes": 2378,
@@ -18454,6 +18496,12 @@
       "git_blob": "8e7361fbf8701a2a76275d5d58bbce2750044266",
       "bytes": 1291,
       "sha256": "5fcacf4620b02b4df850132b12c8d0accf45fc77ebc51e167b20bb709fc94d54"
+    },
+    {
+      "path": "FaceJournal.md",
+      "git_blob": "7ace7053d3fd4185da17912cecc1eec0997b34c7",
+      "bytes": 5104,
+      "sha256": "234444eb0986d6a19f4e6f232325758a20c1b122d515b68e2172bc9425247ae4"
     },
     {
       "path": "GameAnimationSample3.uproject",
@@ -27811,15 +27859,15 @@
     },
     {
       "path": "Labs/FootIKLab/README.md",
-      "git_blob": "95b6f8457a090967af271ee20ba93f98a79954c9",
-      "bytes": 177538,
-      "sha256": "bd37d5086e8db05f86ff5ffd042d86d3bc09d4cf2e32dbc7afd13e712667239d"
+      "git_blob": "dba1448dd092307eb227044f769135ac6b3b480f",
+      "bytes": 179831,
+      "sha256": "823e71789c0b23b18ffb9e523142c4d980bb0c28d71a563e0f202cee1b8e4825"
     },
     {
       "path": "Labs/FootIKLab/SHARED_API.md",
-      "git_blob": "db6c8c77581cdafe70b2267b0e4cf7b1474fa5f0",
-      "bytes": 16695,
-      "sha256": "91a282c8722c1eb0ab07e94232eb0f3a65b5ed2437083f25ea0400b598e9407e"
+      "git_blob": "3a9c32ea008aca446d0a604a50e370678cf0762f",
+      "bytes": 17316,
+      "sha256": "70667807b144376b8981b6946d4b1c3ece1068b53508fbefdfb66b29c7fdf5b8"
     },
     {
       "path": "Labs/FootIKLab/ankle-verification.json",
@@ -27889,9 +27937,9 @@
     },
     {
       "path": "Labs/FootIKLab/bodyflip-wall-scene.json",
-      "git_blob": "33507166311ef1cac13acce33f5b560374376ae2",
-      "bytes": 955,
-      "sha256": "6167a4af65bd6a9ed2006824c7a6bfd3468b6a427db762719e27631989da9f57"
+      "git_blob": "49ee5d5496220b3d4e8baccf44ff8164e5b884aa",
+      "bytes": 1000,
+      "sha256": "eaf8b7f2e753259a46f8b93c3e502c305fb3e8c00064bd63b99fe125e71e9735"
     },
     {
       "path": "Labs/FootIKLab/clearance-verification.json",
@@ -28525,9 +28573,9 @@
     },
     {
       "path": "Labs/FootIKLab/slide-entry.js",
-      "git_blob": "3709d0b1b7a97224c9385a02a9bd1042d09d2477",
-      "bytes": 14767,
-      "sha256": "338023733bc6aeb751cb8e6e3dad0dfac97c9cecbbf9ae4cd53cc136a3c7a05b"
+      "git_blob": "e4e7c4c31cae00999820b282c652823b479066d4",
+      "bytes": 14879,
+      "sha256": "d2a45c8f3ebc129072c531923287fc12558486073b14efe64976779599f71b5c"
     },
     {
       "path": "Labs/FootIKLab/slide-joints.js",
@@ -28573,9 +28621,9 @@
     },
     {
       "path": "Labs/FootIKLab/surface.js",
-      "git_blob": "76984e7466c216a029b6056a0c7f7d58093ef545",
-      "bytes": 92908,
-      "sha256": "9968c74b06e73b0018898b8b8796ca382998a7c890100cbff9f622fda2160878"
+      "git_blob": "8f3c0eebcf59c569b69cade33cc4117c0b6c8b58",
+      "bytes": 94725,
+      "sha256": "7d112d5833baa1b7404c08b7042471868d58d0c8f738c3510dfc66e19c4b717d"
     },
     {
       "path": "Labs/FootIKLab/surface_driver.cjs",
@@ -29040,6 +29088,12 @@
       "sha256": "44488061e8cb2de008c2171dab88dce538bc199728517051b90c12d77194b026"
     },
     {
+      "path": "Labs/FootIKLab/verify-slide-entry-momentum.cjs",
+      "git_blob": "cdcff28b6f85612a7bf16002ace4d536928a35fa",
+      "bytes": 6356,
+      "sha256": "98895a4821d6e9139eb4120155609306722cc7cb36d5037dcf165c7045e17c6e"
+    },
+    {
       "path": "Labs/FootIKLab/verify-slide-entry.cjs",
       "git_blob": "11aa28f7694fe23c91a868d7fdf33b614d263cd4",
       "bytes": 3250,
@@ -29215,9 +29269,9 @@
     },
     {
       "path": "Labs/FootIKLab/verify-wall-entry-rotation.cjs",
-      "git_blob": "167d3d3a46da162cb87760a9ed3cb1beb6a1b38b",
-      "bytes": 6481,
-      "sha256": "6a146a996a7d1e9d7bb5526efb58119ffc6232cbbbb11790537043b2a4ec2125"
+      "git_blob": "8c344968ba72e1e98027e1564d8a3255c5f424e5",
+      "bytes": 6716,
+      "sha256": "e80b8a56c30a6861b16beb7e3d85daf0ea61c4878c7d7edea5a68136524e42d7"
     },
     {
       "path": "Labs/FootIKLab/verify-wall-frame-browser.cjs",
@@ -41803,9 +41857,9 @@
     },
     {
       "path": "ProjectJournal.md",
-      "git_blob": "4a6599c4f2855eac2387d6f5f76b9a3d1a2d6b95",
-      "bytes": 520996,
-      "sha256": "f14199fd8a60bbbbebb179bd74e445ba9ebc898f8cc71429b8147904bd851422"
+      "git_blob": "70e54e66565c7bf0e4d5cf07066809c75da3ac6b",
+      "bytes": 521886,
+      "sha256": "4674682b7876f52ebb4b8b6fd7a4489849b73408043d9fb3ec2d0a2b51060203"
     },
     {
       "path": "Saved/AddJulyWalkCheckbox.py",
@@ -60439,9 +60493,9 @@
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyFootIKRuntimeTests.cpp",
-      "git_blob": "c7d3da38fb06d3d93479e0a9797cd3970a4199b3",
-      "bytes": 24867,
-      "sha256": "9d24e71b81777e90f49d2e6bfef7da6d85f5290bec07a8c57e858324d0014a2a"
+      "git_blob": "26c1ab98cd46148684157ddb866bfb9fa35e4ed7",
+      "bytes": 25085,
+      "sha256": "082c4febd692d6679fea1b2cbfb68277253117c6c29244892805efc1e9584d16"
     },
     {
       "path": "Source/GameAnimationSample3/Private/Tests/ProphecyFootIKSurfaceOwnerTests.cpp",
@@ -61801,9 +61855,9 @@
     },
     {
       "path": "Source/ProphecyFootIKMath/Private/ProphecyFootIKArmKernel.cpp",
-      "git_blob": "ad748c042b017d8aab9bfcdcdd8cc793d9cc7edf",
-      "bytes": 17667,
-      "sha256": "2edef986d206898f7d0acec8c2046470010ecc33b3c0719f29c7792468f24a8a"
+      "git_blob": "bcf785d7bc18b306606605a74bf09ef2ab9d582d",
+      "bytes": 18364,
+      "sha256": "e09923e9dfdb6c22a137e03eef928341e3362387117e3136e39c989129a68e56"
     },
     {
       "path": "Source/ProphecyFootIKMath/Private/ProphecyFootIKEntryKernel.cpp",
@@ -62832,6 +62886,78 @@
       "sha256": "32269685d35b39feb15e9635e29e26a60eedb3cb1ea2e927219aa0536d471c77"
     },
     {
+      "path": "Tools/FaceExpressions/align.py",
+      "git_blob": "c6cebd7baf2a4cd63ee3ebf627213ff05c100aea",
+      "bytes": 1078,
+      "sha256": "ee2ce54af1a847a36e342a93d99b4319eb6455ceefdab8fd745e37a086fbd97f"
+    },
+    {
+      "path": "Tools/FaceExpressions/apply_render.py",
+      "git_blob": "7272ab10b6f466714d205235dfaa6ec39a400035",
+      "bytes": 4334,
+      "sha256": "dfbbd2b9c57624ca6e0cb214952d29548ce80188742d4c6ea881ba6bc9fc12c8"
+    },
+    {
+      "path": "Tools/FaceExpressions/bake.py",
+      "git_blob": "eba7de857de765de5ed0066f8601934e6aed2c34",
+      "bytes": 5245,
+      "sha256": "c093c45699de6f02fb7b7d9b6e4a287aab2bd675dedc7282901730579dd9e13c"
+    },
+    {
+      "path": "Tools/FaceExpressions/dump_boss.py",
+      "git_blob": "790d1dcfc6fdf4d8d58dd0fb736aedd7d1189a54",
+      "bytes": 1004,
+      "sha256": "2f14ed03647b70f1063353cfb6853580fa5e2a27f3c172a213be14decd1009a7"
+    },
+    {
+      "path": "Tools/FaceExpressions/export_boss.py",
+      "git_blob": "76b4a7161436de4a7d558ddb9f12b80546159206",
+      "bytes": 1422,
+      "sha256": "a0a5b1bf8c6356001a0a0f8d3742a61629ee2df993e882f541d345e2092b22a1"
+    },
+    {
+      "path": "Tools/FaceExpressions/import_face_wrinkle_textures.py",
+      "git_blob": "e5dfb48a2f9ace4360c981c61f402481b80bf880",
+      "bytes": 1674,
+      "sha256": "d4df523277656b3d032d56702e5e9559d5ad267dbc21f2470c5337855b422436"
+    },
+    {
+      "path": "Tools/FaceExpressions/match.py",
+      "git_blob": "03453fc16723167b45dbf23779616835ceb5e2d5",
+      "bytes": 1112,
+      "sha256": "e654bdf21865f53e5c4ed8d707745821bd412ac3de6e4046924e0233e81e0348"
+    },
+    {
+      "path": "Tools/FaceExpressions/match2.py",
+      "git_blob": "082eed06ba5bf85dfa60a3b6ab9538a581745d74",
+      "bytes": 1037,
+      "sha256": "51595a0d41db73a35ec917f82dd989836047dd50f7274c32c9c1bde3cfe09b82"
+    },
+    {
+      "path": "Tools/FaceExpressions/rl.py",
+      "git_blob": "fb68324eface9b1d8f7908147d7c591f3241904b",
+      "bytes": 6492,
+      "sha256": "223f84e311180c4896481e0b0d7910b5033fa4b09b600bd139964283a1d5afc0"
+    },
+    {
+      "path": "Tools/FaceExpressions/verify_rt.py",
+      "git_blob": "cbeee76cbf74ff87aedb269f05fc68030ecf3a6e",
+      "bytes": 2696,
+      "sha256": "f6769ef01a9183c0d28156ce0373823ae785649516281414f3dcbccceb518efc"
+    },
+    {
+      "path": "Tools/FaceExpressions/wr_build.py",
+      "git_blob": "726729a6ddf2f11717f48257385828ee9efb6197",
+      "bytes": 5881,
+      "sha256": "48b34d73605146d96fafa7296053fefc40230be5a35b7765da2793181db668a2"
+    },
+    {
+      "path": "Tools/FaceExpressions/wr_render.py",
+      "git_blob": "1a7f1c3cd6e645f6163a6a0744eba557d020fcea",
+      "bytes": 3510,
+      "sha256": "0b23a8fa1a4c6770c1e008ac547233f89d00c3c15c808074dc7ea47aeb4aeddc"
+    },
+    {
       "path": "Tools/FootIK/CMakeLists.txt",
       "git_blob": "fa867ed11ab313baa0763bcd141595a67fc7ebcf",
       "bytes": 4149,
@@ -62851,9 +62977,9 @@
     },
     {
       "path": "Tools/FootIK/PARITY.md",
-      "git_blob": "0dfabc991f3cb667081847765b6561cf913b2543",
-      "bytes": 9457,
-      "sha256": "54500c3d11af8193da2925383e9d84b8874e363d319ea522ddb3fd4a92a233ff"
+      "git_blob": "498e4227c6a807773fe6e6764c604a73d1a11510",
+      "bytes": 10059,
+      "sha256": "3d0168c758a666a4baf510a8cc827827444088d9c90a43ed066cb4db669ba776"
     },
     {
       "path": "Tools/FootIK/PROTOCOL.md",
@@ -63019,9 +63145,9 @@
     },
     {
       "path": "Tools/FootIK/native-kernel-contract.json",
-      "git_blob": "d7720d7468e315a9a582936009cb1a129a7b051d",
+      "git_blob": "0f8031568eed0886a92329e4a84afa6b5e19a231",
       "bytes": 3044,
-      "sha256": "36c0707bfb0c577cb072a2d42514aa94ce56741a819cd98248835de5355fc8c7"
+      "sha256": "3b98ae46ecc0b6fa8de0a44afd649ed771a5c7f179629d4b7ce06eeaf43ead65"
     },
     {
       "path": "Tools/FootIK/native-leg-contact.cjs",
@@ -63055,9 +63181,9 @@
     },
     {
       "path": "Tools/FootIK/parity-export.cjs",
-      "git_blob": "a4d74376c1e5d49196a02b634dd0589c7830d34e",
-      "bytes": 4352,
-      "sha256": "d29290b3fef45a442d5ecc76b085a8fc9a3a83a9965c5ec29a18d009409385f8"
+      "git_blob": "b2db20a925d2c3151c91b252ae060a553793f3e2",
+      "bytes": 4933,
+      "sha256": "a2e80eaf1e47efee1218698bbfe9fbf8e48d28cef68193c604bac5e55059a3c7"
     },
     {
       "path": "Tools/FootIK/parity-fixtures/app-run-down.json.gz",
@@ -63325,9 +63451,9 @@
     },
     {
       "path": "Tools/FootIK/record-arm-fit.cjs",
-      "git_blob": "361f6bff70a03e930ab92c4a9aa0a02b4b905ae2",
-      "bytes": 5408,
-      "sha256": "b7fa5ee95d4b3d952f213486de9c40293b18e5cf39157c8d9df4a5f14c546238"
+      "git_blob": "3d4120ae9566649e06e07ebc339684be24956a26",
+      "bytes": 5424,
+      "sha256": "41aa27e1ba94ad3a812e74b1f0d2ca863c544383fb7d108d8623c81a0626eb2c"
     },
     {
       "path": "Tools/FootIK/runtime-adapter.js",
@@ -64426,6 +64552,12 @@
       "git_blob": "22f3136db47d55362d894554c1e0c6d4a881f0fc",
       "bytes": 9854,
       "sha256": "639a664c79515483d9993ee43f4de2c62c25312bbc9a9a90f3ddc3dd6b3da86e"
+    },
+    {
+      "path": "Tools/MetaHuman/import_boss_expressions.py",
+      "git_blob": "0512e3faaf248f9a42b33ae00e17646b8d114006",
+      "bytes": 4167,
+      "sha256": "8baccceab13df2ef845afacfac5e2454ac5e4d4efb115611a4a94e3df43b6979"
     },
     {
       "path": "Tools/MetaHuman/import_boss_shading_repair.py",

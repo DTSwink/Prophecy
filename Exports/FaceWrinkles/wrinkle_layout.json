@@ -1,0 +1,100 @@
+{
+ "channels": [
+  {
+   "texture": "T_Face_WrinkleMasks_0",
+   "channel": "R",
+   "expression": "Blink_L",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_0",
+   "channel": "G",
+   "expression": "Blink_R",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_0",
+   "channel": "B",
+   "expression": "JawOpen",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_0",
+   "channel": "A",
+   "expression": "Effort",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_1",
+   "channel": "R",
+   "expression": "Effort",
+   "layer": 2
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_1",
+   "channel": "G",
+   "expression": "Pain",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_1",
+   "channel": "B",
+   "expression": "Pain",
+   "layer": 2
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_1",
+   "channel": "A",
+   "expression": "Shout",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_2",
+   "channel": "R",
+   "expression": "Shout",
+   "layer": 2
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_2",
+   "channel": "G",
+   "expression": "Anger",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_2",
+   "channel": "B",
+   "expression": "Anger",
+   "layer": 2
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_2",
+   "channel": "A",
+   "expression": "Fear",
+   "layer": 1
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_3",
+   "channel": "R",
+   "expression": "Fear",
+   "layer": 2
+  },
+  {
+   "texture": "T_Face_WrinkleMasks_3",
+   "channel": "G",
+   "expression": "Grin",
+   "layer": 1
+  }
+ ],
+ "aliases": {
+  "Dead": {
+   "Blink_L": 1.0,
+   "Blink_R": 1.0
+  },
+  "LookDown": {
+   "Blink_L": 0.7,
+   "Blink_R": 0.7
+  }
+ },
+ "detail": "T_Face_WrinkleDetail: RG=layer1 (stretch) normal XY, BA=layer2 (compress) normal XY, DirectX green like MetaHuman source",
+ "note": "Layer weight = clamp(sum over channels of param[expression]*mask, 0, 1); param[Blink_L] includes Dead + 0.7*LookDown (aliases)"
+}
