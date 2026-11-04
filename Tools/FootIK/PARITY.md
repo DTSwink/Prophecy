@@ -6,6 +6,15 @@ and recorded NN replies. Every native NN request is compared too: current
 and history seeds, actual root history, future root positions, and future yaw.
 Recorded replies therefore cannot conceal a changed controller forecast.
 
+For a newly accepted scene, `parity-export.cjs --fixture=<recording.fixture.json.gz>
+--out=<Saved directory>` accepts repeated fixtures and keeps the frozen matrix
+intact. `record-arm-fit.cjs --corpus=<Saved directory>` records its native
+kernel inputs from that same independent oracle. Unreal's
+`-FootIKParityDirectory=<absolute Saved directory>` selects it for
+`Prophecy.FootIK.EmbeddedRuntimeParity`. Start the isolated automation host with
+`-DisablePython -DisablePlugins=Fab -nullrhi -nocef -unattended`; Python startup
+otherwise recreates its deleted pip environment and can attempt downloads.
+
 `parity-cases.cjs` covers 42 solver cases: walk/run on flat ground, stairs up/down,
 uneven ground, toward/parallel inclines at 0/45/90 degrees, coupled wall
 walk/run, front/back/left/right slides, both turn directions, 82/85-degree

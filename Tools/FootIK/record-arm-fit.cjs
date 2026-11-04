@@ -2,8 +2,8 @@
 // Capture original unbundled brace-fit calls, not native-kernel outputs. Binary
 // float64 fixtures preserve signed zero and are generated only below Saved.
 const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),assert=require('node:assert/strict');
-const directory=path.resolve(__dirname,'../../Saved/Diagnostics/FootIKPort20261030');
 const arg=(k,d)=>process.argv.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)||d,name=arg('case','current-yaw-stop10'),kind=arg('kernel','arm'),entry=kind==='entry',leg=kind==='leg',finiteSlabs=process.argv.includes('--finite-slabs');
+const directory=path.resolve(__dirname,'../..',arg('corpus','Saved/Diagnostics/FootIKPort20261030'));
 const armsPath=path.resolve(__dirname,'../../Labs/FootIKLab/'+(entry?'slide-entry.js':leg?'surface.js':'slide-arms.js')),contractPath=path.resolve(__dirname,entry?'native-entry-fit.cjs':leg?'native-leg-contact.cjs':'native-arm-fit.cjs');
 let source=fs.readFileSync(armsPath,'utf8');
 if(finiteSlabs){

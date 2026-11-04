@@ -1,7 +1,7 @@
 'use strict';
 // Independent Node oracle for the native FootIK runtime. Sequential, offline,
 // no new policy inference. Generated large files belong under Saved only.
-const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
 try{const os=require('node:os');os.setPriority(0,process.env.FOOTIK_DIAG_NORMAL_PRIORITY?os.constants.priority.PRIORITY_NORMAL:os.constants.priority.PRIORITY_BELOW_NORMAL);}catch{}
 const {root,cases}=require('./parity-cases.cjs');
 const K=require('../../Labs/FootIKLab/footik.js'),F=require('../../Labs/FootIKLab/surface.js'),C=require('../../Labs/FootIKLab/surface-coupling.js');
@@ -31,7 +31,13 @@ async function main(){
  fs.mkdirSync(out,{recursive:true});
  const sources=Object.fromEntries(sourceFiles.map(n=>[n,hash(path.join(root,'Labs/FootIKLab',n))]));
  const manifest={schema:'footik-native-parity-v1',referenceRuntime:{node:process.version,v8:process.versions.v8},sourceHashes:sources,positionToleranceM:1e-8,quaternionTolerance:1e-10,cases:[]};
- for(const item of cases().filter(c=>!filter||new RegExp(filter).test(c.name))){
+ const fixtures=args.filter(a=>a.startsWith('--fixture=')).map(a=>a.slice(10));
+ const selected=fixtures.length?fixtures.map(dependency=>{
+  const bytes=fs.readFileSync(path.resolve(root,dependency)),f=JSON.parse(dependency.endsWith('.gz')?zlib.gunzipSync(bytes):bytes);
+  const name=path.basename(dependency).replace(/\.fixture\.json(?:\.gz)?$/,'');
+  return {name,tags:['recorded-scene','coupled'],dependency,input:{op:'prepare',source:f.request.source,settings:f.request.settings,policySteps:f.response.steps,endTime:f.request.endTime}};
+ }):cases().filter(c=>!filter||new RegExp(filter).test(c.name));
+ for(const item of selected){
   const begin=performance.now(),input={...item.input,parents};
   const {model,requests}=await oracle(input),expected={frames:model.frames.map(canonicalFrame),windows:model.coupling?.windows||[],requests,events:model.events||[]};
   const inputFile=`${item.name}.input.json`,expectedFile=`${item.name}.expected.json`;

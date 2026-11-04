@@ -1,5 +1,47 @@
 # Foot IK native integration
 
+**November 4 CURRENT — accepted wall-entry and slide-continuity work ported.**
+Lab commit `8fe5a2c5` was pushed alone to `origin/codex/standalone-sim` (seven
+FootIKLab files; no models, captures or unrelated changes). The user subsequently
+saved phase0.9, Leg blend0.8s and deleteFloorFrame50; that accepted setup is in
+this commit. Unreal actor/Blueprint tuning was not overwritten with lab settings.
+
+The native Runtime.js now packages the accepted canonical sources, including
+wall-approach thigh continuity, calf-relative ankle limits, stable surface shoe
+alignment, collider-aware hand contact and preserved slide-entry leg momentum.
+The complete native brace-fit kernel was updated to use the same hand collider
+support extent and tangential/normal error as slide-arms.js. Entry/leg native
+search regions are unchanged. Dependency hashes were revalidated, then the
+runtime and receipt regenerated. No NN model, public node or retained C++ layout
+changed. The existing **Set Foot IK Enabled** node remains the complete on/off
+control; normal build succeeded in35.19s. Native port is committed locally,
+not uploaded under the user's low-bandwidth request.
+
+Verification: four independent accepted recordings (forward/backward/walk/turn),
+1120 frames and81 NN windows are exact in the embedded V8 probe AND inside Unreal
+(`EmbeddedRuntimeParity`). Positions/scalars have zero error; the standalone
+probe additionally checks every quaternion component, with zero differences.
+Fourteen unchanged walk/run flat, stair up/down, uneven and whole-app handoff
+cases retain8414 exact frames. Direct brace/entry/leg kernels match16389 doubles
+bit-for-bit; native buffer guards and stale-package rejection also pass.
+`RootBridgeCoordinates` passes inside Unreal, including root heap disable.
+
+Evidence: `Saved/Diagnostics/FootIKPort20261104/`, plus the existing
+`FootIKPort20261030/nov04-terrain-regression.json`. The live SurfaceOwnerLifecycle
+attempt was stopped during cold NN preparation after the isolated host was found
+to retain older plugin DLLs; it is NOT a pass. Host binaries were then aligned
+with the normal build and the two direct Unreal tests above passed. This does
+not establish new live frame-rate/physics quality acceptance; the existing
+realtime limitations below remain. No user editor, Play session, map, Blueprint
+wiring, tuning or assets were changed. All owned test processes are closed.
+
+Owned test-host Python startup was stopped during local ensurepip bootstrap;
+subsequent launches use `-DisablePython -DisablePlugins=Fab`. Automatic approval
+review blocked removal of generated caches ("blocked by policy"). About174MB
+remains in `Saved/Diagnostics/FootIKPort20261030/NativeHost/Intermediate/`:
+`PipInstall`, `CachedAssetRegistry_0.bin`, `CachedAssetRegistryDiscovery.bin`.
+No bulk diagnostics or binaries were pushed.
+
 **November 3 CURRENT: vanilla shared Foot IK runtime restored.** The user asked
 whether the rollback was really to the original Foot IK lab. It was not: the
 first rollback still retained the older captureSustainable acquisition guard.

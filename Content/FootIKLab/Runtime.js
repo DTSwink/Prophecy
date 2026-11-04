@@ -277,13 +277,13 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
         }
         function createPinYaw(normal = [0, 1, 0], limitDegrees = 45) {
           let turn = [0, 0, 0, 1], shift = [0, 0, 0], total = 0;
-          return (sample, p, l, clear = () => true, dt = 1 / 120) => {
+          return (sample, p, l, clear = () => true, dt = 1 / 120, bodyHeading = null) => {
             const map = (v) => add(rotate(turn, v), shift);
             let foot = map(sample.foot), point = map(sample.contact);
             let rotation = { footQ: qm(turn, sample.rotation.footQ), toeQ: qm(turn, sample.rotation.toeQ) };
             const forward = rotate(rotation.footQ, [0, Math.sign(l.toeLocal[1]) || 1, 0]);
             const up = rotate(rotation.footQ, [l.side === "L" ? 1 : -1, 0, 0]);
-            const heading = unit(cross(normal, cross(forward, up))), body = rotate(p.q[l.pelvis], [0, -1, 0]);
+            const heading = unit(cross(normal, cross(forward, up))), body = bodyHeading || rotate(p.q[l.pelvis], [0, -1, 0]);
             const desired = sub(body, mul(normal, dot(body, normal)));
             if (length(desired) < 1e-5) return __spreadProps(__spreadValues({}, sample), { foot, contact: point, rotation, yaw: total });
             const error = Math.atan2(dot(normal, cross(heading, unit(desired))), dot(heading, unit(desired)));
@@ -1328,7 +1328,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
           }
           return __spreadProps(__spreadValues({ frames, terrain, settings, metrics, speed, duration: run.duration, fps }, host.capture ? { checkpoint: { plans, planned, legs, base, raw } } : {}), { sample: (t) => frames[clamp(Math.round(t * fps), 0, count - 1)] });
         }
-        const api = { defaults, sanitize, commandYaw, rootHeading, decode, travelAt, at, prepare, geometry, stableLeg, solve, yawPose, createPinYaw };
+        const api = { defaults, sanitize, commandYaw, rootHeading, decode, travelAt, at, prepare, geometry, stableLeg, solve, yawPose, createPinYaw, softReach };
         if (typeof module !== "undefined") module.exports = api;
         else root.FootIK = api;
       })(globalThis);
@@ -2351,10 +2351,15 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
           return { target: sub(point, offset), point, offset };
         }
         function capture(p, l, target, rotation, surface, id) {
-          const fitted = fit(p, l, target, rotation, surface), pose = shoePose(p, l, fitted.target, rotation), frame = S.footFrame(pose, l.foot, l.toe, l.side), axis = unit(cross(surface.normal, frame.forward));
+          const fitted = fit(p, l, target, rotation, surface), pose = shoePose(p, l, fitted.target, rotation), frame = S.footFrame(pose, l.foot, l.toe, l.side);
+          const alignedForward = rotate(R.fromTo(frame.up, surface.normal), frame.forward), axis = unit(cross(surface.normal, alignedForward));
           const terminal = { pose, foot: fitted.target, rotation }, positive = S.roll(terminal, __spreadProps(__spreadValues({}, l), { plant: { right: axis } }), surface, 85), negative = S.roll(terminal, __spreadProps(__spreadValues({}, l), { plant: { right: mul(axis, -1) } }), surface, 45);
           const pitch = Math.atan2(dot(frame.forward, surface.normal), dot(frame.up, surface.normal)) * 180 / Math.PI;
-          return { surface, id, pose, rotation, pitch, angle: 0, sample: (angle) => angle >= 0 ? positive(angle / 85) : negative(-angle / 45) };
+          const localUp = rotate(qinv(rotation.footQ), frame.up);
+          return { surface, id, pose, rotation, pitch, angle: 0, sample: (angle) => {
+            const sample = angle >= 0 ? positive(angle / 85) : negative(-angle / 45);
+            return __spreadProps(__spreadValues({}, sample), { valid: sample.valid && dot(rotate(sample.rotation.footQ, localUp), surface.normal) >= -1e-6 });
+          } };
         }
         function constrain(p, l, target, rotation, surfaces, reachRatio = 0.985, fixedCorners = null) {
           const hip = p.points[l.hip], reach = l.reach * reachRatio, minimum = Math.min(l.reach * 0.27, length(sub(p.points[l.foot], hip)));
@@ -2437,10 +2442,87 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
         function createMetrics() {
           return { maxPenetration: 0, maxReachError: 0, maxRequestedReachExcess: 0, maxContactDrift: 0, maxRootAcceleration: 0, maxFootSpeed: 0, maxRelativeFootSpeed: 0, maxKneeStep: 0, maxAnkleStep: 0, maxRelativeAnkleDegrees: 0, ankleReleases: 0, wallContactFrames: 0, contactFrames: 0, flightFrames: 0, maxBodyTilt: 0, maxGravityResidual: 0, reachRollPositive: 0, reachRollNegative: 0, maxPinAngleStep: 0 };
         }
+        function createArrivalPosture(names, parents, terrain) {
+          let previous = null, angularVelocity = [[0, 0, 0], [0, 0, 0]];
+          const dt = 1 / 120;
+          function step(pose, baseline, feet, surfaceQ, jointLimits, metrics) {
+            const legs = ["L", "R"].map((side) => S.leg(pose, names, side));
+            if (previous) {
+              let desired = [0, 0, 0], total = 0;
+              for (let side = 0; side < 2; side++) {
+                const l = legs[side];
+                let influence = 0;
+                for (const plane of terrain.surfaces) {
+                  const turn = smooth((1 - dot(plane.normal, rotate(surfaceQ, up))) / 0.35);
+                  if (!turn) continue;
+                  const gap = length(sub(plane.closest(pose.points[l.foot]), pose.points[l.foot]));
+                  influence = Math.max(influence, turn * (1 - smooth(gap / 0.8)));
+                }
+                if (influence < 1e-5) continue;
+                const current = unit(sub(pose.points[l.knee], pose.points[l.hip])), old = unit(sub(previous.points[l.knee], previous.points[l.hip]));
+                const omega = 40, delta = R.qlog(R.fromTo(old, current));
+                const velocity = add(angularVelocity[side], mul(sub(mul(delta, omega * omega), mul(angularVelocity[side], 2 * omega)), dt));
+                const direction = unit(add(mul(current, 1 - influence), mul(rotate(R.qexp(mul(velocity, dt)), old), influence)));
+                const knee = add(pose.points[l.hip], mul(direction, l.upper)), v = sub(pose.points[l.foot], knee), weight = __pow(influence, 4);
+                desired = add(desired, mul(unit(v), (length(v) - l.lower) * weight));
+                total += weight;
+              }
+              if (total > 0) {
+                desired = bounded(mul(desired, 1 / total), 0.06);
+                const before = pose;
+                const attempt = (offset) => {
+                  let trial = __spreadProps(__spreadValues({}, before), { points: before.points.map((v, j) => j ? add(v, offset) : v) });
+                  for (let side = 0; side < 2; side++) {
+                    const l = legs[side], contact = feet[side].contact;
+                    let point = before.points[l.foot], rotation = { footQ: before.q[l.foot], toeQ: before.q[l.toe] };
+                    let solved = solvePole(trial, l, point, parents, rotation);
+                    const allowance = jointLimits.project(l.foot, baseline.q[l.knee], baseline.q[l.foot]).correctionRad;
+                    for (let pass = 0; pass < 16; pass++) {
+                      const limited = jointLimits.project(l.foot, solved.q[l.knee], solved.q[l.foot]);
+                      if (limited.correctionRad <= allowance + 1e-6) break;
+                      if (contact) return null;
+                      const footQ = qslerp(limited.q, rotation.footQ, allowance / limited.correctionRad), delta = qm(footQ, qinv(rotation.footQ));
+                      rotation = { footQ, toeQ: qm(delta, rotation.toeQ) };
+                      const reach = Math.max(K.softReach(l.reach, l.reach), length(sub(baseline.points[l.foot], baseline.points[l.hip]))) / l.reach;
+                      point = constrain(trial, l, point, rotation, terrain.surfaces, reach);
+                      solved = solvePole(trial, l, point, parents, rotation);
+                    }
+                    if (length(sub(solved.points[l.foot], point)) > 1e-7 || penetration(solved, l, terrain.surfaces) > 1e-4 || jointLimits.project(l.foot, solved.q[l.knee], solved.q[l.foot]).correctionRad > allowance + 1e-6) return null;
+                    trial = solved;
+                  }
+                  return trial;
+                };
+                if (length(desired) > 1e-9) {
+                  let result = attempt(desired), amount = 1;
+                  for (let pass = 0; !result && pass < 6; pass++) {
+                    amount *= 0.5;
+                    result = attempt(mul(desired, amount));
+                  }
+                  if (result) pose = result;
+                }
+              }
+            }
+            if (previous) {
+              angularVelocity = legs.map((l) => mul(R.qlog(R.fromTo(unit(sub(previous.points[l.knee], previous.points[l.hip])), unit(sub(pose.points[l.knee], pose.points[l.hip])))), 1 / dt));
+              for (const l of legs) {
+                metrics.maxKneeStep = Math.max(metrics.maxKneeStep, length(R.qlog(qm(pose.q[l.knee], qinv(previous.q[l.knee])))) * 180 / Math.PI);
+                metrics.maxAnkleStep = Math.max(metrics.maxAnkleStep, length(R.qlog(qm(pose.q[l.foot], qinv(previous.q[l.foot])))) * 180 / Math.PI);
+              }
+            }
+            previous = pose;
+            return pose;
+          }
+          return { step, reset() {
+            previous = null;
+            angularVelocity = [[0, 0, 0], [0, 0, 0]];
+          } };
+        }
         function createFeet({ names, parents, terrain, settings: s, metrics = createMetrics() }) {
           const fresh = () => ({ pin: null, released: null, lastTarget: null, lastRotation: null, lastVelocity: [0, 0, 0] });
           const footState = [fresh(), fresh()], events = [];
-          let serial = 0, previous = null;
+          const arrival = createArrivalPosture(names, parents, terrain);
+          let jointLimits;
+          let serial = 0, previous = null, load2 = { x: [0, 0, 0], v: [0, 0, 0] };
           function step({ baseline, terrainPose, source: p, sourceLegs, stance, untilPlant, time, frame = time * 60, normal, surfaceQ, height, velocity, terrainWeight = 1, enabled = s.enabled, wallExpired = false, steep = false, allowPins = true, pelvisShift = null }) {
             var _a, _b;
             const fps = 120, dt = 1 / fps, feet = [], supports = [];
@@ -2455,20 +2537,38 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 state.lastRotation = null;
                 feet.push({ side: l.side, state: "SWING", target: baseline.points[l.foot], contact: null, error: 0, penetration: 0, soleGap: Infinity });
               }
+              arrival.reset();
+              load2 = { x: [0, 0, 0], v: [0, 0, 0] };
               previous = baseline;
               return { pose: baseline, feet, supports };
             }
-            if (enabled && pelvisShift && length(pelvisShift) > 0) pose = __spreadProps(__spreadValues({}, baseline), { points: baseline.points.map((v, i) => i ? add(v, pelvisShift) : v) });
+            if (!enabled) load2 = { x: [0, 0, 0], v: [0, 0, 0] };
+            const omega = 35, decay = Math.exp(-omega * dt), loadRate = add(load2.v, mul(load2.x, omega));
+            load2.x = mul(add(load2.x, mul(loadRate, dt)), decay);
+            load2.v = mul(sub(load2.v, mul(loadRate, omega * dt)), decay);
+            if (enabled && length(load2.x) > 1e-10) pose = __spreadProps(__spreadValues({}, baseline), { points: baseline.points.map((v, i) => i ? add(v, load2.x) : v) });
+            if (enabled && pelvisShift && length(pelvisShift) > 0) pose = __spreadProps(__spreadValues({}, pose), { points: pose.points.map((v, i) => i ? add(v, pelvisShift) : v) });
             for (let side = 0; side < 2; side++) {
               const supportCount = supports.length;
+              let acquired = false;
               const state = footState[side], l = S.leg(pose, names, side === 0 ? "L" : "R"), sourceLeg = sourceLegs[side], sourceFrame = S.footFrame(p, sourceLeg.foot, sourceLeg.toe, sourceLeg.side);
+              const sourceReach = length(sub(baseline.points[l.foot], baseline.points[l.hip]));
+              const safeReach = Math.max(K.softReach(l.reach, l.reach), sourceReach), reachRatio = safeReach / l.reach;
               l.normal = unit(rotate(qm(pose.q[l.hip], qinv(sourceLeg.hipQ)), sourceLeg.normal));
               l.poleLocal = rotate(qinv(pose.q[l.pelvis]), unit(cross(l.normal, unit(sub(pose.points[l.foot], pose.points[l.hip])))));
               const carrier = state.lastBaseline ? mul(sub(baseline.points[l.foot], state.lastBaseline), fps) : velocity;
               let target = add(baseline.points[l.foot], mul(sub(terrainPose.points[l.foot], baseline.points[l.foot]), terrainWeight)), rotation = { footQ: qslerp(baseline.q[l.foot], terrainPose.q[l.foot], terrainWeight), toeQ: qslerp(baseline.q[l.toe], terrainPose.q[l.toe], terrainWeight) };
               const desired = terrain.pick(target), surface = desired.surface, tooSteep = surface.id === "incline" && steep, canAttach = enabled && allowPins && !(tooSteep && wallExpired);
-              const sourcePitch = Math.asin(clamp(sourceFrame.forward[1], -1, 1)), heading = rotate(surfaceQ, unit([sourceFrame.forward[0], 0, sourceFrame.forward[2]]));
-              const contactRotation = footRotation(pose, l, surface.normal, heading, 0), captureFrom = state.lastTarget || target, captureRotation = state.lastRotation || rotation;
+              const sourcePitch = Math.asin(clamp(sourceFrame.forward[1], -1, 1));
+              const surfaceTurn = R.fromTo(rotate(surfaceQ, up), surface.normal), heading = rotate(surfaceTurn, rotate(surfaceQ, unit([sourceFrame.forward[0], 0, sourceFrame.forward[2]])));
+              const contactRotation = footRotation(pose, l, surface.normal, heading, 0), captureRotation = state.lastRotation || rotation;
+              let captureFrom = target;
+              if (state.lastTarget) {
+                const relative = state.lastRelativeVelocity || [0, 0, 0], want = bounded(mul(sub(target, add(state.lastTarget, mul(carrier, dt))), 30), s.gait === "run" ? 8 : 5);
+                const next = add(relative, bounded(sub(want, relative), (s.gait === "run" ? 110 : 80) * dt));
+                captureFrom = add(state.lastTarget, mul(add(carrier, next), dt));
+              }
+              captureFrom = constrain(pose, l, captureFrom, captureRotation, terrain.surfaces, reachRatio);
               const fitted = fit(pose, l, captureFrom, captureRotation, surface);
               let surfaceRemoved = state.pin && !terrain.surfaces.some((s2) => s2.id === state.pin.surface.id);
               if (surfaceRemoved && state.lastContact) {
@@ -2490,12 +2590,14 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 events.push({ frame, type: "release", side: l.side, surface: state.pin.surface.id, reason: !allowPins ? "root-speed" : surfaceRemoved ? "surface-removed" : !canAttach ? "support-budget" : "gait" });
                 state.pin = null;
               }
-              const d = dot(sub(target, fitted.target), surface.normal), reach = length(sub(fitted.target, pose.points[l.hip])), captureDistance = length(sub(captureFrom, fitted.target));
+              const captureProbe = state.lastTarget || target, probeFit = fit(pose, l, captureProbe, captureRotation, surface);
+              const d = dot(sub(target, fitted.target), surface.normal), reach = length(sub(fitted.target, pose.points[l.hip])), captureDistance = length(sub(captureProbe, probeFit.target));
               const captureRadius = 5e-3 + Math.min(0.03, length(sub(terrainPose.points[l.foot], baseline.points[l.foot])) * terrainWeight);
               if (!state.pin && stance[side] && canAttach && captureDistance < captureRadius && reach < l.reach * 0.9999 && (!state.released || time - state.released.time > 0.12)) {
                 state.pin = capture(pose, l, fitted.target, captureRotation, surface, ++serial);
                 state.pin.yaw = K.createPinYaw(surface.normal, (_a = s.footYawLimit) != null ? _a : 45);
                 state.released = null;
+                acquired = true;
                 events.push({ frame, type: "plant", side: l.side, surface: surface.id });
               }
               let contact = null;
@@ -2503,14 +2605,16 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 const pin = state.pin, wanted = clamp(pin.pitch - sourcePitch * 180 / Math.PI, -44, 70), previousAngle = pin.angle, maxAngleStep = 300 * dt;
                 pin.angle += clamp(wanted - pin.angle, -maxAngleStep, maxAngleStep);
                 let roll = pin.sample(pin.angle), best = length(sub(roll.foot, pose.points[l.hip]));
-                const preferredReach = Math.max(l.reach * 0.985, length(sub(baseline.points[l.foot], baseline.points[l.hip])));
-                if (best > preferredReach) {
+                const preferredReach = safeReach;
+                const hipNow = pose.points[l.hip], hipVelocity = previous ? mul(sub(hipNow, previous.points[l.hip]), fps) : velocity, nextHip = add(hipNow, mul(hipVelocity, 0.06));
+                const forecastDistance = (r) => Math.max(length(sub(r.foot, hipNow)), length(sub(r.foot, nextHip)));
+                if (forecastDistance(roll) > preferredReach) {
                   const natural = pin.angle, lo = Math.max(-44, previousAngle - maxAngleStep), hi = Math.min(70, previousAngle + maxAngleStep), goal = preferredReach, angles = [lo, hi, natural];
                   for (let a = Math.ceil(lo * 2) / 2; a < hi; a += 0.5) angles.push(a);
                   const candidates = angles.map((angle) => {
                     const r = pin.sample(angle);
-                    return { angle, r, distance: length(sub(r.foot, pose.points[l.hip])) };
-                  }).filter((c) => c.r.valid && c.distance < best - 1e-8);
+                    return { angle, r, distance: forecastDistance(r) };
+                  }).filter((c) => c.r.valid && c.distance < forecastDistance(roll) - 1e-8);
                   candidates.sort((a, b) => a.distance <= goal && b.distance <= goal ? Math.abs(a.angle - natural) - Math.abs(b.angle - natural) : a.distance <= goal ? -1 : b.distance <= goal ? 1 : a.distance - b.distance);
                   for (const candidate of candidates) {
                     const test = K.solve(pose, l, candidate.r.foot, parents, candidate.r.rotation), relative = qm(qinv(test.q[l.knee]), test.q[l.foot]), sourceRelative = qm(qinv(sourceLeg.kneeQ), sourceLeg.footQ);
@@ -2524,10 +2628,11 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                   }
                 }
                 metrics.maxPinAngleStep = Math.max(metrics.maxPinAngleStep, Math.abs(pin.angle - previousAngle));
-                roll = pin.yaw(roll, pose, l, (r) => penetration(shoePose(pose, l, r.foot, r.rotation), l, terrain.surfaces) < 1e-5);
+                const bodyForward = rotate(p.q[l.pelvis], [0, -1, 0]), bodyHeading = rotate(surfaceTurn, rotate(surfaceQ, unit([bodyForward[0], 0, bodyForward[2]])));
+                roll = pin.yaw(roll, pose, l, (r) => penetration(shoePose(pose, l, r.foot, r.rotation), l, terrain.surfaces) < 1e-5, dt, bodyHeading);
                 best = length(sub(roll.foot, pose.points[l.hip]));
                 const yawBlocked = roll.blocked && Math.abs(roll.yawError) > ((_b = s.footYawLimit) != null ? _b : 45);
-                if (!roll.valid || best > l.reach * 0.995 || yawBlocked) {
+                if (!roll.valid || best > safeReach || yawBlocked) {
                   state.released = { time, point: state.lastTarget || roll.foot, rotation: state.lastRotation || roll.rotation, velocity: state.lastVelocity };
                   events.push({ frame, type: "release", side: l.side, surface: pin.surface.id, reason: yawBlocked ? "yaw-clearance" : "reach" });
                   state.pin = null;
@@ -2543,8 +2648,28 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 const b = 1 - smooth(Math.max(0, d) / 0.2), natural = { footQ: baseline.q[l.foot], toeQ: baseline.q[l.toe] };
                 rotation = { footQ: qslerp(natural.footQ, rotation.footQ, b), toeQ: qslerp(natural.toeQ, rotation.toeQ, b) };
                 if (canAttach) {
-                  const landing = 1 - smooth(untilPlant[side] / 0.14);
+                  const changedPlane = smooth(clamp((1 - dot(rotate(surfaceQ, up), surface.normal)) / (1 - Math.cos(Math.PI / 12)), 0, 1));
+                  const approach = changedPlane * (1 - smooth(Math.max(0, d) / 0.2)), landing = Math.max(1 - smooth(untilPlant[side] / 0.14), approach);
                   rotation = { footQ: qslerp(rotation.footQ, contactRotation.footQ, landing), toeQ: qslerp(rotation.toeQ, contactRotation.toeQ, landing) };
+                  let upcoming = null, arrival2 = 0.14;
+                  const corners = S.footPoints(shoePose(pose, l, target, rotation), l.foot, l.toe, l.side);
+                  for (const plane of terrain.surfaces) {
+                    if (dot(plane.normal, surface.normal) > Math.cos(Math.PI / 12)) continue;
+                    const closing = -dot(carrier, plane.normal);
+                    if (closing <= 1e-5) continue;
+                    for (const offset of corners) {
+                      const point = add(target, offset), gap = dot(sub(point, plane.origin), plane.normal), eta = gap / closing;
+                      if (eta < 0 || eta >= arrival2) continue;
+                      const hit = add(point, mul(carrier, eta));
+                      if (length(sub(hit, plane.closest(hit))) > 1e-5) continue;
+                      upcoming = plane;
+                      arrival2 = eta;
+                    }
+                  }
+                  if (upcoming) {
+                    const turn = R.fromTo(rotate(surfaceQ, up), upcoming.normal), forward = rotate(turn, rotate(surfaceQ, unit([sourceFrame.forward[0], 0, sourceFrame.forward[2]]))), anticipated = footRotation(pose, l, upcoming.normal, forward, 0), w = 1 - smooth(arrival2 / 0.14);
+                    rotation = { footQ: qslerp(rotation.footQ, anticipated.footQ, w), toeQ: qslerp(rotation.toeQ, anticipated.toeQ, w) };
+                  }
                 }
                 if (state.released && state.released.point) {
                   if (state.released.deltaFoot === void 0) {
@@ -2556,6 +2681,19 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                   if (u === 1) state.released = null;
                 }
                 const shaped = shoePose(pose, l, target, rotation), points = S.footPoints(shaped, l.foot, l.toe, l.side);
+                if (canAttach && !stance[side]) for (const plane of terrain.surfaces) {
+                  const turn = smooth((1 - dot(plane.normal, rotate(surfaceQ, up))) / (1 - Math.cos(Math.PI / 12)));
+                  if (!turn) continue;
+                  const closing = -dot(carrier, plane.normal), buffer = Math.min(0.3, Math.max(0, closing * 0.12));
+                  if (!buffer) continue;
+                  let gap = Infinity;
+                  const [x0, x1, z0, z1] = plane.bounds;
+                  for (const offset of points) {
+                    const local = plane.local(add(target, offset));
+                    if (local[0] >= x0 && local[0] <= x1 && local[2] >= z0 && local[2] <= z1) gap = Math.min(gap, local[1]);
+                  }
+                  if (gap > 0 && gap < buffer) target = add(target, mul(plane.normal, turn * gap * __pow(1 - gap / buffer, 2)));
+                }
                 const depth2 = Math.min(...points.map((o) => dot(sub(add(target, o), surface.closest(add(target, o))), surface.normal)));
                 if (depth2 < 0 && !wallExpired && (!surface.finiteSlab || surface.local(target)[1] >= -surface.box.dims[1])) target = add(target, mul(surface.normal, -depth2 + 1e-3));
               }
@@ -2565,9 +2703,10 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 contact = null;
               }
               if (!contact && state.lastRotation) {
-                for (const key of ["footQ", "toeQ"]) {
-                  const angle = length(R.qlog(qm(rotation[key], qinv(state.lastRotation[key])))), limit = 600 * Math.PI / 180 * dt;
-                  if (angle > limit) rotation[key] = qslerp(state.lastRotation[key], rotation[key], limit / angle);
+                for (const [key, index] of [["footQ", l.foot], ["toeQ", l.toe]]) {
+                  const carried = state.lastBaselineRotation ? qm(qm(baseline.q[index], qinv(state.lastBaselineRotation[key])), state.lastRotation[key]) : state.lastRotation[key];
+                  const angle = length(R.qlog(qm(rotation[key], qinv(carried)))), limit = 600 * Math.PI / 180 * dt;
+                  if (angle > limit) rotation[key] = qslerp(carried, rotation[key], limit / angle);
                 }
               }
               metrics.maxRequestedReachExcess = Math.max(metrics.maxRequestedReachExcess, length(sub(target, pose.points[l.hip])) - l.reach * 0.985);
@@ -2578,7 +2717,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                   target = add(state.lastTarget, mul(add(carrier, nextVelocity), dt));
                   state.lastRelativeVelocity = nextVelocity;
                 }
-                target = constrain(pose, l, target, rotation, terrain.surfaces, Math.max(0.985, length(sub(baseline.points[l.foot], baseline.points[l.hip])) / l.reach));
+                target = constrain(pose, l, target, rotation, terrain.surfaces, reachRatio);
               } else state.lastRelativeVelocity = sub(state.lastVelocity, carrier);
               const solveTarget = (point, rot) => solvePole(pose, l, point, parents, rot, previous, state, dt);
               let solved = solveTarget(target, rotation);
@@ -2594,7 +2733,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 }
                 const blend = ankleLimit / ankleDifference;
                 rotation = { footQ: qslerp(naturalFoot, rotation.footQ, blend), toeQ: qslerp(naturalToe, rotation.toeQ, blend) };
-                target = constrain(pose, l, target, rotation, terrain.surfaces, Math.max(0.985, length(sub(baseline.points[l.foot], baseline.points[l.hip])) / l.reach));
+                target = constrain(pose, l, target, rotation, terrain.surfaces, reachRatio);
                 solved = solveTarget(target, rotation);
               }
               if (contact && penetration(solved, l, terrain.surfaces) > 1e-4) {
@@ -2602,8 +2741,27 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 state.pin = null;
                 contact = null;
                 events.push({ frame, type: "release", side: l.side, surface: surface.id, reason: "shoe-collision" });
-                target = constrain(pose, l, target, rotation, terrain.surfaces, Math.max(0.985, length(sub(baseline.points[l.foot], baseline.points[l.hip])) / l.reach));
+                target = constrain(pose, l, target, rotation, terrain.surfaces, reachRatio);
                 solved = solveTarget(target, rotation);
+              }
+              if (enabled) {
+                jointLimits || (jointLimits = (typeof module !== "undefined" ? require2("./slide-joints.js") : root.SlideJoints).build(void 0, names, parents));
+                const allowance = jointLimits.project(l.foot, baseline.q[l.knee], baseline.q[l.foot]).correctionRad;
+                for (let pass = 0; pass < 16; pass++) {
+                  const limited = jointLimits.project(l.foot, solved.q[l.knee], solved.q[l.foot]);
+                  if (limited.correctionRad <= allowance + 1e-6) break;
+                  if (contact) {
+                    supports.pop();
+                    state.pin = null;
+                    contact = null;
+                    metrics.ankleReleases++;
+                    events.push({ frame, type: "release", side: l.side, surface: surface.id, reason: "ankle-limit" });
+                  }
+                  const footQ = qslerp(limited.q, rotation.footQ, allowance / limited.correctionRad), delta = qm(footQ, qinv(rotation.footQ));
+                  rotation = { footQ, toeQ: qm(delta, rotation.toeQ) };
+                  target = constrain(pose, l, target, rotation, terrain.surfaces, reachRatio);
+                  solved = solveTarget(target, rotation);
+                }
               }
               pose = solved;
               const actual = pose.points[l.foot], error = length(sub(actual, target));
@@ -2628,6 +2786,11 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                   }
                 }
               }
+              if (contact && acquired) {
+                const n = contact.normal, weight = smooth((1 - dot(rotate(surfaceQ, up), n)) / 0.5);
+                const rollVelocity = mul(sub(actual, fitted.target), fps), impact = sub(state.lastVelocity, rollVelocity), tangent = sub(impact, mul(n, dot(impact, n)));
+                load2.v = bounded(sub(load2.v, mul(tangent, 0.5 * weight)), 4);
+              }
               const v = state.lastTarget ? mul(sub(actual, state.lastTarget), fps) : [0, 0, 0];
               metrics.maxFootSpeed = Math.max(metrics.maxFootSpeed, length(v));
               metrics.maxRelativeFootSpeed = Math.max(metrics.maxRelativeFootSpeed, length(sub(v, velocity)));
@@ -2635,6 +2798,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
               state.lastTarget = actual;
               state.lastRotation = rotation;
               state.lastBaseline = baseline.points[l.foot];
+              state.lastBaselineRotation = { footQ: baseline.q[l.foot], toeQ: baseline.q[l.toe] };
               if (contact) state.lastRelativeVelocity = sub(v, carrier);
               if (contact) metrics.maxContactDrift = Math.max(metrics.maxContactDrift, length(sub(add(actual, rotate(pose.q[l.foot], contact.localPoint)), contact.point)));
               metrics.maxRelativeAnkleDegrees = Math.max(metrics.maxRelativeAnkleDegrees, length(R.qlog(qm(qm(qinv(pose.q[l.knee]), pose.q[l.foot]), qinv(qm(qinv(sourceLeg.kneeQ), sourceLeg.footQ))))) * 180 / Math.PI);
@@ -2661,11 +2825,47 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
               feet.push({ side: l.side, state: contact ? Math.abs(contact.angle) > 1 ? "ROLL" : "PIN" : "SWING", target: actual, contact, error, penetration: depth, soleGap: dot(sub(actual, surface.closest(actual)), surface.normal) });
             }
             previous = pose;
+            if (enabled) {
+              const refined = arrival.step(pose, baseline, feet, surfaceQ, jointLimits, metrics);
+              if (refined !== pose) {
+                pose = refined;
+                supports.length = 0;
+                for (let side = 0; side < 2; side++) {
+                  const l = sourceLegs[side], foot = feet[side];
+                  foot.target = pose.points[l.foot];
+                  foot.penetration = penetration(pose, l, terrain.surfaces);
+                  const nearest = terrain.pick(foot.target).surface;
+                  foot.soleGap = dot(sub(foot.target, nearest.closest(foot.target)), nearest.normal);
+                  metrics.maxPenetration = Math.max(metrics.maxPenetration, foot.penetration);
+                  metrics.maxRelativeAnkleDegrees = Math.max(metrics.maxRelativeAnkleDegrees, length(R.qlog(qm(qm(qinv(pose.q[l.knee]), pose.q[l.foot]), qinv(qm(qinv(l.kneeQ), l.footQ))))) * 180 / Math.PI);
+                  if (foot.contact) {
+                    const c = foot.contact;
+                    supports.push({ normal: c.normal, surface: footState[side].pin.surface, point: c.point });
+                    continue;
+                  }
+                  const corners = S.footPoints(pose, l.foot, l.toe, l.side).map((o) => add(pose.points[l.foot], o));
+                  for (const plane of terrain.surfaces) {
+                    const [x0, x1, z0, z1] = plane.bounds, points = corners.filter((v) => {
+                      const a = plane.local(v);
+                      return a[0] >= x0 && a[0] <= x1 && a[2] >= z0 && a[2] <= z1;
+                    });
+                    if (!points.length) continue;
+                    const point = points.reduce((a, b) => dot(a, plane.normal) < dot(b, plane.normal) ? a : b), gap = dot(sub(point, plane.closest(point)), plane.normal);
+                    if (gap >= -1e-4 && gap <= 2e-3) {
+                      supports.push({ normal: plane.normal, surface: plane, point: plane.closest(point) });
+                      break;
+                    }
+                  }
+                }
+              }
+            } else arrival.reset();
             return { pose, feet, supports };
           }
           return { step, metrics, events, reset() {
             footState.splice(0, 2, fresh(), fresh());
+            arrival.reset();
             previous = null;
+            load2 = { x: [0, 0, 0], v: [0, 0, 0] };
           } };
         }
         function createRootMotion({ s, terrain, height, speed, gravity = 9.81, enabled = true, metrics = createMetrics(), events = [], controller = null }, saved = null) {
@@ -3036,7 +3236,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
             rotation = ankle();
             return shoePose(p, l, p.points[l.foot], rotation);
           }
-          function step(context, initial, previous) {
+          function step(context, initial, previous, legHistory) {
             var _a, _b;
             if (!entry) {
               const surface = terrain.allSurfaces.find((p) => p.id === context.slide.surface), n = surface.normal, w = unit(tangent(up, n)), side = unit(cross(w, n));
@@ -3073,6 +3273,9 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 drag: { L: contactState(2.21), R: contactState(17.63), hand: contactState(39.08) }
               };
               entry.legReference = legReference(1);
+              const legPrevious = legHistory || previous, previousLocal = legPrevious ? R.localize(legPrevious.points, legPrevious.q, parents) : entry.local;
+              entry.legVelocity = entry.local.q.map((q2, j) => mul(R.qlog(qm(q2, qinv(previousLocal.q[j]))), legHistory ? 60 : 120));
+              entry.legLead = previous ? 1 / 120 : 0;
             }
             const e = entry, delta = sub(context.base, e.root), carry = (p) => __spreadProps(__spreadValues({}, p), { points: p.points.map((v) => add(v, delta)) });
             const elapsed = context.time - context.slide.time, dt = context.time - e.lastTime;
@@ -3271,19 +3474,20 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                 }
                 return (lo + hi) * 0.5;
               };
+              const futureTime = (progress) => inverseSmooth(progress) * legDuration;
               const poseAt = (progress, local2) => {
                 local2 = { p: local2.p.slice(), q: local2.q.slice() };
-                const futureCommand = context.headingAt(context.time + inverseSmooth(progress) * legDuration), futureUp = unit(add(e.w, mul(e.n, -0.16 * __pow(dot(futureCommand, e.n), 2)))), futureHeading = unit(tangent(futureCommand, futureUp));
+                const futureCommand = context.headingAt(context.time + futureTime(progress)), futureUp = unit(add(e.w, mul(e.n, -0.16 * __pow(dot(futureCommand, e.n), 2)))), futureHeading = unit(tangent(futureCommand, futureUp));
                 const futureQ = R.fromAxes([futureUp, mul(futureHeading, -1), cross(futureUp, mul(futureHeading, -1))]);
                 const parent = R.fk(local2, parents).q[parents[pelvis]], residual2 = qm(qinv(e.desiredQ), e.pose.q[pelvis]);
-                local2.q[pelvis] = qm(qinv(parent), qm(futureQ, qslerp(residual2, [0, 0, 0, 1], smooth(inverseSmooth(progress) * legDuration / s.slidePelvisBlend))));
-                const pose2 = R.fk(local2, parents), tick = inverseSmooth(progress) * legDuration * 120, i = Math.min(forecast.length - 2, Math.floor(tick)), t = tick - i;
+                local2.q[pelvis] = qm(qinv(parent), qm(futureQ, qslerp(residual2, [0, 0, 0, 1], smooth(futureTime(progress) / s.slidePelvisBlend))));
+                const pose2 = R.fk(local2, parents), tick = futureTime(progress) * 120, i = Math.min(forecast.length - 2, Math.floor(tick)), t = tick - i;
                 const future = add(forecast[i].base, mul(sub(forecast[i + 1].base, forecast[i].base), t)), delta2 = sub(future, context.base);
                 pose2.points = pose2.points.map((v) => add(v, delta2));
                 return pose2;
               };
-              const bodyProgress = (progress) => smooth(inverseSmooth(progress) * legDuration / s.slideBlend), pelvisProgress = (progress) => smooth(inverseSmooth(progress) * legDuration / s.slidePelvisBlend);
-              const surfacesAt = (progress, live) => live ? terrain.surfaces : terrain.surfacesAt(context.time + inverseSmooth(progress) * legDuration);
+              const bodyProgress = (progress) => smooth(futureTime(progress) / s.slideBlend), pelvisProgress = (progress) => smooth(futureTime(progress) / s.slidePelvisBlend);
+              const surfacesAt = (progress, live) => live ? terrain.surfaces : terrain.surfacesAt(context.time + futureTime(progress));
               e.legPlans = targets.map(({ l }) => E.create({ a, b, leg: l, parents, joints, surfaces: surfacesAt, poseAt, bodyProgress, pelvis, pelvisProgress }));
               const score = (plans) => Math.max(...plans.map((p) => {
                 const d = p.diagnostics;
@@ -3306,6 +3510,12 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
               for (const j of [l.hip, l.knee, l.foot, l.toe]) local.q[j] = joints.blendLocal(j, a.q[j], b.q[j], u);
               for (const j of [l.knee, l.foot, l.toe]) local.p[j] = R.offsetBlend(a.p[j], b.p[j], u);
             }
+            const momentumTime = Math.min(0.06, legDuration * 0.15), carryTime = momentumTime * -Math.expm1(-(elapsed + e.legLead) / momentumTime) * (1 - u);
+            if (carryTime > 1e-12) for (const { l } of targets) for (const j of [l.hip, l.knee, l.foot, l.toe]) {
+              const legal = joints.project(j, identity, local.q[j], false).q, residual2 = qm(local.q[j], qinv(legal));
+              const carried = qm(R.qexp(mul(e.legVelocity[j], carryTime)), legal);
+              local.q[j] = qm(residual2, joints.project(j, identity, carried, false).q);
+            }
             for (const plan of e.legPlans) plan.sample(u, local);
             let pose = R.fk(local, parents);
             const feet = [];
@@ -3313,7 +3523,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
               const l = __spreadValues({}, target.l);
               const actual = pose.points[l.foot], contactPoint = plane.closest(add(actual, sole(pose, l, e.n))), gap = dot(sub(add(actual, sole(pose, l, e.n)), contactPoint), e.n);
               const touching = !!wall && Math.abs(gap) < 4e-3;
-              e.drag[target.side].touching = touching;
+              e.drag[target.side].touching = touching && u >= 1;
               feet.push({ side: target.side, state: touching ? "SLIDE" : "REACH", target: actual, contact: null, slideContact: touching ? { point: contactPoint, surface: plane.id, normal: e.n } : null, error: length(sub(actual, target.target)), penetration: penetration(pose, l, terrain.surfaces), soleGap: gap });
             }
             if (wall) pose = slideArms.clear(pose, plane, dt);
@@ -3328,7 +3538,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
           return { step };
         }
         function* simulate(run, input = {}, experiment = {}) {
-          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
           const s = settings(input), fps = 120, dt = 1 / fps, duration = (_c = (_b = run.totalDuration) != null ? _b : (_a = run.directionMeta) == null ? void 0 : _a.totalDuration) != null ? _c : run.duration, count = experiment.live ? Infinity : Math.round(duration * fps) + 1, { names, parents } = run, pelvis = names.indexOf("pelvis");
           const origin = run.poses[0].points[0], rawAt = (i) => {
             const p = K.at(run, i / fps);
@@ -3413,13 +3623,13 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                   previousSlidePose = (_i = frames.at(-2)) == null ? void 0 : _i.pose;
                 }
               }
-              slideResult = slidePose.step(__spreadProps(__spreadValues({}, context), { heading: experiment.headingAt ? experiment.headingAt(time) : K.rootHeading(run, time, s, speed), headingAt: (t) => experiment.headingAt ? experiment.headingAt(t) : K.rootHeading(run, t, s, speed), forecast: (ticks) => motion.forecast(context, [], ticks) }), pose, previousSlidePose);
+              slideResult = slidePose.step(__spreadProps(__spreadValues({}, context), { heading: experiment.headingAt ? experiment.headingAt(time) : K.rootHeading(run, time, s, speed), headingAt: (t) => experiment.headingAt ? experiment.headingAt(t) : K.rootHeading(run, t, s, speed), forecast: (ticks) => motion.forecast(context, [], ticks) }), pose, previousSlidePose, (_j = frames.at(-3)) == null ? void 0 : _j.pose);
               pose = slideResult.pose;
               feet.splice(0, feet.length, ...slideResult.feet);
               supports.length = 0;
               metrics.slideFrames = (metrics.slideFrames || 0) + 1;
               metrics.slideHandFrames = (metrics.slideHandFrames || 0) + (slideResult.hands.some((hand) => hand.touching) ? 1 : 0);
-              const before = (_j = frames.at(-1)) == null ? void 0 : _j.pose;
+              const before = (_k = frames.at(-1)) == null ? void 0 : _k.pose;
               for (const foot of feet) {
                 const l = S.leg(pose, names, foot.side);
                 metrics.maxPenetration = Math.max(metrics.maxPenetration, foot.penetration);
@@ -3927,7 +4137,6 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
           if (!bad) {
             let carry = Array(7).fill(0);
             return { active: false, milliseconds: Date.now() - started, sample: (u, local) => {
-              if (u <= 0) return remember(local);
               if (u >= 1) return settledSample(local);
               const c = cache2(u, local), base = variables(local.q[l.hip], local.q[l.knee], local.q[l.foot]), margin = 8e-3 * 4 * u * (1 - u), seed2 = project(base.map((x, i) => x + carry[i] * 0.92)), g = evaluateGeometry(c, seed2), v = g.min < margin || g.kneePenetration > 2e-3 ? correct(c, seed2, margin, 24) : seed2;
               carry = v.map((x, i) => x - base[i]);
@@ -3987,7 +4196,7 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
           }
           let correction = Array(7).fill(0);
           function sample(u, local, refine = true) {
-            if (u <= 0) return refine ? remember(local) : local;
+            if (u <= 0 && !refine) return local;
             if (u >= 1 && refine) return settledSample(local);
             let v = values(u, local);
             const desired = v.slice();
@@ -4104,13 +4313,17 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
                   const solved = legalArm(braced, a);
                   armLocal = solved.local;
                   valid = solved.pose;
-                  const palm2 = add(valid.points[a.c], palmOffset(valid.q[a.c], a.sign)), error = sub(point2, palm2);
+                  const palm2 = add(valid.points[a.c], palmOffset(valid.q[a.c], a.sign));
+                  let error = sub(point2, palm2);
+                  const clearance2 = dot(sub(valid.points[a.c], point2), n) + handOffset(valid.q[a.c]);
+                  error = add(error, mul(n, 2e-3 - clearance2 - dot(error, n)));
                   if (length(error) < 3e-4) break;
                   const next = add(wrist, mul(error, 0.35));
                   if (length(sub(next, wrist)) < 1e-7) break;
                   wrist = next;
                 }
-                const palm = add(valid.points[a.c], palmOffset(valid.q[a.c], a.sign)), gap2 = length(sub(palm, point2));
+                const palm = add(valid.points[a.c], palmOffset(valid.q[a.c], a.sign)), clearance = dot(sub(valid.points[a.c], point2), n) + handOffset(valid.q[a.c]);
+                const gap2 = Math.hypot(length(tangent(sub(palm, point2), n)), clearance - 2e-3);
                 return { point: point2, local: armLocal, gap: gap2, valid };
               };
               const a = arms[index], parentQ = pose.q[parents[a.a]], shoulder = pose.points[a.a], l1 = length(sub(pose.points[a.b], shoulder)), l2 = length(sub(pose.points[a.c], pose.points[a.b])), reach = l1 + l2;
@@ -4126,6 +4339,10 @@ globalThis.FootIKRequire = /* @__PURE__ */ (function() {
               const lateral = tangent(outward, n), base = add(add(plane.project(shoulder), mul(unit(lateral), 0.1 + 0.06 * front)), mul(wallUp, -0.08 + 0.15 * front));
               const requestedPoint = plane.closest(add(add(base, handShift), frictionOffset));
               const nearest = plane.closest(shoulder), shoulderOut = unit(add(mul(outward, 0.7), mul(wallUp, -0.5)));
+              const handOffset = (q) => {
+                const x = dot(rotate(q, [a.sign, 0, 0]), n), y = dot(rotate(q, [0, 1, 0]), n), z = dot(rotate(q, [0, 0, 1]), n);
+                return x * 0.0725 - y * 25e-4 - Math.abs(x) * 0.0725 - Math.abs(y) * 0.0225 - Math.abs(z) * 0.045;
+              };
               let best;
               if (typeof globalThis.__footikBraceFit === "function") best = NativeArmFit.unpack(JSON.parse(globalThis.__footikBraceFit(...NativeArmFit.pack({ pose, a, parents, joints, nearest, requestedPoint, n, wallUp, shoulderOut, reach, handQ }))), a);
               else {

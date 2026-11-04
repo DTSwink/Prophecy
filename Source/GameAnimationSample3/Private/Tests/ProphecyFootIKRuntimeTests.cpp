@@ -8,6 +8,8 @@
 #include "Policies/CondensedJsonPrintPolicy.h"
 #include "Dom/JsonObject.h"
 #include "HAL/FileManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 namespace ProphecyFootIKParity
 {
@@ -85,7 +87,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProphecyFootIKRuntimeParity,"Prophecy.FootIK.E
 bool FProphecyFootIKRuntimeParity::RunTest(const FString&)
 {
     using namespace ProphecyFootIKParity;
-    const FString Directory=FPaths::ProjectSavedDir()/TEXT("Diagnostics/FootIKPort20261030");TSharedPtr<FJsonObject> Manifest;
+    FString Directory=FPaths::ProjectSavedDir()/TEXT("Diagnostics/FootIKPort20261030");
+    // Keep frozen historical oracles intact when verifying a newly accepted scene.
+    FParse::Value(FCommandLine::Get(),TEXT("FootIKParityDirectory="),Directory);
+    TSharedPtr<FJsonObject> Manifest;
     if(!Read(Directory/TEXT("manifest.json"),Manifest)){AddError(TEXT("Generate the independent oracle first: node Tools/FootIK/parity-export.cjs"));return false;}
     FComparison Comparison;int64 Frames=0,Windows=0;int32 Cases=0;
     for(const auto& CaseValue:Manifest->GetArrayField(TEXT("cases"))){

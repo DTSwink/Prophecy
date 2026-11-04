@@ -3,12 +3,12 @@
   "instructions": "Update these canonical dependency hashes only after revalidating the corresponding native kernel against independent unbundled fixtures. The package guard prevents silently executing stale native math after lab edits.",
   "dependencies": {
     "brace": {
-      "slide-arms.js": "01f977a1d32fb81266fa19990805444f0092a8c99c12cf4b2acb0c2982b77f0c",
+      "slide-arms.js": "3f646bc0e6fc8ddd2c444286d146c85427b6cf3d7da71848a7422e8c2a5e1ba1",
       "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
       "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e"
     },
     "entry": {
-      "slide-entry.js": "338023733bc6aeb751cb8e6e3dad0dfac97c9cecbbf9ae4cd53cc136a3c7a05b",
+      "slide-entry.js": "d2a45c8f3ebc129072c531923287fc12558486073b14efe64976779599f71b5c",
       "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
       "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
       "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f"
@@ -20,9 +20,9 @@
       "../../Tools/FootIK/native-terrain-floor.cjs": "41ede0745097bd0740a008158f206d757effe372bcb154c8001ab74d1cb6e583"
     },
     "legContact": {
-      "surface.js": "4bef927e87d6f2187005afcb8c5a2a1c9d7519a6cc28a8782499a8890b41a97d",
+      "surface.js": "7d112d5833baa1b7404c08b7042471868d58d0c8f738c3510dfc66e19c4b717d",
       "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
-      "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e",
+      "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94",
       "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f",
       "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e"
     },
@@ -31,14 +31,14 @@
       "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
       "../../Tools/FootIK/live-terrain.cjs": "802613c78f412f2ae88b7faf9323585b558d0d08988f822697cdd90809f8515a",
       "../../Tools/FootIK/native-terrain-floor.cjs": "41ede0745097bd0740a008158f206d757effe372bcb154c8001ab74d1cb6e583",
-      "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e"
+      "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94"
     },
     "terrainRotation": {
       "terrain.js": "e51577a9f0e914aed2366c0b086796b58b38a485400ac888287c1996ed181090",
       "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
       "../../Tools/FootIK/live-terrain.cjs": "802613c78f412f2ae88b7faf9323585b558d0d08988f822697cdd90809f8515a",
       "../../Tools/FootIK/native-terrain-floor.cjs": "41ede0745097bd0740a008158f206d757effe372bcb154c8001ab74d1cb6e583",
-      "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e",
+      "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94",
       "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f"
     }
   }

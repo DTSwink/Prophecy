@@ -70,15 +70,15 @@
     "native live handoff"
   ],
   "sources": {
-    "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e",
+    "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94",
     "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
     "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f",
     "terrain.js": "e51577a9f0e914aed2366c0b086796b58b38a485400ac888287c1996ed181090",
     "handoff.js": "40f187d9e92d0b86992f4437f440e0e4d452d569c5cf9aaed5acef0230ac25a4",
-    "surface.js": "4bef927e87d6f2187005afcb8c5a2a1c9d7519a6cc28a8782499a8890b41a97d",
+    "surface.js": "7d112d5833baa1b7404c08b7042471868d58d0c8f738c3510dfc66e19c4b717d",
     "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
-    "slide-entry.js": "338023733bc6aeb751cb8e6e3dad0dfac97c9cecbbf9ae4cd53cc136a3c7a05b",
-    "slide-arms.js": "01f977a1d32fb81266fa19990805444f0092a8c99c12cf4b2acb0c2982b77f0c",
+    "slide-entry.js": "d2a45c8f3ebc129072c531923287fc12558486073b14efe64976779599f71b5c",
+    "slide-arms.js": "3f646bc0e6fc8ddd2c444286d146c85427b6cf3d7da71848a7422e8c2a5e1ba1",
     "surface-coupling.js": "464a9d3857e13dd30d3ab6a4b6a4c3279835e8d94618a9f2f136594d960d1901",
     "live-stair-planner.cjs": "a25a43277e83027df864bc0bbe06ce4997aa0617e9a80121683d796de2413e7d",
     "stair-boundary.cjs": "7fde993c28bef8b33327777e43981e9986c1efcd8ab8808863148b8f1d17cb72",
@@ -94,15 +94,15 @@
   "polyfills": "7f4909e04faf0b2f64987b617a18683e913230449663970f0f7758033a534bfd",
   "deterministicTrigWasm": "e55c58b011f7531b8a6ae9cf6108a9449cafbe5994a4671e4293c2a0f16b5a61",
   "nativeKernels": {
-    "contract": "36c0707bfb0c577cb072a2d42514aa94ce56741a819cd98248835de5355fc8c7",
+    "contract": "3b98ae46ecc0b6fa8de0a44afd649ed771a5c7f179629d4b7ce06eeaf43ead65",
     "dependencies": {
       "brace": {
-        "slide-arms.js": "01f977a1d32fb81266fa19990805444f0092a8c99c12cf4b2acb0c2982b77f0c",
+        "slide-arms.js": "3f646bc0e6fc8ddd2c444286d146c85427b6cf3d7da71848a7422e8c2a5e1ba1",
         "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
         "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e"
       },
       "entry": {
-        "slide-entry.js": "338023733bc6aeb751cb8e6e3dad0dfac97c9cecbbf9ae4cd53cc136a3c7a05b",
+        "slide-entry.js": "d2a45c8f3ebc129072c531923287fc12558486073b14efe64976779599f71b5c",
         "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
         "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
         "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f"
@@ -114,9 +114,9 @@
         "../../Tools/FootIK/native-terrain-floor.cjs": "41ede0745097bd0740a008158f206d757effe372bcb154c8001ab74d1cb6e583"
       },
       "legContact": {
-        "surface.js": "4bef927e87d6f2187005afcb8c5a2a1c9d7519a6cc28a8782499a8890b41a97d",
+        "surface.js": "7d112d5833baa1b7404c08b7042471868d58d0c8f738c3510dfc66e19c4b717d",
         "slide-joints.js": "040dbf5dee22de88456c4c9f403c3fb102d39683444f4c424fed8c84b09a257c",
-        "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e",
+        "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94",
         "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f",
         "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e"
       },
@@ -125,14 +125,14 @@
         "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
         "../../Tools/FootIK/live-terrain.cjs": "802613c78f412f2ae88b7faf9323585b558d0d08988f822697cdd90809f8515a",
         "../../Tools/FootIK/native-terrain-floor.cjs": "41ede0745097bd0740a008158f206d757effe372bcb154c8001ab74d1cb6e583",
-        "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e"
+        "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94"
       },
       "terrainRotation": {
         "terrain.js": "e51577a9f0e914aed2366c0b086796b58b38a485400ac888287c1996ed181090",
         "recovery.js": "3923790df6fb6ee86af679839cbd3a7481451025ff372ca8401b11152ceda41e",
         "../../Tools/FootIK/live-terrain.cjs": "802613c78f412f2ae88b7faf9323585b558d0d08988f822697cdd90809f8515a",
         "../../Tools/FootIK/native-terrain-floor.cjs": "41ede0745097bd0740a008158f206d757effe372bcb154c8001ab74d1cb6e583",
-        "footik.js": "fe2944f717ec0f9f3a9a3fdd1c82f71b025a4be2d2bf4937fd7289373c87638e",
+        "footik.js": "e9e24f479047f8c3a2d51003c03b3b60cb7d773a6a53e5bf94f2597d5c19dc94",
         "support.js": "cf7a03b4bfd863e7d0af59510399eb21007085c50ed9201569cdcecdf358603f"
       }
     }
@@ -148,7 +148,7 @@
       "Tools/FootIK/v8-math/src/base/base-export.h": "235446c5f0d05e53266c620d6366428aa2d77d88e55f1011e82515367316c2b5",
       "Source/ProphecyFootIKMath/ProphecyFootIKMath.Build.cs": "0bce9aa6ddc27ea104c7a803ef7a8d0c80390699444dfa3b4658239d1cc6fb6b",
       "Source/ProphecyFootIKMath/Private/ProphecyFootIKMath.cpp": "1a023a97af127036d34e7a5079f5ac76e065968b0f56159caa43ff301a7a05aa",
-      "Source/ProphecyFootIKMath/Private/ProphecyFootIKArmKernel.cpp": "2edef986d206898f7d0acec8c2046470010ecc33b3c0719f29c7792468f24a8a",
+      "Source/ProphecyFootIKMath/Private/ProphecyFootIKArmKernel.cpp": "e09923e9dfdb6c22a137e03eef928341e3362387117e3136e39c989129a68e56",
       "Source/ProphecyFootIKMath/Public/ProphecyFootIKArmKernel.h": "89d1653da58c399d1974f38636660f34f26c12c6830c27993f72dd9d2501d3c9",
       "Source/ProphecyFootIKMath/Private/ProphecyFootIKEntryKernel.cpp": "1e209247b8928105e6d667904a1eefa897464c74e40c3f73898066bbe423d39a",
       "Source/ProphecyFootIKMath/Public/ProphecyFootIKEntryKernel.h": "7c6aafb7c88805718c48037f379f0c99088d2418639676d800ea936a2137000e",
@@ -159,7 +159,7 @@
     },
     "notices": "d76400d86651e61cbe746d574613fe9ff9be87e29ce456d6cea27510a991064c"
   },
-  "runtime": "704e48aa97b5c6448bf92bcfafb30275adc816900471d3f5e362c97c4ebfc98d",
+  "runtime": "1af9282e6d578b1be12bd8d132294e1db189e35c8d4c87f59647b3e3c7925180",
   "hostHelpers": {
     "Tools/FootIK/foot-corners.cjs": "0c5a92da682aa4d18856dfa65fb69d3f360ef54cb0fc8851b7ee35b027f17f04"
   }

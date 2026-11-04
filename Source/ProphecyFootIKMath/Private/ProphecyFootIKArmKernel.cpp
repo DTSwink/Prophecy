@@ -200,6 +200,12 @@ Result LegalArm(const Input&I,const Pose&P)
     R.World.Elbow=Add(I.Shoulder,Rotate(R.World.Upper,LowerOffset));R.World.Wrist=Add(R.World.Elbow,Rotate(R.World.Lower,HandOffset));return R;
 }
 V Palm(const Q&Q0,double Sign){return Add(Scale(Rotate(Q0,V{Sign,0,0}),.0725),Scale(Rotate(Q0,V{0,1,0}),Sign==1?.020:-.025));}
+// Match the canonical hand collider support extent, not just its palm marker.
+double HandOffset(const Input&I,const Q&Q0)
+{
+    const double X=Dot(Rotate(Q0,V{I.Sign,0,0}),I.Normal),Y=Dot(Rotate(Q0,V{0,1,0}),I.Normal),Z=Dot(Rotate(Q0,V{0,0,1}),I.Normal);
+    return X*.0725-Y*.0025-std::abs(X)*.0725-std::abs(Y)*.0225-std::abs(Z)*.045;
+}
 Result Fit(const Input&I,double T,const Q&Orientation)
 {
     const V Point=Add(I.Nearest,Scale(Sub(I.Requested,I.Nearest),T));V Wrist=Sub(Point,Palm(Orientation,I.Sign));Result R;
@@ -211,10 +217,14 @@ Result Fit(const Input&I,double T,const Q&Orientation)
         const V Prior=I.HasPrior?Rotate(FromTo(I.BraceAxis,Axis),I.BracePole):Authored;
         const V Pole=Unit(Tangent(Add(Scale(Prior,.98),Scale(Authored,.02)),Axis));
         R=LegalArm(I,SolveArm(I,Add(I.Shoulder,Scale(Axis,Max(0,Safe))),Pole,Orientation));
-        const V Error=Sub(Point,Add(R.World.Wrist,Palm(R.World.Hand,I.Sign)));if(Hypot(Error)<.0003)break;
+        V Error=Sub(Point,Add(R.World.Wrist,Palm(R.World.Hand,I.Sign)));
+        const double Clearance=Dot(Sub(R.World.Wrist,Point),I.Normal)+HandOffset(I,R.World.Hand);
+        Error=Add(Error,Scale(I.Normal,.002-Clearance-Dot(Error,I.Normal)));if(Hypot(Error)<.0003)break;
         const V Next=Add(Wrist,Scale(Error,.35));if(Hypot(Sub(Next,Wrist))<1.e-7)break;Wrist=Next;
     }
-    R.Point=Point;R.Gap=Hypot(Sub(Add(R.World.Wrist,Palm(R.World.Hand,I.Sign)),Point));return R;
+    const V PalmPoint=Add(R.World.Wrist,Palm(R.World.Hand,I.Sign));
+    const double Clearance=Dot(Sub(R.World.Wrist,Point),I.Normal)+HandOffset(I,R.World.Hand);
+    R.Point=Point;R.Gap=Hypot(std::array<double,2>{Hypot(Tangent(Sub(PalmPoint,Point),I.Normal)),Clearance-.002});return R;
 }
 Result Select(const Input&I)
 {

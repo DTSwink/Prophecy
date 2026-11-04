@@ -1,5 +1,18 @@
 # Prophecy â€” current handoff
 
+**November4 — accepted Foot IK pushed and ported to Unreal:** lab-only commit
+8fe5a2c5 pushed; no models/captures/unrelated uploads. Current user setup phase0.9,
+Leg blend0.8s, floor deletionF50 retained. Canonical wall-approach/ankle/slide-entry
+changes now embedded; native hand-contact math matches the corrected collider
+extent. Normal build passed. Four slide cases/1120 frames/81 NN windows exact
+inside Unreal and native V8;14 terrain cases/8414 frames exact; root-coordinate
+and disable check passes. Existing Foot IK enable node and Blueprint tuning
+preserved. Native port local only. Interrupted cold lifecycle attempt is NOT a
+pass; realtime limits remain. Owned test processes closed. Auto-review blocked
+removing ~174MB of generated test caches; paths and evidence in
+[Foot IK native handoff](Docs/FootIKNative.md). Earlier lab-only status below is
+superseded by this port.
+
 **November 3 - Foot IK F16-19 thigh continuity follow-up (lab):** The prior
 clearance/impact response still produced a sharp thigh arrival/reversal. Shared
 feet now accommodate a damped thigh-direction pursuit with a bounded pelvis
