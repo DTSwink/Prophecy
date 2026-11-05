@@ -7,6 +7,8 @@
 #include "ProphecyJoltBodyComponent.h"
 #include "ProphecyJoltStaticMeshLibrary.h"
 #include "ProphecyJoltSkeletalPropComponent.h"
+#include "ProphecyRetractableSkeletalMeshComponent.h"
+#include "HAL/IConsoleManager.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "ProphecyAgent.h"
@@ -216,11 +218,25 @@ bool UProphecyJoltSceneCollisionComponent::EnableNow(FString& OutError)
     LastError.Reset(); return true;
 }
 
+namespace
+{
+// Skeletal props owned by ordinary Blueprints (not SkeletalMeshActors) that should still
+// be one passive Jolt articulation: the gallows rope, or any mesh tagged explicitly.
+// Prophecy.Rope.Jolt=0 keeps the gallows rope on its legacy Chaos path for comparisons.
+bool IsSceneJoltSkeletalProp(const UPrimitiveComponent& Source)
+{
+    if (!Source.IsA<USkeletalMeshComponent>() || Cast<AProphecyAgent>(Source.GetOwner())) return false;
+    if (Source.ComponentHasTag(TEXT("Prophecy.JoltSkeletalProp"))) return true;
+    static IConsoleVariable* RopeJolt = IConsoleManager::Get().FindConsoleVariable(TEXT("Prophecy.Rope.Jolt"));
+    return Source.IsA<UProphecyRetractableSkeletalMeshComponent>() && (!RopeJolt || RopeJolt->GetInt() != 0);
+}
+}
+
 void UProphecyJoltSceneCollisionComponent::ObserveSource(UPrimitiveComponent& Source)
 {
     if (!State || Source.GetWorld() != GetWorld()
         || (Source.GetMobility() != EComponentMobility::Static && !Source.IsA<UStaticMeshComponent>()
-            && !(Source.IsA<USkeletalMeshComponent>() && Cast<ASkeletalMeshActor>(Source.GetOwner())))) return;
+            && !(Source.IsA<USkeletalMeshComponent>() && (Cast<ASkeletalMeshActor>(Source.GetOwner()) || IsSceneJoltSkeletalProp(Source))))) return;
     const TWeakObjectPtr<UPrimitiveComponent> Key(&Source);
     if (State->Sources.Contains(Key)) return;
     auto& Entry = State->Sources.Add(Key);

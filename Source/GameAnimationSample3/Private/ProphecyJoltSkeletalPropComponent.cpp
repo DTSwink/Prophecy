@@ -21,8 +21,10 @@ struct FProphecyJoltSkeletalPropState
     TArray<FProphecyJoltBodyHandle> Handles;
     TArray<FName> Names;
     TArray<double> Masses;
-    TArray<bool> Dynamic;
+    TArray<bool> Dynamic, Retired;
+    bool bHeldLimb = false; // every body held kinematic through SetSimulationEnabled(false)
     TArray<FTransform> BaseLocal, Bodies, BodyToComponent;
+    TArray<TOptional<FTransform>> KinematicTarget; // body origin relative to the unscaled mesh carrier
     ProphecyJolt::Pose::FPreparedLayout Layout;
     FProphecyJoltComposedPose Pose;
     FProphecyJoltQueryPose Queries;
@@ -93,6 +95,8 @@ bool UProphecyJoltSkeletalPropComponent::Enable(USkeletalMeshComponent& Mesh, FS
         Mappings.Add(Mapping);
         State->Names.Add(Body.BodyName); State->Masses.Add(Body.MassKg);
         State->Dynamic.Add(Body.bSimulating);
+        State->Retired.Add(false);
+        State->KinematicTarget.AddDefaulted();
         State->BodyToComponent.Add(Body.BodyOriginToWorld.GetRelativeTransform(Mesh.GetComponentTransform()));
     }
     if (!State->Layout.Build(Ref.GetNum(), Parents, Mappings, Error)) return false;
@@ -114,6 +118,9 @@ bool UProphecyJoltSkeletalPropComponent::Enable(USkeletalMeshComponent& Mesh, FS
     Mesh.SetEnableAnimation(true);
     Mesh.SetDisablePostProcessBlueprint(true);
     Mesh.SetComponentTickEnabled(false);
+    // The mesh's own tick is off, so it never refreshes "recently rendered": as for characters, the skinned
+    // pose must always be sent to the renderer or a placed SkeletalMeshActor keeps showing its first pose.
+    Mesh.VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
     Mesh.SetAnimInstanceClass(UProphecyJoltPoseAnimInstance::StaticClass());
     return Deferred || EnableNow(Error);
 }
@@ -185,6 +192,7 @@ bool UProphecyJoltSkeletalPropComponent::RefreshCollisionPolicy(FString& Error)
         // QueryOnly receiver as a request to disable the native physical body.
         Update.Responses = FCollisionResponseContainer::CreateMinContainer(
             Body->GetResponseToChannels(), Mesh->GetCollisionResponseToChannels());
+        if (State->Retired.IsValidIndex(I) && State->Retired[I]) Update.Responses = FCollisionResponseContainer(ECR_Ignore);
     }
     const auto Result = State->Owner->UpdateBodyCollision(Updates);
     if (!Result.IsSuccess()) { Error = Result.Message; return false; }
@@ -200,6 +208,7 @@ bool UProphecyJoltSkeletalPropComponent::SetSimulationEnabled(bool Enabled, FStr
     if (!IsJoltStepClientActive()) { Error = TEXT("Skeletal prop admission is not complete."); return false; }
     const auto Result = State->Owner->SetRigKinematicLimb(State->Handles, !Enabled);
     if (!Result.IsSuccess()) { Error = Result.Message; return false; }
+    State->bHeldLimb = !Enabled;
     for (int32 I=0; I<State->Handles.Num(); ++I)
     {
         State->Dynamic[I] = Enabled;
@@ -208,8 +217,56 @@ bool UProphecyJoltSkeletalPropComponent::SetSimulationEnabled(bool Enabled, FStr
             FProphecyJoltBodyState Body;
             if (State->Owner->ReadBody(State->Handles[I], Body).IsSuccess())
                 State->BodyToComponent[I] = FTransform(Body.Rotation, Body.PositionCm).GetRelativeTransform(State->Mesh->GetComponentTransform());
+            State->KinematicTarget[I].Reset();
         }
     }
+    return true;
+}
+bool UProphecyJoltSkeletalPropComponent::SetKinematicBodyTarget(FName Bone, const FTransform& BodyOriginWorld, FString& Error)
+{
+    auto* Mesh = State ? State->Mesh.Get() : nullptr;
+    const int32 Index = State ? State->Names.IndexOfByKey(Bone) : INDEX_NONE;
+    if (!Mesh || !IsJoltStepClientActive() || !State->BodyToComponent.IsValidIndex(Index))
+    { Error = FString::Printf(TEXT("Skeletal prop has no admitted body %s."), *Bone.ToString()); return false; }
+    if (State->Dynamic[Index]) { Error = FString::Printf(TEXT("Body %s is dynamic, not kinematic."), *Bone.ToString()); return false; }
+    // Relative to the unscaled carrier: a non-uniformly scaled, rotated mesh cannot represent
+    // an arbitrary rigid offset exactly through FTransform composition.
+    FTransform Target = BodyOriginWorld; Target.RemoveScaling();
+    State->KinematicTarget[Index] = Target.GetRelativeTransform(FTransform(Mesh->GetComponentQuat(), Mesh->GetComponentLocation()));
+    return true;
+}
+bool UProphecyJoltSkeletalPropComponent::SetBodiesCollisionRetired(TConstArrayView<FName> Bones, TConstArrayView<bool> Retired, FString& Error)
+{
+    if (!IsJoltStepClientActive() || Bones.Num() != Retired.Num())
+    { Error = TEXT("Skeletal prop collision retirement needs completed admission and one flag per bone."); return false; }
+    bool bChanged = false;
+    for (int32 I = 0; I < Bones.Num(); ++I)
+    {
+        const int32 Index = State->Names.IndexOfByKey(Bones[I]);
+        if (!State->Retired.IsValidIndex(Index)) { Error = FString::Printf(TEXT("No body %s."), *Bones[I].ToString()); return false; }
+        bChanged |= State->Retired[Index] != Retired[I];
+        State->Retired[Index] = Retired[I];
+    }
+    return !bChanged || RefreshCollisionPolicy(Error);
+}
+bool UProphecyJoltSkeletalPropComponent::IsBodyDynamic(FName Bone) const
+{
+    const int32 Index = State ? State->Names.IndexOfByKey(Bone) : INDEX_NONE;
+    return State && State->Dynamic.IsValidIndex(Index) && State->Dynamic[Index];
+}
+bool UProphecyJoltSkeletalPropComponent::SetSolverIterations(int32 Velocity, int32 Position, FString& Error)
+{
+    if (!IsJoltStepClientActive()) { Error = TEXT("Skeletal prop admission is not complete."); return false; }
+    const auto Result = State->Owner->SetRigSolverIterations(State->Rig, Velocity, Position);
+    if (!Result.IsSuccess()) { Error = Result.Message; return false; }
+    return true;
+}
+bool UProphecyJoltSkeletalPropComponent::SetBodyMassKg(FName Bone, float MassKg, FString& Error)
+{
+    const int32 Index = State ? State->Names.IndexOfByKey(Bone) : INDEX_NONE;
+    if (!IsJoltStepClientActive() || !State->Handles.IsValidIndex(Index)) { Error = FString::Printf(TEXT("No admitted body %s."), *Bone.ToString()); return false; }
+    const auto Result = State->Owner->SetBodyMassKg(State->Handles[Index], MassKg);
+    if (!Result.IsSuccess()) { Error = Result.Message; return false; }
     return true;
 }
 bool UProphecyJoltSkeletalPropComponent::PrepareJoltWorldStep(float Dt, bool, FString& Error)
@@ -218,11 +275,28 @@ bool UProphecyJoltSkeletalPropComponent::PrepareJoltWorldStep(float Dt, bool, FS
     auto* Mesh = State->Mesh.Get();
     if (!Mesh || Mesh->GetSkeletalMeshAsset() != State->Asset.Get())
     { Error = TEXT("Skeletal prop mesh changed while bound."); return false; }
+    // A held rig is a native kinematic limb: its velocities are reset every step, so it is posed, not moved.
+    if (State->bHeldLimb)
+    {
+        TArray<FTransform, TInlineAllocator<32>> Poses;
+        for (int32 I=0; I<State->Handles.Num(); ++I)
+        {
+            FTransform Pose = State->KinematicTarget[I].IsSet()
+                ? *State->KinematicTarget[I] * FTransform(Mesh->GetComponentQuat(), Mesh->GetComponentLocation())
+                : State->BodyToComponent[I] * Mesh->GetComponentTransform();
+            Pose.RemoveScaling();
+            Poses.Add(Pose);
+        }
+        const auto Result = State->Owner->PoseRigKinematicLimb(State->Handles, Poses, Dt);
+        if (!Result.IsSuccess()) { Error = Result.Message; return false; }
+        return true;
+    }
     for (int32 I=0; I<State->Handles.Num(); ++I)
         if (!State->Dynamic[I])
         {
-            const auto Result = State->Owner->MoveKinematicBody(State->Handles[I],
-                State->BodyToComponent[I] * Mesh->GetComponentTransform(), Dt);
+            const auto Result = State->Owner->MoveKinematicBody(State->Handles[I], State->KinematicTarget[I].IsSet()
+                ? *State->KinematicTarget[I] * FTransform(Mesh->GetComponentQuat(), Mesh->GetComponentLocation())
+                : State->BodyToComponent[I] * Mesh->GetComponentTransform(), Dt);
             if (!Result.IsSuccess()) { Error = Result.Message; return false; }
         }
     return true;

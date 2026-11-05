@@ -28,6 +28,16 @@ public:
     bool RefreshCollisionPolicy(FString& Error);
     double GetCapturedBodyMassKg(FName Bone) const;
     bool SetSimulationEnabled(bool Enabled, FString& Error);
+    /** Kinematic bodies only: the world body-origin pose they follow from the next step on
+     * (stored relative to the mesh, so moving the actor still carries it). */
+    bool SetKinematicBodyTarget(FName Bone, const FTransform& BodyOriginWorld, FString& Error);
+    /** Retired bodies keep their mass and joints but collide with nothing. Unchanged input is free. */
+    bool SetBodiesCollisionRetired(TConstArrayView<FName> Bones, TConstArrayView<bool> Retired, FString& Error);
+    bool IsBodyDynamic(FName Bone) const;
+    /** Rig-wide Jolt solver steps (long light chains such as ropes need more than the world default). */
+    bool SetSolverIterations(int32 Velocity, int32 Position, FString& Error);
+    /** Absolute dynamic mass of one body (inertia scales with it), e.g. to carry a welded attachment. */
+    bool SetBodyMassKg(FName Bone, float MassKg, FString& Error);
     bool bAutomaticStep = true;
     bool StepAndPublish(float DeltaSeconds, FString& Error);
     virtual bool IsJoltStepClientActive() const override;

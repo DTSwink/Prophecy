@@ -2,6 +2,13 @@
 #include "ProphecyJoltConstraintRuntime.h"
 
 #include "ProphecyRetractableSkeletalMeshComponent.h"
+#include "ProphecyNoose.h"
+#include "ProphecyPotenceRope.h"
+#include "ProphecyJoltFightSetup.h"
+#include "ProphecyJoltSkeletalPropComponent.h"
+#include "ProphecyJoltStaticMeshLibrary.h"
+#include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
 
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -30,6 +37,66 @@ bool UProphecyPhysicsConstraintBlueprintLibrary::SetPikeWoundCorrection(UPhysics
 
 namespace
 {
+// The gallows rope is one passive Jolt articulation whenever the world runs Jolt gameplay
+// physics; 0 restores the legacy Chaos rope/noose path (comparison and fallback only).
+TAutoConsoleVariable<int32> CVarPotenceRopeJolt(TEXT("Prophecy.Rope.Jolt"), 1,
+	TEXT("1: the gallows rope, its pulley and its noose run in Jolt when the world uses Jolt gameplay physics. 0: legacy Chaos rope."));
+
+bool IsJoltRopeWorld(UWorld* World)
+{
+	if (!World || !World->IsGameWorld() || CVarPotenceRopeJolt.GetValueOnGameThread() == 0) return false;
+	// Same decision as ProphecyJolt::DefaultPhysics: an explicit setup actor wins, else the project default.
+	bool bAnySetup = false;
+	for (TActorIterator<AProphecyJoltFightSetup> It(World); It; ++It)
+	{
+		bAnySetup = true;
+		if (It->bEnableJolt) return true;
+	}
+	if (bAnySetup) return false;
+	static IConsoleVariable* Default = IConsoleManager::Get().FindConsoleVariable(TEXT("Prophecy.Jolt.DefaultPhysics"));
+	return !Default || Default->GetInt() != 0;
+}
+
+TAutoConsoleVariable<int32> CVarPotenceRopeJoltVelocitySteps(TEXT("Prophecy.Rope.JoltVelocitySteps"), 48,
+	TEXT("Jolt velocity solver steps for the gallows rope articulation (world default is lower; a 27-link chain needs more)."));
+TAutoConsoleVariable<int32> CVarPotenceRopeJoltPositionSteps(TEXT("Prophecy.Rope.JoltPositionSteps"), 32,
+	TEXT("Jolt position solver steps for the gallows rope articulation."));
+
+// Runs on the game thread until the rope's Jolt admission completes, then applies the rope
+// solver steps and the welded noose mass once, and stops. No recurring work afterwards.
+TMap<TWeakObjectPtr<USkeletalMeshComponent>, FTimerHandle> PotenceRopeTuning;
+void SchedulePotenceRopeJoltTuning(USkeletalMeshComponent* Rope, const FName TipBone, const float ExtraTipMassKg)
+{
+	UWorld* World = Rope ? Rope->GetWorld() : nullptr;
+	if (!World || PotenceRopeTuning.Contains(Rope)) return;
+	const TWeakObjectPtr<USkeletalMeshComponent> WeakRope(Rope);
+	TSharedRef<int32> Polls = MakeShared<int32>(0);
+	FTimerHandle& Handle = PotenceRopeTuning.Add(Rope);
+	World->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([WeakRope, TipBone, ExtraTipMassKg, Polls]()
+	{
+		USkeletalMeshComponent* Mesh = WeakRope.Get();
+		auto Stop = [&WeakRope, Mesh]()
+		{
+			FTimerHandle Done;
+			if (PotenceRopeTuning.RemoveAndCopyValue(WeakRope, Done) && Mesh && Mesh->GetWorld()) Mesh->GetWorld()->GetTimerManager().ClearTimer(Done);
+		};
+		UProphecyJoltSkeletalPropComponent* Prop = Mesh ? UProphecyJoltSkeletalPropComponent::Find(Mesh) : nullptr;
+		if (!Mesh || ++*Polls > 600) { Stop(); return; }
+		if (!Prop || !Prop->IsJoltStepClientActive()) return;
+		FString Error;
+		const int32 V = CVarPotenceRopeJoltVelocitySteps.GetValueOnGameThread(), P = CVarPotenceRopeJoltPositionSteps.GetValueOnGameThread();
+		if (V > 0 && P > 0 && !Prop->SetSolverIterations(V, P, Error))
+			UE_LOG(LogPhysics, Warning, TEXT("Potence rope (Jolt) solver steps: %s"), *Error);
+		const double TipMass = Prop->GetCapturedBodyMassKg(TipBone);
+		if (ExtraTipMassKg > 0.f && TipMass > 0.0 && !Prop->SetBodyMassKg(TipBone, float(TipMass) + ExtraTipMassKg, Error))
+			UE_LOG(LogPhysics, Warning, TEXT("Potence rope (Jolt) noose mass: %s"), *Error);
+		UE_LOG(LogTemp, Display, TEXT("Potence rope in Jolt: %s, velocity/position steps %d/%d, %s %.3f kg + noose %.3f kg"),
+			*Mesh->GetName(), V, P, *TipBone.ToString(), TipMass, ExtraTipMassKg);
+		ProphecyNoose::OnRopeAdmitted(Mesh);
+		Stop();
+	}), 0.1f, true);
+}
+
 constexpr int32 PotenceRopeSegmentCount = 27;
 constexpr float PotenceRopeScaleTolerance = 1.0e-5f;
 constexpr int32 PotenceRopePositionSolverIterations = 12;
@@ -61,6 +128,7 @@ struct FPotenceRopeState
 };
 
 TMap<TWeakObjectPtr<USkeletalMeshComponent>, FPotenceRopeState> PotenceRopeStates;
+TMap<TWeakObjectPtr<USkeletalMeshComponent>, float> PotenceRopeAmounts;
 uint32 PotenceRopeUpdateCallCount = 0;
 
 uint32 HashBoatWaveSeed(uint32 Value)
@@ -322,6 +390,15 @@ bool PerformPotenceNooseWeld(
 		return false;
 	}
 
+	if (IsJoltRopeWorld(Rope->GetWorld()))
+	{
+		// Jolt: the authored (Fab) noose is replaced by the procedural one carried by the rope end bone;
+		// its mass goes on the terminal rope body once the rope is admitted.
+		ProphecyNoose::Install(Rope, TerminalBone, Noose);
+		SchedulePotenceRopeJoltTuning(Rope, TerminalBone, ProphecyNoose::GetMassKg(Rope));
+		return true;
+	}
+
 	Noose->SetWorldLocation(
 		Rope->GetSocketLocation(TerminalBone),
 		false,
@@ -339,6 +416,17 @@ bool PerformPotenceNooseWeld(
 	return true;
 }
 
+}
+
+bool ProphecyPotenceRope::GetReelGeometry(const USkeletalMeshComponent* Rope, FTransform& AnchorWorld, FVector& RetractionDirectionWorld, float& LengthWorld)
+{
+	return Rope && GetPotenceRopeReelGeometry(Rope, AnchorWorld, RetractionDirectionWorld, LengthWorld);
+}
+
+float ProphecyPotenceRope::GetAmount(const USkeletalMeshComponent* Rope)
+{
+	const float* Amount = PotenceRopeAmounts.Find(const_cast<USkeletalMeshComponent*>(Rope));
+	return Amount ? *Amount : 0.f;
 }
 
 void UProphecyPhysicsConstraintBlueprintLibrary::GetLinearZLimit(
@@ -436,6 +524,54 @@ bool UProphecyPhysicsConstraintBlueprintLibrary::UpdatePotenceRopePhysics(
 	}
 
 	check(IsInGameThread());
+	if (IsJoltRopeWorld(Target->GetWorld()))
+	{
+		if (UProphecyJoltSkeletalPropComponent* Prop = UProphecyJoltSkeletalPropComponent::Find(Target))
+		{
+			const float JoltAmount = FMath::Clamp(Amount, 0.0f, 1.0f);
+			RetractableTarget->SetRetractionVisualAmount(JoltAmount);
+			RetractableTarget->SetVisibility(true, false);
+			// Admission pending: Chaos is already off for this mesh. Never re-enable it here;
+			// the next call after admission applies the reel to the native bodies.
+			if (!Prop->IsJoltStepClientActive())
+			{
+				return true;
+			}
+			FTransform JoltAnchorWorld;
+			FVector JoltDirectionWorld;
+			float JoltLengthWorld = 0.0f;
+			if (!GetPotenceRopeReelGeometry(Target, JoltAnchorWorld, JoltDirectionWorld, JoltLengthWorld))
+			{
+				return false;
+			}
+			// Same reel as the Chaos path: the kinematic root slides back through the fixed
+			// wood anchor, the full-length chain follows, consumed links stop colliding.
+			FTransform JoltRootTarget = JoltAnchorWorld;
+			JoltRootTarget.AddToTranslation(JoltDirectionWorld * JoltLengthWorld * JoltAmount);
+			FString Error;
+			if (!Prop->SetKinematicBodyTarget(PotenceRopeRootBone, JoltRootTarget, Error))
+			{
+				UE_LOG(LogPhysics, Warning, TEXT("Potence rope (Jolt): %s"), *Error);
+				return false;
+			}
+			const float JoltProgress = JoltAmount * static_cast<float>(PotenceRopeSegmentCount);
+			TArray<FName, TInlineAllocator<PotenceRopeSegmentCount>> Bones;
+			TArray<bool, TInlineAllocator<PotenceRopeSegmentCount>> Retired;
+			for (int32 SegmentIndex = 0; SegmentIndex < PotenceRopeSegmentCount; ++SegmentIndex)
+			{
+				Bones.Add(MakePotenceRopeBoneName(SegmentIndex));
+				Retired.Add(JoltProgress - static_cast<float>(SegmentIndex) >= 1.0f);
+			}
+			if (!Prop->SetBodiesCollisionRetired(Bones, Retired, Error))
+			{
+				UE_LOG(LogPhysics, Warning, TEXT("Potence rope (Jolt): %s"), *Error);
+				return false;
+			}
+			PotenceRopeAmounts.Add(Target, JoltAmount);
+			ProphecyNoose::OnRopeReeled(Target);
+			return true;
+		}
+	}
 	if ((++PotenceRopeUpdateCallCount & 0xffu) == 0u)
 	{
 		RemoveStalePotenceRopeStates();
@@ -496,6 +632,7 @@ bool UProphecyPhysicsConstraintBlueprintLibrary::UpdatePotenceRopePhysics(
 		Target->WakeAllRigidBodies();
 	}
 	State.AppliedAmount = ClampedAmount;
+	PotenceRopeAmounts.Add(Target, ClampedAmount);
 	RetractableTarget->SetRetractionVisualAmount(ClampedAmount);
 	RetractableTarget->SetVisibility(true, false);
 
