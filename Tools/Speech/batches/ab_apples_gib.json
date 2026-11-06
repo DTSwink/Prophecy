@@ -1,0 +1,71 @@
+{
+ "name": "ab_apples_gib",
+ "language": "invented language v2",
+ "voices": {
+  "S1": {
+   "name": "George - Warm, Captivating Storyteller",
+   "voice_id": "JBFqnCBsd6RMkjVDRZzb"
+  },
+  "S2": {
+   "name": "Jessica - Playful, Bright, Warm",
+   "voice_id": "cgSgspJ2msm6clMCkdW9"
+  }
+ },
+ "variants": [
+  {
+   "id": "v3_fr",
+   "model": "eleven_v3",
+   "language_code": "fr"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "[warmly]",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Prait lér! Clanreuque cécassi, lauvimete ké maumu. Daume vratri za guiangésse."
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Daume vratrisi? Kon cheau za blait bradanchin vé pè."
+  },
+  {
+   "speaker": "S1",
+   "tags": "[chuckles]",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Pranségete? Meu jé douron. Cécassi mio nazbransi flait."
+  },
+  {
+   "speaker": "S2",
+   "tags": "[amused]",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Lia za nazbransi rafeve rausse vratri, zi za cécassi diait."
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "Ah, bé jé za vaplou réque. Rausse zi za aijon, zi pè rissou za zaru."
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "Rausse vratri zi za zaru, zi pè preau quait piait."
+  },
+  {
+   "speaker": "S1",
+   "tags": "[sighs]",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Miait creur bé preau quait, zi miait creur pè nér vouque. Frait. Rausse vratri."
+  },
+  {
+   "speaker": "S2",
+   "tags": "[warmly]",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "Bé zou zér nér teu vouque. Mérsil bé, bleune lanziait."
+  }
+ ]
+}

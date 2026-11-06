@@ -1,0 +1,250 @@
+{
+ "scene": "apples_occitan_A5",
+ "T": 33.76,
+ "lines": [
+  {
+   "id": "00_S1",
+   "speaker": "S1",
+   "start": 0.0,
+   "dur": 4.8,
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "audio": "assets/audio/00_S1.mp3"
+  },
+  {
+   "id": "01_S2",
+   "speaker": "S2",
+   "start": 4.8,
+   "dur": 2.7199999999999998,
+   "english": "Two coins? They look a little bruised to me.",
+   "audio": "assets/audio/01_S2.mp3"
+  },
+  {
+   "id": "02_S1",
+   "speaker": "S1",
+   "start": 7.52,
+   "dur": 5.280000000000001,
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "audio": "assets/audio/02_S1.mp3"
+  },
+  {
+   "id": "03_S2",
+   "speaker": "S2",
+   "start": 12.8,
+   "dur": 3.7600000000000016,
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "audio": "assets/audio/03_S2.mp3"
+  },
+  {
+   "id": "04_S1",
+   "speaker": "S1",
+   "start": 16.560000000000002,
+   "dur": 5.039999999999999,
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "audio": "assets/audio/04_S1.mp3"
+  },
+  {
+   "id": "05_S2",
+   "speaker": "S2",
+   "start": 21.6,
+   "dur": 2.6400000000000006,
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "audio": "assets/audio/05_S2.mp3"
+  },
+  {
+   "id": "06_S1",
+   "speaker": "S1",
+   "start": 24.240000000000002,
+   "dur": 6.079999999999998,
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "audio": "assets/audio/06_S1.mp3"
+  },
+  {
+   "id": "07_S2",
+   "speaker": "S2",
+   "start": 30.32,
+   "dur": 3.4399999999999977,
+   "english": "You never lose money. Thank you, old friend.",
+   "audio": "assets/audio/07_S2.mp3"
+  }
+ ],
+ "chars": {
+  "S1": "Seller (Marcel_FR voice)",
+  "S2": "Customer (Sarah_FR voice)"
+ },
+ "K": 97,
+ "fps": 25.0,
+ "frames": 844,
+ "levels": [
+  0.0,
+  0.30000001192092896,
+  0.6000000238418579,
+  1.0,
+  1.2999999523162842,
+  1.600000023841858,
+  2.0
+ ],
+ "parts": {
+  "c_S1": {
+   "offset": 0,
+   "shape": [
+    7,
+    844,
+    97
+   ]
+  },
+  "c_S2": {
+   "offset": 573076,
+   "shape": [
+    7,
+    844,
+    97
+   ]
+  },
+  "w_S1": {
+   "offset": 1146152,
+   "shape": [
+    7,
+    844,
+    82
+   ]
+  },
+  "w_S2": {
+   "offset": 1630608,
+   "shape": [
+    7,
+    844,
+    82
+   ]
+  },
+  "h_S1": {
+   "offset": 2115064,
+   "shape": [
+    844,
+    3
+   ]
+  },
+  "h_S2": {
+   "offset": 2117596,
+   "shape": [
+    844,
+    3
+   ]
+  }
+ },
+ "mapNames": [
+  "head_cm2_color.head_wm2_browsDown_L",
+  "head_cm2_color.head_wm2_browsDown_R",
+  "head_cm2_color.head_wm2_browsLateral_L",
+  "head_cm2_color.head_wm2_browsLateral_R",
+  "head_cm1_color.head_wm1_browsRaiseInner_L",
+  "head_cm1_color.head_wm1_browsRaiseInner_R",
+  "head_cm1_color.head_wm1_browsRaiseOuter_L",
+  "head_cm1_color.head_wm1_browsRaiseOuter_R",
+  "head_cm1_color.head_wm1_blink_L",
+  "head_cm1_color.head_wm1_squintInner_L",
+  "head_cm1_color.head_wm1_blink_R",
+  "head_cm1_color.head_wm1_squintInner_R",
+  "head_cm3_color.head_wm3_cheekRaiseInner_L",
+  "head_cm3_color.head_wm3_cheekRaiseOuter_L",
+  "head_cm3_color.head_wm3_cheekRaiseUpper_L",
+  "head_cm3_color.head_wm3_cheekRaiseInner_R",
+  "head_cm3_color.head_wm3_cheekRaiseOuter_R",
+  "head_cm3_color.head_wm3_cheekRaiseUpper_R",
+  "head_cm2_color.head_wm2_noseWrinkler_L",
+  "head_cm2_color.head_wm2_noseWrinkler_R",
+  "head_cm3_color.head_wm3_smile_L",
+  "head_cm1_color.head_wm13_lips_UL",
+  "head_cm1_color.head_wm13_lips_UR",
+  "head_cm1_color.head_wm13_lips_DL",
+  "head_cm1_color.head_wm13_lips_DR",
+  "head_cm3_color.head_wm3_smile_R",
+  "head_cm3_color.head_wm13_lips_UL",
+  "head_cm3_color.head_wm13_lips_DL",
+  "head_cm3_color.head_wm13_lips_UR",
+  "head_cm3_color.head_wm13_lips_DR",
+  "head_cm2_color.head_wm2_mouthStretch_L",
+  "head_cm2_color.head_wm2_mouthStretch_R",
+  "head_cm1_color.head_wm1_purse_UL",
+  "head_cm1_color.head_wm1_purse_UR",
+  "head_cm1_color.head_wm1_purse_DL",
+  "head_cm1_color.head_wm1_purse_DR",
+  "head_cm1_color.head_wm1_chinRaise_L",
+  "head_cm1_color.head_wm1_chinRaise_R",
+  "head_cm1_color.head_wm1_jawOpen",
+  "head_cm2_color.head_wm2_neckStretch_L",
+  "head_cm2_color.head_wm2_neckStretch_R",
+  "head_wm2_normal.head_wm2_browsDown_L",
+  "head_wm2_normal.head_wm2_browsDown_R",
+  "head_wm2_normal.head_wm2_browsLateral_L",
+  "head_wm2_normal.head_wm2_browsLateral_R",
+  "head_wm1_normal.head_wm1_browsRaiseInner_L",
+  "head_wm1_normal.head_wm1_browsRaiseInner_R",
+  "head_wm1_normal.head_wm1_browsRaiseOuter_L",
+  "head_wm1_normal.head_wm1_browsRaiseOuter_R",
+  "head_wm1_normal.head_wm1_blink_L",
+  "head_wm1_normal.head_wm1_squintInner_L",
+  "head_wm1_normal.head_wm1_blink_R",
+  "head_wm1_normal.head_wm1_squintInner_R",
+  "head_wm3_normal.head_wm3_cheekRaiseInner_L",
+  "head_wm3_normal.head_wm3_cheekRaiseOuter_L",
+  "head_wm3_normal.head_wm3_cheekRaiseUpper_L",
+  "head_wm3_normal.head_wm3_cheekRaiseInner_R",
+  "head_wm3_normal.head_wm3_cheekRaiseOuter_R",
+  "head_wm3_normal.head_wm3_cheekRaiseUpper_R",
+  "head_wm2_normal.head_wm2_noseWrinkler_L",
+  "head_wm2_normal.head_wm2_noseWrinkler_R",
+  "head_wm3_normal.head_wm3_smile_L",
+  "head_wm1_normal.head_wm13_lips_UL",
+  "head_wm1_normal.head_wm13_lips_UR",
+  "head_wm1_normal.head_wm13_lips_DL",
+  "head_wm1_normal.head_wm13_lips_DR",
+  "head_wm3_normal.head_wm3_smile_R",
+  "head_wm3_normal.head_wm13_lips_UL",
+  "head_wm3_normal.head_wm13_lips_DL",
+  "head_wm3_normal.head_wm13_lips_UR",
+  "head_wm3_normal.head_wm13_lips_DR",
+  "head_wm2_normal.head_wm2_mouthStretch_L",
+  "head_wm2_normal.head_wm2_mouthStretch_R",
+  "head_wm1_normal.head_wm1_purse_UL",
+  "head_wm1_normal.head_wm1_purse_UR",
+  "head_wm1_normal.head_wm1_purse_DL",
+  "head_wm1_normal.head_wm1_purse_DR",
+  "head_wm1_normal.head_wm1_chinRaise_L",
+  "head_wm1_normal.head_wm1_chinRaise_R",
+  "head_wm1_normal.head_wm1_jawOpen",
+  "head_wm2_normal.head_wm2_neckStretch_L",
+  "head_wm2_normal.head_wm2_neckStretch_R"
+ ],
+ "forwardGltf": [
+  0,
+  0,
+  1
+ ],
+ "headCenterGltf": [
+  -5.7589582866057754e-05,
+  1.5371613502502441,
+  0.03780108690261841
+ ],
+ "idleFrames": 302,
+ "materials": [
+  "body_shader_shader",
+  "teeth_shader_shader",
+  "eyeLeft_shader_shader",
+  "eyeRight_shader_shader",
+  "eyeshell_shader_shader",
+  "eyeEdge_shader_shader",
+  "eyelashes_HiLOD_shader_shader",
+  "head_LOD3_shader_shader"
+ ],
+ "poseFrames": [
+  1,
+  2,
+  3,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ]
+}

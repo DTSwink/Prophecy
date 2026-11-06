@@ -1,0 +1,18 @@
+OBJECTS [('root', 'ARMATURE'), ('SKM_UEFN_Mannequin', 'EMPTY')]
+BONES 88 ['attach', 'pelvis', 'spine_01', 'spine_02', 'spine_03', 'spine_04', 'spine_05', 'clavicle_l', 'upperarm_l', 'lowerarm_l', 'hand_l', 'index_metacarpal_l']
+ACTION speech poses (1.0, 10.0) fps 30
+KEYED FRAMES [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0] count 10
+FRAME 1 [('weapon_r', 0.0), ('weapon_l', 0.0), ('upperarm_twist_02_r', 0.0), ('upperarm_twist_02_l', 0.0)]
+FRAME 2 [('ik_hand_l', 70.7), ('hand_l', 68.5), ('lowerarm_twist_01_l', 54.8), ('lowerarm_l', 23.7)]
+FRAME 3 [('ik_hand_r', 102.2), ('hand_r', 95.3), ('lowerarm_twist_01_r', 76.3), ('lowerarm_r', 36.2)]
+FRAME 4 [('hand_l', 23.8), ('ik_hand_l', 22.9), ('lowerarm_twist_01_l', 18.0), ('lowerarm_twist_02_l', 4.5)]
+FRAME 5 [('ik_hand_l', 120.8), ('hand_l', 105.9), ('lowerarm_twist_01_l', 84.1), ('lowerarm_l', 71.1)]
+FRAME 6 [('ik_hand_r', 111.7), ('hand_r', 94.6), ('lowerarm_twist_01_r', 73.3), ('lowerarm_r', 52.9)]
+FRAME 7 [('ik_hand_l', 139.3), ('upperarm_l', 97.5), ('hand_l', 49.4), ('lowerarm_l', 44.4)]
+FRAME 8 [('ik_hand_r', 125.2), ('hand_r', 73.4), ('upperarm_r', 58.9), ('lowerarm_twist_01_r', 58.7)]
+FRAME 9 [('hand_l', 45.4), ('ik_hand_l', 44.4), ('ik_hand_r', 43.1), ('hand_r', 42.7)]
+FRAME 10 [('ik_hand_r', 160.0), ('ik_hand_l', 138.4), ('hand_r', 109.2), ('hand_l', 95.3)]
+Blender 5.1.1 (hash b70da489d7f4 built 2026-04-14 01:37:22)
+FBX import of 'speech poses.fbx' took 16.47 ms
+
+Blender quit

@@ -1,0 +1,74 @@
+{
+ "scene": "apples_occitan_A5",
+ "T": 33.76,
+ "lines": [
+  {
+   "id": "00_S1",
+   "speaker": "S1",
+   "start": 0.0,
+   "dur": 4.8,
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "audio": "assets/audio/00_S1.mp3"
+  },
+  {
+   "id": "01_S2",
+   "speaker": "S2",
+   "start": 4.8,
+   "dur": 2.7199999999999998,
+   "english": "Two coins? They look a little bruised to me.",
+   "audio": "assets/audio/01_S2.mp3"
+  },
+  {
+   "id": "02_S1",
+   "speaker": "S1",
+   "start": 7.52,
+   "dur": 5.280000000000001,
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "audio": "assets/audio/02_S1.mp3"
+  },
+  {
+   "id": "03_S2",
+   "speaker": "S2",
+   "start": 12.8,
+   "dur": 3.7600000000000016,
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "audio": "assets/audio/03_S2.mp3"
+  },
+  {
+   "id": "04_S1",
+   "speaker": "S1",
+   "start": 16.560000000000002,
+   "dur": 5.039999999999999,
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "audio": "assets/audio/04_S1.mp3"
+  },
+  {
+   "id": "05_S2",
+   "speaker": "S2",
+   "start": 21.6,
+   "dur": 2.6400000000000006,
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "audio": "assets/audio/05_S2.mp3"
+  },
+  {
+   "id": "06_S1",
+   "speaker": "S1",
+   "start": 24.240000000000002,
+   "dur": 6.079999999999998,
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "audio": "assets/audio/06_S1.mp3"
+  },
+  {
+   "id": "07_S2",
+   "speaker": "S2",
+   "start": 30.32,
+   "dur": 3.4399999999999977,
+   "english": "You never lose money. Thank you, old friend.",
+   "audio": "assets/audio/07_S2.mp3"
+  }
+ ],
+ "chars": {
+  "S1": "Seller (Marcel_FR voice)",
+  "S2": "Customer (Sarah_FR voice)"
+ }
+}

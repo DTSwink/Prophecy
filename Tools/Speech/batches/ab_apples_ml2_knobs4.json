@@ -1,0 +1,478 @@
+{
+ "name": "ab_apples_ml2_knobs4",
+ "language": "invented language v3 (French spelling, syllable parity)",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  },
+  "S2": {
+   "name": "Sarah_FR",
+   "voice_id": "t8BrjWUT5Z23DLLBzbuY"
+  }
+ },
+ "variants": [
+  {
+   "id": "stab25_sim0_style0",
+   "model": "eleven_multilingual_v2",
+   "language_code": "fr",
+   "seed": 4242,
+   "voice_settings": {
+    "stability": 0.25,
+    "similarity_boost": 0.0,
+    "style": 0.0,
+    "use_speaker_boost": true
+   }
+  },
+  {
+   "id": "stab50_sim0_style0",
+   "model": "eleven_multilingual_v2",
+   "language_code": "fr",
+   "seed": 4242,
+   "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.0,
+    "style": 0.0,
+    "use_speaker_boost": true
+   }
+  },
+  {
+   "id": "stab75_sim0_style0",
+   "model": "eleven_multilingual_v2",
+   "language_code": "fr",
+   "seed": 4242,
+   "voice_settings": {
+    "stability": 0.75,
+    "similarity_boost": 0.0,
+    "style": 0.0,
+    "use_speaker_boost": true
+   }
+  },
+  {
+   "id": "stab25_sim0_style100",
+   "model": "eleven_multilingual_v2",
+   "language_code": "fr",
+   "seed": 4242,
+   "voice_settings": {
+    "stability": 0.25,
+    "similarity_boost": 0.0,
+    "style": 1.0,
+    "use_speaker_boost": true
+   }
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Prait bévaul! Mait cécasses, choulete quez treu. Daume nane za guiangésse.",
+   "words": [
+    {
+     "g": "Prait",
+     "src": 0
+    },
+    {
+     "g": "bévaul!",
+     "src": 1
+    },
+    {
+     "g": "Mait",
+     "src": 2
+    },
+    {
+     "g": "cécasses,",
+     "src": 3
+    },
+    {
+     "g": "choulete",
+     "src": 4
+    },
+    {
+     "g": "quez",
+     "src": 5
+    },
+    {
+     "g": "treu.",
+     "src": 6
+    },
+    {
+     "g": "Daume",
+     "src": 7
+    },
+    {
+     "g": "nane",
+     "src": 8
+    },
+    {
+     "g": "za",
+     "src": 9
+    },
+    {
+     "g": "guiangésse.",
+     "src": 10
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Daume nanes? Quon cheau za brudeu fras vé pè.",
+   "words": [
+    {
+     "g": "Daume",
+     "src": 0
+    },
+    {
+     "g": "nanes?",
+     "src": 1
+    },
+    {
+     "g": "Quon",
+     "src": 2
+    },
+    {
+     "g": "cheau",
+     "src": 3
+    },
+    {
+     "g": "za",
+     "src": 4
+    },
+    {
+     "g": "brudeu",
+     "src": 5
+    },
+    {
+     "g": "fras",
+     "src": 6
+    },
+    {
+     "g": "vé",
+     "src": 7
+    },
+    {
+     "g": "pè.",
+     "src": 8
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Fralete? Meu jé douron. Cécasses miot nazbrans flait.",
+   "words": [
+    {
+     "g": "Fralete?",
+     "src": 0
+    },
+    {
+     "g": "Meu",
+     "src": 1
+    },
+    {
+     "g": "jé",
+     "src": 2
+    },
+    {
+     "g": "douron.",
+     "src": 3
+    },
+    {
+     "g": "Cécasses",
+     "src": 4
+    },
+    {
+     "g": "miot",
+     "src": 5
+    },
+    {
+     "g": "nazbrans",
+     "src": 6
+    },
+    {
+     "g": "flait.",
+     "src": 7
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Liat za nazbrans reque rausse nane, zi za cécasses ruteglon.",
+   "words": [
+    {
+     "g": "Liat",
+     "src": 0
+    },
+    {
+     "g": "za",
+     "src": 1
+    },
+    {
+     "g": "nazbrans",
+     "src": 2
+    },
+    {
+     "g": "reque",
+     "src": 3
+    },
+    {
+     "g": "rausse",
+     "src": 4
+    },
+    {
+     "g": "nane,",
+     "src": 5
+    },
+    {
+     "g": "zi",
+     "src": 6
+    },
+    {
+     "g": "za",
+     "src": 7
+    },
+    {
+     "g": "cécasses",
+     "src": 8
+    },
+    {
+     "g": "ruteglon.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "Ah, bé jé za vaplou réque. Rausse zi za zeu, zi pè crou za drait.",
+   "words": [
+    {
+     "g": "Ah,",
+     "src": 0
+    },
+    {
+     "g": "bé",
+     "src": 1
+    },
+    {
+     "g": "jé",
+     "src": 2
+    },
+    {
+     "g": "za",
+     "src": 3
+    },
+    {
+     "g": "vaplou",
+     "src": 5
+    },
+    {
+     "g": "réque.",
+     "src": 4
+    },
+    {
+     "g": "Rausse",
+     "src": 6
+    },
+    {
+     "g": "zi",
+     "src": 7
+    },
+    {
+     "g": "za",
+     "src": 8
+    },
+    {
+     "g": "zeu,",
+     "src": 9
+    },
+    {
+     "g": "zi",
+     "src": 10
+    },
+    {
+     "g": "pè",
+     "src": 11
+    },
+    {
+     "g": "crou",
+     "src": 12
+    },
+    {
+     "g": "za",
+     "src": 13
+    },
+    {
+     "g": "drait.",
+     "src": 14
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "Rausse nane zi za drait, zi pè prot quait vaurétot.",
+   "words": [
+    {
+     "g": "Rausse",
+     "src": 0
+    },
+    {
+     "g": "nane",
+     "src": 1
+    },
+    {
+     "g": "zi",
+     "src": 2
+    },
+    {
+     "g": "za",
+     "src": 3
+    },
+    {
+     "g": "drait,",
+     "src": 4
+    },
+    {
+     "g": "zi",
+     "src": 5
+    },
+    {
+     "g": "pè",
+     "src": 6
+    },
+    {
+     "g": "prot",
+     "src": 7
+    },
+    {
+     "g": "quait",
+     "src": 8
+    },
+    {
+     "g": "vaurétot.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Flumou creur bé prot quait, zi flumou creur pè nère ronli. Frait. Rausse nane.",
+   "words": [
+    {
+     "g": "Flumou",
+     "src": 0
+    },
+    {
+     "g": "creur",
+     "src": 1
+    },
+    {
+     "g": "bé",
+     "src": 2
+    },
+    {
+     "g": "prot",
+     "src": 3
+    },
+    {
+     "g": "quait,",
+     "src": 4
+    },
+    {
+     "g": "zi",
+     "src": 5
+    },
+    {
+     "g": "flumou",
+     "src": 6
+    },
+    {
+     "g": "creur",
+     "src": 7
+    },
+    {
+     "g": "pè",
+     "src": 8
+    },
+    {
+     "g": "nère",
+     "src": 9
+    },
+    {
+     "g": "ronli.",
+     "src": 10
+    },
+    {
+     "g": "Frait.",
+     "src": 11
+    },
+    {
+     "g": "Rausse",
+     "src": 12
+    },
+    {
+     "g": "nane.",
+     "src": 13
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "Bé zou latoin nère teu ronli. Mérsil bé, bleune vron.",
+   "words": [
+    {
+     "g": "Bé",
+     "src": 0
+    },
+    {
+     "g": "zou",
+     "src": 1
+    },
+    {
+     "g": "latoin",
+     "src": 1
+    },
+    {
+     "g": "nère",
+     "src": 2
+    },
+    {
+     "g": "teu",
+     "src": 1
+    },
+    {
+     "g": "ronli.",
+     "src": 3
+    },
+    {
+     "g": "Mérsil",
+     "src": 4
+    },
+    {
+     "g": "bé,",
+     "src": 5
+    },
+    {
+     "g": "bleune",
+     "src": 6
+    },
+    {
+     "g": "vron.",
+     "src": 7
+    }
+   ]
+  }
+ ]
+}

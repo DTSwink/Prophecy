@@ -1,0 +1,398 @@
+{
+ "name": "ab_apples_occ_fv_plain",
+ "language": "Occitan (Lengadocian, translated by Claude)",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  },
+  "S2": {
+   "name": "Sarah_FR",
+   "voice_id": "t8BrjWUT5Z23DLLBzbuY"
+  }
+ },
+ "variants": [
+  {
+   "id": "v4",
+   "model": "eleven_v4"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "[warmly]",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr.",
+   "words": [
+    {
+     "g": "Bonjorn!",
+     "src": 1
+    },
+    {
+     "g": "Pomas",
+     "src": 3
+    },
+    {
+     "g": "frescas,",
+     "src": 2
+    },
+    {
+     "g": "culhidas",
+     "src": 4
+    },
+    {
+     "g": "a",
+     "src": 5
+    },
+    {
+     "g": "l'alba.",
+     "src": 6
+    },
+    {
+     "g": "Dos",
+     "src": 7
+    },
+    {
+     "g": "sòus",
+     "src": 8
+    },
+    {
+     "g": "lo",
+     "src": 9
+    },
+    {
+     "g": "panièr.",
+     "src": 10
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Dos sòus? Me semblan un pauc macadas.",
+   "words": [
+    {
+     "g": "Dos",
+     "src": 0
+    },
+    {
+     "g": "sòus?",
+     "src": 1
+    },
+    {
+     "g": "Me",
+     "src": 8
+    },
+    {
+     "g": "semblan",
+     "src": 3
+    },
+    {
+     "g": "un",
+     "src": 4
+    },
+    {
+     "g": "pauc",
+     "src": 5
+    },
+    {
+     "g": "macadas.",
+     "src": 6
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[chuckles]",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Macadas? Son de pigas. Las pomas tanben an de pigas.",
+   "words": [
+    {
+     "g": "Macadas?",
+     "src": 0
+    },
+    {
+     "g": "Son",
+     "src": 2
+    },
+    {
+     "g": "de",
+     "src": 1
+    },
+    {
+     "g": "pigas.",
+     "src": 3
+    },
+    {
+     "g": "Las",
+     "src": 4
+    },
+    {
+     "g": "pomas",
+     "src": 4
+    },
+    {
+     "g": "tanben",
+     "src": 7
+    },
+    {
+     "g": "an",
+     "src": 5
+    },
+    {
+     "g": "de",
+     "src": 6
+    },
+    {
+     "g": "pigas.",
+     "src": 6
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[amused]",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Alara las pigas còstan un sòu, e las pomas un autre.",
+   "words": [
+    {
+     "g": "Alara",
+     "src": 0
+    },
+    {
+     "g": "las",
+     "src": 1
+    },
+    {
+     "g": "pigas",
+     "src": 2
+    },
+    {
+     "g": "còstan",
+     "src": 3
+    },
+    {
+     "g": "un",
+     "src": 4
+    },
+    {
+     "g": "sòu,",
+     "src": 5
+    },
+    {
+     "g": "e",
+     "src": 6
+    },
+    {
+     "g": "las",
+     "src": 7
+    },
+    {
+     "g": "pomas",
+     "src": 8
+    },
+    {
+     "g": "un",
+     "src": 9
+    },
+    {
+     "g": "autre.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera.",
+   "words": [
+    {
+     "g": "Ai,",
+     "src": 0
+    },
+    {
+     "g": "ès",
+     "src": 2
+    },
+    {
+     "g": "una",
+     "src": 3
+    },
+    {
+     "g": "femna",
+     "src": 5
+    },
+    {
+     "g": "dura.",
+     "src": 4
+    },
+    {
+     "g": "Un",
+     "src": 6
+    },
+    {
+     "g": "sòu",
+     "src": 6
+    },
+    {
+     "g": "e",
+     "src": 7
+    },
+    {
+     "g": "mièg,",
+     "src": 9
+    },
+    {
+     "g": "e",
+     "src": 10
+    },
+    {
+     "g": "t'apondi",
+     "src": 12
+    },
+    {
+     "g": "una",
+     "src": 13
+    },
+    {
+     "g": "pera.",
+     "src": 14
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "Un sòu e la pera, e tòrni deman.",
+   "words": [
+    {
+     "g": "Un",
+     "src": 0
+    },
+    {
+     "g": "sòu",
+     "src": 1
+    },
+    {
+     "g": "e",
+     "src": 2
+    },
+    {
+     "g": "la",
+     "src": 3
+    },
+    {
+     "g": "pera,",
+     "src": 4
+    },
+    {
+     "g": "e",
+     "src": 5
+    },
+    {
+     "g": "tòrni",
+     "src": 7
+    },
+    {
+     "g": "deman.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[sighs]",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu.",
+   "words": [
+    {
+     "g": "Cada",
+     "src": 0
+    },
+    {
+     "g": "jorn",
+     "src": 1
+    },
+    {
+     "g": "tòrnas,",
+     "src": 3
+    },
+    {
+     "g": "e",
+     "src": 5
+    },
+    {
+     "g": "cada",
+     "src": 6
+    },
+    {
+     "g": "jorn",
+     "src": 7
+    },
+    {
+     "g": "pèrdi",
+     "src": 9
+    },
+    {
+     "g": "d'argent.",
+     "src": 10
+    },
+    {
+     "g": "Va",
+     "src": 11
+    },
+    {
+     "g": "plan.",
+     "src": 11
+    },
+    {
+     "g": "Un",
+     "src": 12
+    },
+    {
+     "g": "sòu.",
+     "src": 13
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[warmly]",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "Pèrdes pas jamai d'argent. Mercé, vièlh amic.",
+   "words": [
+    {
+     "g": "Pèrdes",
+     "src": 2
+    },
+    {
+     "g": "pas",
+     "src": 1
+    },
+    {
+     "g": "jamai",
+     "src": 1
+    },
+    {
+     "g": "d'argent.",
+     "src": 3
+    },
+    {
+     "g": "Mercé,",
+     "src": 4
+    },
+    {
+     "g": "vièlh",
+     "src": 6
+    },
+    {
+     "g": "amic.",
+     "src": 7
+    }
+   ]
+  }
+ ]
+}

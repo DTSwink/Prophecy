@@ -1,0 +1,131 @@
+{
+ "name": "r5",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  },
+  "S2": {
+   "name": "Sarah_FR",
+   "voice_id": "t8BrjWUT5Z23DLLBzbuY"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4",
+  "seed": 1234
+ },
+ "requests": [
+  {
+   "id": "00_S1_Afs_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [warmly] Bonjour! Poumo fresco, cuillido a l'albo. Dous sòu lou panié."
+  },
+  {
+   "id": "00_S1_Afs_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [warmly] Bonjour! Poumo fresco, cuillido a l'albo. Dous sòu lou panié."
+  },
+  {
+   "id": "00_S1_Cfs_s5",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 5,
+   "text": "[heavy southern French accent] [warmly] Bonjour! Poumo fresco, cuillido a l'albo. Dous sòu lou panié."
+  },
+  {
+   "id": "01_S2_Afs_s1234",
+   "speaker": "S2",
+   "line": "01",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] Dous sòu? Mé semblan un pauc macado."
+  },
+  {
+   "id": "02_S1_Afs_s1234",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [chuckles] Macado? Soun dé pigo. Li poumo tanben an dé pigo."
+  },
+  {
+   "id": "02_S1_Afs_s77",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [chuckles] Macado? Soun dé pigo. Li poumo tanben an dé pigo."
+  },
+  {
+   "id": "02_S1_Cfs_s5",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 5,
+   "text": "[heavy southern French accent] [chuckles] Macado? Soun dé pigo. Li poumo tanben an dé pigo."
+  },
+  {
+   "id": "03_S2_Afs_s1234",
+   "speaker": "S2",
+   "line": "03",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [amused] Alaro li pigo còstan un sòu, é li poumo un autre."
+  },
+  {
+   "id": "04_S1_Afs_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] Aï, ès uno femno duro. Un sòu é mièch, é t'apoundi uno pero."
+  },
+  {
+   "id": "04_S1_Afs_s77",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] Aï, ès uno femno duro. Un sòu é mièch, é t'apoundi uno pero."
+  },
+  {
+   "id": "04_S1_Cfs_s5",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 5,
+   "text": "[heavy southern French accent] Aï, ès uno femno duro. Un sòu é mièch, é t'apoundi uno pero."
+  },
+  {
+   "id": "05_S2_Afs_s1234",
+   "speaker": "S2",
+   "line": "05",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] Un sòu é la pero, é tòrni deman."
+  },
+  {
+   "id": "06_S1_Afs_s1234",
+   "speaker": "S1",
+   "line": "06",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [sighs] Cado jour tòrno, é cado jour pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "06_S1_Afs_s77",
+   "speaker": "S1",
+   "line": "06",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [sighs] Cado jour tòrno, é cado jour pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "06_S1_Cfs_s5",
+   "speaker": "S1",
+   "line": "06",
+   "seed": 5,
+   "text": "[heavy southern French accent] [sighs] Cado jour tòrno, é cado jour pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "07_S2_Afs_s1234",
+   "speaker": "S2",
+   "line": "07",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [warmly] Pèrdé pa jamaï d'argent. Mercé, vièill amic."
+  }
+ ]
+}

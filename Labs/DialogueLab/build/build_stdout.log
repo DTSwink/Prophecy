@@ -1,0 +1,21 @@
+POSES 9 frames kept of 10 skipped [4]
+RT clavicle_r [-0.025, -0.003, 0.425] [-0.023, 0.003, 0.424]
+RT upperarm_r [-0.155, 0.079, 0.405] [-0.152, 0.072, 0.406]
+RT hand_r [-0.269, 0.144, -0.051] [-0.27, 0.134, -0.05]
+RT head [-0.014, -0.045, 0.589] [-0.012, -0.039, 0.589]
+RT index_03_r [-0.271, 0.105, -0.199] [-0.268, 0.109, -0.181]
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.1\5.1\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+07:45:40 | INFO: Starting glTF 2.0 export
+07:45:40 | INFO: Extracting primitive: StaticMesh2
+07:45:43 | WARNING: The active Vertex Color will not be exported, as it is not used in the node tree of the material
+07:45:44 | INFO: Primitives created: 8
+07:45:44 | WARNING: There are more than 4 joint vertex influences.The 4 with highest weight will be used (and normalized).
+07:45:49 | INFO: Finished glTF 2.0 export in 8.622459650039673 s
+
+LAB BUILD OK 97 morphs 302 idle frames 20616 KB glb
+Blender 5.1.1 (hash b70da489d7f4 built 2026-04-14 01:37:22)
+FBX import of 'SKM_Boss_UEFN_Fitted.fbx' took 62.74 ms
+FBX import of 'Anim_Idle.fbx' took 83.59 ms
+FBX import of 'speech poses.fbx' took 10.45 ms
+
+Blender quit

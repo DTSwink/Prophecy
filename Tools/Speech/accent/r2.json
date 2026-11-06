@@ -1,0 +1,145 @@
+{
+ "name": "r2",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4",
+  "seed": 1234
+ },
+ "requests": [
+  {
+   "id": "06_A_s1234",
+   "speaker": "S1",
+   "line": "06",
+   "text": "[thick French accent from the south of France] [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "00_A_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "02_A_s77",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_A_s77",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "06_A_s77",
+   "speaker": "S1",
+   "line": "06",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "00_B_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[strong French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "02_B_s1234",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[strong French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_B_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[strong French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "06_B_s1234",
+   "speaker": "S1",
+   "line": "06",
+   "text": "[strong French accent] [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "00_C_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[heavy southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "02_C_s1234",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[heavy southern French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_C_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[heavy southern French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "06_C_s1234",
+   "speaker": "S1",
+   "line": "06",
+   "text": "[heavy southern French accent] [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "00_D_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[a market vendor from Provence, speaking with a thick southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "02_D_s1234",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[a market vendor from Provence, speaking with a thick southern French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_D_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[a market vendor from Provence, speaking with a thick southern French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "06_D_s1234",
+   "speaker": "S1",
+   "line": "06",
+   "text": "[a market vendor from Provence, speaking with a thick southern French accent] [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu."
+  },
+  {
+   "id": "00_E_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[thick French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "02_E_s1234",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[thick French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_E_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[thick French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "06_E_s1234",
+   "speaker": "S1",
+   "line": "06",
+   "text": "[thick French accent] [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu."
+  }
+ ]
+}

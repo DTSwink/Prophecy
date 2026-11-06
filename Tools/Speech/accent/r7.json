@@ -1,0 +1,243 @@
+{
+ "name": "r7_validate",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  },
+  "S2": {
+   "name": "Sarah_FR",
+   "voice_id": "t8BrjWUT5Z23DLLBzbuY"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4",
+  "seed": 4242
+ },
+ "requests": [
+  {
+   "id": "v1_S1_L0",
+   "speaker": "S1",
+   "line": "v1",
+   "level": 0,
+   "english": "Good evening, neighbour. The wind is blowing hard tonight.",
+   "text": "[thick French accent from the south of France] [warmly] Bona nuèch, vesin. Lo vent bufa fòrt aqueste ser."
+  },
+  {
+   "id": "v1_S1_L1",
+   "speaker": "S1",
+   "line": "v1",
+   "level": 1,
+   "english": "Good evening, neighbour. The wind is blowing hard tonight.",
+   "text": "[thick French accent from the south of France] [warmly] Bouno nuèch, vesin. Lou vent bufo fòrt aqueste ser."
+  },
+  {
+   "id": "v1_S1_L2",
+   "speaker": "S1",
+   "line": "v1",
+   "level": 2,
+   "english": "Good evening, neighbour. The wind is blowing hard tonight.",
+   "text": "[thick French accent from the south of France] [warmly] Boune nuèch, vesin. Lou vent bufe fòrt aqueste ser."
+  },
+  {
+   "id": "v1_S2_L0",
+   "speaker": "S2",
+   "line": "v1",
+   "level": 0,
+   "english": "Good evening, neighbour. The wind is blowing hard tonight.",
+   "text": "[thick French accent from the south of France] [warmly] Bona nuèch, vesin. Lo vent bufa fòrt aqueste ser."
+  },
+  {
+   "id": "v2_S1_L0",
+   "speaker": "S1",
+   "line": "v2",
+   "level": 0,
+   "english": "I haven't seen your brother since the spring fair.",
+   "text": "[thick French accent from the south of France] [sighs] Ai pas vist ton fraire dempuèi la fièira de prima."
+  },
+  {
+   "id": "v2_S1_L1",
+   "speaker": "S1",
+   "line": "v2",
+   "level": 1,
+   "english": "I haven't seen your brother since the spring fair.",
+   "text": "[thick French accent from the south of France] [sighs] Aï pa vist toun fraire dempuèi la fièiro dé primo."
+  },
+  {
+   "id": "v2_S1_L2",
+   "speaker": "S1",
+   "line": "v2",
+   "level": 2,
+   "english": "I haven't seen your brother since the spring fair.",
+   "text": "[thick French accent from the south of France] [sighs] Aï pa vist toun fraire dempuèi la fièire dé prime."
+  },
+  {
+   "id": "v3_S1_L0",
+   "speaker": "S1",
+   "line": "v3",
+   "level": 0,
+   "english": "The cows came back alone from the mountain!",
+   "text": "[thick French accent from the south of France] [surprised] Las vacas son tornadas solètas de la montanha!"
+  },
+  {
+   "id": "v3_S1_L1",
+   "speaker": "S1",
+   "line": "v3",
+   "level": 1,
+   "english": "The cows came back alone from the mountain!",
+   "text": "[thick French accent from the south of France] [surprised] Li vaco soun tournado soulèto dé la mountagno!"
+  },
+  {
+   "id": "v3_S1_L2",
+   "speaker": "S1",
+   "line": "v3",
+   "level": 2,
+   "english": "The cows came back alone from the mountain!",
+   "text": "[thick French accent from the south of France] [surprised] Les vaques soun tournades soulètes dé la mountagne!"
+  },
+  {
+   "id": "v4_S1_L0",
+   "speaker": "S1",
+   "line": "v4",
+   "level": 0,
+   "english": "If it rains tomorrow, we won't go to the market.",
+   "text": "[thick French accent from the south of France] Se plòu deman, anarem pas al mercat."
+  },
+  {
+   "id": "v4_S1_L1",
+   "speaker": "S1",
+   "line": "v4",
+   "level": 1,
+   "english": "If it rains tomorrow, we won't go to the market.",
+   "text": "[thick French accent from the south of France] Sé plòu deman, anarem pa au mercat."
+  },
+  {
+   "id": "v4_S1_L2",
+   "speaker": "S1",
+   "line": "v4",
+   "level": 2,
+   "english": "If it rains tomorrow, we won't go to the market.",
+   "text": "[thick French accent from the south of France] Sé plòu deman, anarem pa au mercat."
+  },
+  {
+   "id": "v4_S2_L0",
+   "speaker": "S2",
+   "line": "v4",
+   "level": 0,
+   "english": "If it rains tomorrow, we won't go to the market.",
+   "text": "[thick French accent from the south of France] Se plòu deman, anarem pas al mercat."
+  },
+  {
+   "id": "v5_S1_L0",
+   "speaker": "S1",
+   "line": "v5",
+   "level": 0,
+   "english": "My father always said bread is sacred.",
+   "text": "[thick French accent from the south of France] [softly] Mon paire disiá totjorn que lo pan es sacrat."
+  },
+  {
+   "id": "v5_S1_L1",
+   "speaker": "S1",
+   "line": "v5",
+   "level": 1,
+   "english": "My father always said bread is sacred.",
+   "text": "[thick French accent from the south of France] [softly] Moun paire disiá toutjour qué lou pan ès sacrat."
+  },
+  {
+   "id": "v5_S1_L2",
+   "speaker": "S1",
+   "line": "v5",
+   "level": 2,
+   "english": "My father always said bread is sacred.",
+   "text": "[thick French accent from the south of France] [softly] Moun paire disiá toutjour qué lou pan ès sacrat."
+  },
+  {
+   "id": "v6_S1_L0",
+   "speaker": "S1",
+   "line": "v6",
+   "level": 0,
+   "english": "Bring me two bottles of wine and a cheese.",
+   "text": "[thick French accent from the south of France] [cheerfully] Pòrta-me doas botelhas de vin e un formatge."
+  },
+  {
+   "id": "v6_S1_L1",
+   "speaker": "S1",
+   "line": "v6",
+   "level": 1,
+   "english": "Bring me two bottles of wine and a cheese.",
+   "text": "[thick French accent from the south of France] [cheerfully] Pòrto-mé douo bouteillo dé vin é un fourmatge."
+  },
+  {
+   "id": "v6_S1_L2",
+   "speaker": "S1",
+   "line": "v6",
+   "level": 2,
+   "english": "Bring me two bottles of wine and a cheese.",
+   "text": "[thick French accent from the south of France] [cheerfully] Pòrte-mé doues bouteilles dé vin é un fourmatge."
+  },
+  {
+   "id": "v6_S2_L0",
+   "speaker": "S2",
+   "line": "v6",
+   "level": 0,
+   "english": "Bring me two bottles of wine and a cheese.",
+   "text": "[thick French accent from the south of France] [cheerfully] Pòrta-me doas botelhas de vin e un formatge."
+  },
+  {
+   "id": "v7_S1_L0",
+   "speaker": "S1",
+   "line": "v7",
+   "level": 0,
+   "english": "This cart is too heavy for one man.",
+   "text": "[thick French accent from the south of France] [grumbling] Aquesta carreta es tròp pesuga per un sol òme."
+  },
+  {
+   "id": "v7_S1_L1",
+   "speaker": "S1",
+   "line": "v7",
+   "level": 1,
+   "english": "This cart is too heavy for one man.",
+   "text": "[thick French accent from the south of France] [grumbling] Aquesto carreto ès tròp pesugo per un soul òme."
+  },
+  {
+   "id": "v7_S1_L2",
+   "speaker": "S1",
+   "line": "v7",
+   "level": 2,
+   "english": "This cart is too heavy for one man.",
+   "text": "[thick French accent from the south of France] [grumbling] Aqueste carrete ès tròp pesugue per un soul òme."
+  },
+  {
+   "id": "v8_S1_L0",
+   "speaker": "S1",
+   "line": "v8",
+   "level": 0,
+   "english": "Listen, if you find the cat, call me right away.",
+   "text": "[thick French accent from the south of France] [urgently] Escota, se trobas lo cat, sona-me sulcòp."
+  },
+  {
+   "id": "v8_S1_L1",
+   "speaker": "S1",
+   "line": "v8",
+   "level": 1,
+   "english": "Listen, if you find the cat, call me right away.",
+   "text": "[thick French accent from the south of France] [urgently] Escouto, sé troubo lou cat, souno-mé sulcòp."
+  },
+  {
+   "id": "v8_S1_L2",
+   "speaker": "S1",
+   "line": "v8",
+   "level": 2,
+   "english": "Listen, if you find the cat, call me right away.",
+   "text": "[thick French accent from the south of France] [urgently] Escoute, sé troubes lou cat, soune-mé sulcòp."
+  },
+  {
+   "id": "v8_S2_L0",
+   "speaker": "S2",
+   "line": "v8",
+   "level": 0,
+   "english": "Listen, if you find the cat, call me right away.",
+   "text": "[thick French accent from the south of France] [urgently] Escota, se trobas lo cat, sona-me sulcòp."
+  }
+ ]
+}

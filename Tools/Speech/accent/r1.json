@@ -1,0 +1,169 @@
+{
+ "name": "r1",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4",
+  "seed": 1234
+ },
+ "requests": [
+  {
+   "id": "00_P1_prime",
+   "speaker": "S1",
+   "line": "00",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_P2_prime_fr",
+   "speaker": "S1",
+   "line": "00",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr.",
+   "language_code": "fr"
+  },
+  {
+   "id": "00_P3_prev_fr",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr.",
+   "language_code": "fr",
+   "previous_text": "Bon alors, écoutez-moi bien, mes amis, je vais vous raconter une petite histoire de chez nous."
+  },
+  {
+   "id": "00_P4_strongtag_fr",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr.",
+   "language_code": "fr"
+  },
+  {
+   "id": "00_P5_stable",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr.",
+   "voice_settings": {
+    "stability": 0.8,
+    "similarity_boost": 1.0
+   }
+  },
+  {
+   "id": "00_P6_respell_fr",
+   "speaker": "S1",
+   "line": "00",
+   "text": "[French accent] [warmly] Boundjour! Poumos frèscos, culhidos a l'albo. Dous sòous lou panié.",
+   "language_code": "fr"
+  },
+  {
+   "id": "02_P1_prime",
+   "speaker": "S1",
+   "line": "02",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "02_P2_prime_fr",
+   "speaker": "S1",
+   "line": "02",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas.",
+   "language_code": "fr"
+  },
+  {
+   "id": "02_P3_prev_fr",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas.",
+   "language_code": "fr",
+   "previous_text": "Bon alors, écoutez-moi bien, mes amis, je vais vous raconter une petite histoire de chez nous."
+  },
+  {
+   "id": "02_P4_strongtag_fr",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[thick French accent from the south of France] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas.",
+   "language_code": "fr"
+  },
+  {
+   "id": "02_P5_stable",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas.",
+   "voice_settings": {
+    "stability": 0.8,
+    "similarity_boost": 1.0
+   }
+  },
+  {
+   "id": "02_P6_respell_fr",
+   "speaker": "S1",
+   "line": "02",
+   "text": "[French accent] [chuckles] Macados? Soun dé pigos. Las poumos tambèn an dé pigos.",
+   "language_code": "fr"
+  },
+  {
+   "id": "04_P1_prime",
+   "speaker": "S1",
+   "line": "04",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "04_P2_prime_fr",
+   "speaker": "S1",
+   "line": "04",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera.",
+   "language_code": "fr"
+  },
+  {
+   "id": "04_P3_prev_fr",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera.",
+   "language_code": "fr",
+   "previous_text": "Bon alors, écoutez-moi bien, mes amis, je vais vous raconter une petite histoire de chez nous."
+  },
+  {
+   "id": "04_P4_strongtag_fr",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[thick French accent from the south of France] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera.",
+   "language_code": "fr"
+  },
+  {
+   "id": "04_P5_stable",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera.",
+   "voice_settings": {
+    "stability": 0.8,
+    "similarity_boost": 1.0
+   }
+  },
+  {
+   "id": "04_P6_respell_fr",
+   "speaker": "S1",
+   "line": "04",
+   "text": "[French accent] Aï, ès uno fenno duro. Un sòou é mièch, é t'apoundi uno péro.",
+   "language_code": "fr"
+  },
+  {
+   "id": "CC_P7_concat",
+   "speaker": "S1",
+   "line": "06,00,02,04",
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[French accent] Bon alors, écoutez-moi bien, mes amis. [sighs] Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr. [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas. Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera.",
+   "segments": [
+    "Cada jorn tòrnas, e cada jorn pèrdi d'argent. Va plan. Un sòu.",
+    "Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr.",
+    "Macadas? Son de pigas. Las pomas tanben an de pigas.",
+    "Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+   ]
+  }
+ ]
+}

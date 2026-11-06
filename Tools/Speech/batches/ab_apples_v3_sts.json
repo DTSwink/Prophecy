@@ -1,0 +1,42 @@
+[
+ {
+  "voice_id": "kENkNtk0xyzG09WW40xE",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/00_S1.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/00_S1.mp3"
+ },
+ {
+  "voice_id": "t8BrjWUT5Z23DLLBzbuY",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/01_S2.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/01_S2.mp3"
+ },
+ {
+  "voice_id": "kENkNtk0xyzG09WW40xE",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/02_S1.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/02_S1.mp3"
+ },
+ {
+  "voice_id": "t8BrjWUT5Z23DLLBzbuY",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/03_S2.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/03_S2.mp3"
+ },
+ {
+  "voice_id": "kENkNtk0xyzG09WW40xE",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/04_S1.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/04_S1.mp3"
+ },
+ {
+  "voice_id": "t8BrjWUT5Z23DLLBzbuY",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/05_S2.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/05_S2.mp3"
+ },
+ {
+  "voice_id": "kENkNtk0xyzG09WW40xE",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/06_S1.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/06_S1.mp3"
+ },
+ {
+  "voice_id": "t8BrjWUT5Z23DLLBzbuY",
+  "in": "Saved/Speech/ab_apples_v3/curated_psola/07_S2.mp3",
+  "out": "Saved/Speech/ab_apples_v3/curated_sts/07_S2.mp3"
+ }
+]

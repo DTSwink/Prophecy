@@ -1,0 +1,394 @@
+{
+ "name": "ab_apples_esperanto",
+ "language": "Esperanto (translated by Claude)",
+ "voices": {
+  "S1": {
+   "name": "George - Warm, Captivating Storyteller",
+   "voice_id": "JBFqnCBsd6RMkjVDRZzb"
+  },
+  "S2": {
+   "name": "Jessica - Playful, Bright, Warm",
+   "voice_id": "cgSgspJ2msm6clMCkdW9"
+  }
+ },
+ "variants": [
+  {
+   "id": "v3",
+   "model": "eleven_v3"
+  },
+  {
+   "id": "v4",
+   "model": "eleven_v4"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "[warmly]",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Bonan matenon! Freŝaj pomoj, deprenitaj ĉe tagiĝo. Du moneroj por korbo.",
+   "words": [
+    {
+     "g": "Bonan",
+     "src": 0
+    },
+    {
+     "g": "matenon!",
+     "src": 1
+    },
+    {
+     "g": "Freŝaj",
+     "src": 2
+    },
+    {
+     "g": "pomoj,",
+     "src": 3
+    },
+    {
+     "g": "deprenitaj",
+     "src": 4
+    },
+    {
+     "g": "ĉe",
+     "src": 5
+    },
+    {
+     "g": "tagiĝo.",
+     "src": 6
+    },
+    {
+     "g": "Du",
+     "src": 7
+    },
+    {
+     "g": "moneroj",
+     "src": 8
+    },
+    {
+     "g": "por",
+     "src": 9
+    },
+    {
+     "g": "korbo.",
+     "src": 10
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Du moneroj? Ili ŝajnas al mi iom kontuzitaj.",
+   "words": [
+    {
+     "g": "Du",
+     "src": 0
+    },
+    {
+     "g": "moneroj?",
+     "src": 1
+    },
+    {
+     "g": "Ili",
+     "src": 2
+    },
+    {
+     "g": "ŝajnas",
+     "src": 3
+    },
+    {
+     "g": "al",
+     "src": 7
+    },
+    {
+     "g": "mi",
+     "src": 8
+    },
+    {
+     "g": "iom",
+     "src": 5
+    },
+    {
+     "g": "kontuzitaj.",
+     "src": 6
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[chuckles]",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Kontuzitaj? Tiuj estas lentugoj. Ankaŭ pomoj havas lentugojn.",
+   "words": [
+    {
+     "g": "Kontuzitaj?",
+     "src": 0
+    },
+    {
+     "g": "Tiuj",
+     "src": 1
+    },
+    {
+     "g": "estas",
+     "src": 2
+    },
+    {
+     "g": "lentugoj.",
+     "src": 3
+    },
+    {
+     "g": "Ankaŭ",
+     "src": 7
+    },
+    {
+     "g": "pomoj",
+     "src": 4
+    },
+    {
+     "g": "havas",
+     "src": 5
+    },
+    {
+     "g": "lentugojn.",
+     "src": 6
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[amused]",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Do la lentugoj kostas unu moneron, kaj la pomoj alian.",
+   "words": [
+    {
+     "g": "Do",
+     "src": 0
+    },
+    {
+     "g": "la",
+     "src": 1
+    },
+    {
+     "g": "lentugoj",
+     "src": 2
+    },
+    {
+     "g": "kostas",
+     "src": 3
+    },
+    {
+     "g": "unu",
+     "src": 4
+    },
+    {
+     "g": "moneron,",
+     "src": 5
+    },
+    {
+     "g": "kaj",
+     "src": 6
+    },
+    {
+     "g": "la",
+     "src": 7
+    },
+    {
+     "g": "pomoj",
+     "src": 8
+    },
+    {
+     "g": "alian.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "Ha, vi estas malmola virino. Unu kaj duono, kaj mi aldonas piron.",
+   "words": [
+    {
+     "g": "Ha,",
+     "src": 0
+    },
+    {
+     "g": "vi",
+     "src": 1
+    },
+    {
+     "g": "estas",
+     "src": 2
+    },
+    {
+     "g": "malmola",
+     "src": 4
+    },
+    {
+     "g": "virino.",
+     "src": 5
+    },
+    {
+     "g": "Unu",
+     "src": 6
+    },
+    {
+     "g": "kaj",
+     "src": 7
+    },
+    {
+     "g": "duono,",
+     "src": 9
+    },
+    {
+     "g": "kaj",
+     "src": 10
+    },
+    {
+     "g": "mi",
+     "src": 11
+    },
+    {
+     "g": "aldonas",
+     "src": 12
+    },
+    {
+     "g": "piron.",
+     "src": 14
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "Unu monero kaj la piro, kaj mi revenos morgaŭ.",
+   "words": [
+    {
+     "g": "Unu",
+     "src": 0
+    },
+    {
+     "g": "monero",
+     "src": 1
+    },
+    {
+     "g": "kaj",
+     "src": 2
+    },
+    {
+     "g": "la",
+     "src": 3
+    },
+    {
+     "g": "piro,",
+     "src": 4
+    },
+    {
+     "g": "kaj",
+     "src": 5
+    },
+    {
+     "g": "mi",
+     "src": 6
+    },
+    {
+     "g": "revenos",
+     "src": 7
+    },
+    {
+     "g": "morgaŭ.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[sighs]",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Ĉiutage vi revenas, kaj ĉiutage mi perdas monon. Bone. Unu monero.",
+   "words": [
+    {
+     "g": "Ĉiutage",
+     "src": 1
+    },
+    {
+     "g": "vi",
+     "src": 2
+    },
+    {
+     "g": "revenas,",
+     "src": 3
+    },
+    {
+     "g": "kaj",
+     "src": 5
+    },
+    {
+     "g": "ĉiutage",
+     "src": 7
+    },
+    {
+     "g": "mi",
+     "src": 8
+    },
+    {
+     "g": "perdas",
+     "src": 9
+    },
+    {
+     "g": "monon.",
+     "src": 10
+    },
+    {
+     "g": "Bone.",
+     "src": 11
+    },
+    {
+     "g": "Unu",
+     "src": 12
+    },
+    {
+     "g": "monero.",
+     "src": 13
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[warmly]",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "Vi neniam perdas monon. Dankon, maljuna amiko.",
+   "words": [
+    {
+     "g": "Vi",
+     "src": 0
+    },
+    {
+     "g": "neniam",
+     "src": 1
+    },
+    {
+     "g": "perdas",
+     "src": 2
+    },
+    {
+     "g": "monon.",
+     "src": 3
+    },
+    {
+     "g": "Dankon,",
+     "src": 4
+    },
+    {
+     "g": "maljuna",
+     "src": 6
+    },
+    {
+     "g": "amiko.",
+     "src": 7
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,170 @@
+{
+ "name": "r3",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  },
+  "S2": {
+   "name": "Sarah_FR",
+   "voice_id": "t8BrjWUT5Z23DLLBzbuY"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4",
+  "seed": 1234
+ },
+ "requests": [
+  {
+   "id": "00_Apr_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[thick French accent from the south of France] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Apr_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[thick French accent from the south of France] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Apr_s5",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 5,
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[thick French accent from the south of France] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Cpr_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[heavy southern French accent] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Cpr_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "prime": "Bon alors, écoutez-moi bien, mes amis.",
+   "text": "[heavy southern French accent] Bon alors, écoutez-moi bien, mes amis. [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_A_s5",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 5,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_A_s9",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 9,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_A_s11",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 11,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_A_s13",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 13,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_C_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[heavy southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_C_s5",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 5,
+   "text": "[heavy southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_C_s9",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 9,
+   "text": "[heavy southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_F_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[warm southern French accent, like an old man from Toulouse] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_F_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[warm southern French accent, like an old man from Toulouse] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_sarah_tag_s1234",
+   "speaker": "S2",
+   "line": "00",
+   "text": "[French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "02_C_s77",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 77,
+   "text": "[heavy southern French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "02_C_s5",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 5,
+   "text": "[heavy southern French accent] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_C_s77",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 77,
+   "text": "[heavy southern French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "04_C_s5",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 5,
+   "text": "[heavy southern French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "02_A_s5",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 5,
+   "text": "[thick French accent from the south of France] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "04_A_s5",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 5,
+   "text": "[thick French accent from the south of France] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  }
+ ]
+}

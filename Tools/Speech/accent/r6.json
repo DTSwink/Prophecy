@@ -1,0 +1,84 @@
+{
+ "name": "r6",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4"
+ },
+ "requests": [
+  {
+   "id": "04_v2min_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] Aï, ès una fenna dura. Un sòu é mièch, é t'apoundi una pèra."
+  },
+  {
+   "id": "04_v2min_s77",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] Aï, ès una fenna dura. Un sòu é mièch, é t'apoundi una pèra."
+  },
+  {
+   "id": "04_v2min_s5",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 5,
+   "text": "[thick French accent from the south of France] Aï, ès una fenna dura. Un sòu é mièch, é t'apoundi una pèra."
+  },
+  {
+   "id": "04_v3mute_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] Aï, ès une fenne dure. Un sòu é mièch, é t'apoundi une père."
+  },
+  {
+   "id": "04_v3mute_s77",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] Aï, ès une fenne dure. Un sòu é mièch, é t'apoundi une père."
+  },
+  {
+   "id": "04_v3mute_s5",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 5,
+   "text": "[thick French accent from the south of France] Aï, ès une fenne dure. Un sòu é mièch, é t'apoundi une père."
+  },
+  {
+   "id": "00_Afs_s5",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 5,
+   "text": "[thick French accent from the south of France] [warmly] Bonjour! Poumo fresco, cuillido a l'albo. Dous sòu lou panié."
+  },
+  {
+   "id": "00_Afs_s9",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 9,
+   "text": "[thick French accent from the south of France] [warmly] Bonjour! Poumo fresco, cuillido a l'albo. Dous sòu lou panié."
+  },
+  {
+   "id": "02_A_s9",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 9,
+   "text": "[thick French accent from the south of France] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  },
+  {
+   "id": "02_A_s11",
+   "speaker": "S1",
+   "line": "02",
+   "seed": 11,
+   "text": "[thick French accent from the south of France] [chuckles] Macadas? Son de pigas. Las pomas tanben an de pigas."
+  }
+ ]
+}

@@ -1,0 +1,71 @@
+{
+ "name": "ab_apples_en",
+ "language": "English original",
+ "voices": {
+  "S1": {
+   "name": "George - Warm, Captivating Storyteller",
+   "voice_id": "JBFqnCBsd6RMkjVDRZzb"
+  },
+  "S2": {
+   "name": "Jessica - Playful, Bright, Warm",
+   "voice_id": "cgSgspJ2msm6clMCkdW9"
+  }
+ },
+ "variants": [
+  {
+   "id": "v3_en",
+   "model": "eleven_v3",
+   "language_code": "en"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "[warmly]",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Good morning! Fresh apples, picked at dawn. Two coins a basket."
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Two coins? They look a little bruised to me."
+  },
+  {
+   "speaker": "S1",
+   "tags": "[chuckles]",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Bruised? Those are freckles. Apples have freckles too."
+  },
+  {
+   "speaker": "S2",
+   "tags": "[amused]",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Then the freckles cost one coin, and the apples another."
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "Ah, you are a hard woman. One and a half, and I add a pear."
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "One coin and the pear, and I come back tomorrow."
+  },
+  {
+   "speaker": "S1",
+   "tags": "[sighs]",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Every day you come back, and every day I lose money. Fine. One coin."
+  },
+  {
+   "speaker": "S2",
+   "tags": "[warmly]",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "You never lose money. Thank you, old friend."
+  }
+ ]
+}

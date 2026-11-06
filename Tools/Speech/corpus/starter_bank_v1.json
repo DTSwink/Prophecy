@@ -1,0 +1,8104 @@
+{
+ "stats": {
+  "scenes": 81,
+  "lines": 635,
+  "characters": 30824,
+  "est_minutes": 34.2,
+  "by_category": {
+   "bargaining": 15,
+   "storytelling": 12,
+   "dispute": 11,
+   "small_talk": 23,
+   "banter": 10,
+   "emotional": 10
+  },
+  "by_speakers": {
+   "2": 35,
+   "3": 27,
+   "4": 19
+  },
+  "by_source": {
+   "Original": 25,
+   "CRD3": 16,
+   "Friends": 15,
+   "MELD": 16,
+   "DealOrNoDeal": 9
+  }
+ },
+ "scenes": [
+  {
+   "source": "Original",
+   "ref": "orig000",
+   "category": "bargaining",
+   "mood": "light",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "merchant",
+     "gender": "m",
+     "name": "Vauri"
+    },
+    {
+     "id": "S2",
+     "name_en": "buyer",
+     "gender": "f",
+     "name": "Rojar"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Prait lér! Clanreuque cécassi, lauvimete ké maumu. Daume vratri za guiangésse."
+    },
+    {
+     "spk": "S2",
+     "en": "Two coins? They look a little bruised to me.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Daume vratrisi? Kon cheau za blait bradanchin vé pè."
+    },
+    {
+     "spk": "S1",
+     "en": "Bruised? Those are freckles. Apples have freckles too.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Pranségete? Meu jé douron. Cécassi mio nazbransi flait."
+    },
+    {
+     "spk": "S2",
+     "en": "Then the freckles cost one coin, and the apples another.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Lia za nazbransi rafeve rausse vratri, zi za cécassi diait."
+    },
+    {
+     "spk": "S1",
+     "en": "Ah, you are a hard woman. One and a half, and I add a pear.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ah, bé jé za vaplou réque. Rausse zi za aijon, zi pè rissou za zaru."
+    },
+    {
+     "spk": "S2",
+     "en": "One coin and the pear, and I come back tomorrow.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Rausse vratri zi za zaru, zi pè preau quait piait."
+    },
+    {
+     "spk": "S1",
+     "en": "Every day you come back, and every day I lose money. Fine. One coin.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Miait creur bé preau quait, zi miait creur pè nér vouque. Frait. Rausse vratri."
+    },
+    {
+     "spk": "S2",
+     "en": "You never lose money. Thank you, old friend.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Bé zou zér nér teu vouque. Mérsil bé, bleune lanziait."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00000"
+  },
+  {
+   "source": "Original",
+   "ref": "orig001",
+   "category": "bargaining",
+   "mood": "tense",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "smith",
+     "gender": "m",
+     "name": "Crurquir"
+    },
+    {
+     "id": "S2",
+     "name_en": "mercenary",
+     "gender": "m",
+     "name": "Chonrique"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "How much for the long blade on the wall?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nausse vrar jou za dréque tilpra ké za vaintute?"
+    },
+    {
+     "spk": "S1",
+     "en": "Forty silver. Good steel, folded twelve times.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pouga plér. Prait vènan, ciquuvete méceau jeuqui."
+    },
+    {
+     "spk": "S2",
+     "en": "Forty? I could buy a horse for forty.",
+     "emotion": "disgust",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[skeptical]",
+     "text": "Pouga? Pè bréle vépran za oubru jou pouga."
+    },
+    {
+     "spk": "S1",
+     "en": "Then ride the horse into battle and see how it cuts.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia clait za oubru vé tauvi zi cleu nausse fè aillait."
+    },
+    {
+     "spk": "S2",
+     "en": "Twenty-five. The hilt is plain and the guard is too short.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Trougi. Za voncoiguait jé reuja zi za pauvi jé flait claur."
+    },
+    {
+     "spk": "S1",
+     "en": "The guard is exactly as long as it should be. Thirty-five, not one coin less.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Za pauvi jé biatalman trère dréque trère fè vousse jé. Télove, zou rausse vratri frapèllon teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Thirty, and I tell every soldier in the camp where I bought it.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Chèreau, zi pè quèsson miait getva ké za cifrais bou pè vépranvete fè."
+    },
+    {
+     "spk": "S1",
+     "en": "...Thirty-two. And you sharpen it here, not at that thief across the square.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "... Soujin. Zi bé vumfra fè bou, zou ké meu dèpan naume za ronqué teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Deal.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Punsa."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00001"
+  },
+  {
+   "source": "Original",
+   "ref": "orig002",
+   "category": "bargaining",
+   "mood": "light",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "innkeeper",
+     "gender": "f",
+     "name": "Ransou"
+    },
+    {
+     "id": "S2",
+     "name_en": "traveller",
+     "gender": "m",
+     "name": "Fisri"
+    },
+    {
+     "id": "S3",
+     "name_en": "traveller",
+     "gender": "f",
+     "name": "Fisri"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "We need a room for two nights, and a stall for the mule.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju léme za vreau jou daume léssi, zi za détser jou za mispissauque."
+    },
+    {
+     "spk": "S1",
+     "en": "Room is six a night. The mule is two, he eats more than you.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vreau jé raume za lésse. Za mispissauque jé daume, fè quéle bélon cauve bé."
+    },
+    {
+     "spk": "S3",
+     "en": "That is true, he does.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Meu jé roin, fè mio."
+    },
+    {
+     "spk": "S2",
+     "en": "Could we do ten for everything if we help in the kitchen?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bréle ju mio dréve jou treau brésse ju drausse ké za vrule?"
+    },
+    {
+     "spk": "S1",
+     "en": "Can you cook?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Quiait bé gimraute?"
+    },
+    {
+     "spk": "S3",
+     "en": "He can burn water. I can cook.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè quiait clureau proule. Pè quiait gimraute."
+    },
+    {
+     "spk": "S1",
+     "en": "Then she works, and you carry wood. Ten for everything.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[laughs]",
+     "text": "Lia fè dége, zi bé chivoi creau. Dréve jou treau."
+    },
+    {
+     "spk": "S2",
+     "en": "Fair enough. Where do I find the axe?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Réle lansin. Bou mio pè gueuque za boilan?"
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00002"
+  },
+  {
+   "source": "Original",
+   "ref": "orig003",
+   "category": "bargaining",
+   "mood": "calm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "farmer",
+     "gender": "m",
+     "name": "Lièté"
+    },
+    {
+     "id": "S2",
+     "name_en": "farmer",
+     "gender": "m",
+     "name": "Lièté"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "My cow for your two goats and the cart.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Leu mépreau jou zan daume lopleusi zi za aibrou."
+    },
+    {
+     "spk": "S2",
+     "en": "Your cow is old. The cart is almost new.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zan mépreau jé bleune. Za aibrou jé naton déque."
+    },
+    {
+     "spk": "S1",
+     "en": "She is old, but she still gives milk every morning. Your goats eat my fence.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé bleune, guait fè glait feau soué miait lér. Zan lopleusi quéle leu tréri."
+    },
+    {
+     "spk": "S2",
+     "en": "Hmm. The cart stays with me. Cow for the two goats and a sack of grain.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[thoughtful]",
+     "text": "Hmm. Za aibrou reuque kou pè. Mépreau jou za daume lopleusi zi za julé dè flumflé."
+    },
+    {
+     "spk": "S1",
+     "en": "Two sacks.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Daume julési."
+    },
+    {
+     "spk": "S2",
+     "en": "One sack, and I lend you the cart at harvest.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Rausse julé, zi pè itait bé za aibrou ké jeuma."
+    },
+    {
+     "spk": "S1",
+     "en": "All right. Shake on it.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou raur. Veuté ké fè."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00003"
+  },
+  {
+   "source": "Original",
+   "ref": "orig004",
+   "category": "bargaining",
+   "mood": "tense",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "captain",
+     "gender": "f",
+     "name": "Pafror"
+    },
+    {
+     "id": "S2",
+     "name_en": "sellsword",
+     "gender": "m",
+     "name": "Réveu"
+    },
+    {
+     "id": "S3",
+     "name_en": "sellsword",
+     "gender": "m",
+     "name": "Réveu"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "We pay ten silver a man for the week. Food included.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju daque drévete plér za céque jou za alusse. Franton mauquete."
+    },
+    {
+     "spk": "S2",
+     "en": "Ten? The road to the north is full of raiders.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dréve? Za taul vé za désse jé tréti dè mureuvausi."
+    },
+    {
+     "spk": "S3",
+     "en": "Last month the lord paid twenty.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Geau nouifré za preugar daquete quége."
+    },
+    {
+     "spk": "S1",
+     "en": "Last month the lord lost half his men. I am not him.",
+     "emotion": "powerful",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[firmly]",
+     "text": "Geau nouifré za preugar nérete aijon pon eurèsi. Pè jé zou fè teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Fifteen, and we keep whatever we take from the raiders.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Liclou, zi ju dieau freau ju glé dè za mureuvausi."
+    },
+    {
+     "spk": "S1",
+     "en": "Twelve, you keep the weapons, the coin goes to the village.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Méceau, bé dieau za vourési, za vratri téme vé za mafreu."
+    },
+    {
+     "spk": "S3",
+     "en": "Take it. The village fed us last winter.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[quietly]",
+     "text": "Glé fè. Za mafreu souditete ju geau rauveul."
+    },
+    {
+     "spk": "S2",
+     "en": "Twelve then. But the food better be warm.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Méceau lia. Guait za franton féque jé rèvait."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00004"
+  },
+  {
+   "source": "Original",
+   "ref": "orig005",
+   "category": "bargaining",
+   "mood": "light",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "herbalist",
+     "gender": "f",
+     "name": "Dancro"
+    },
+    {
+     "id": "S2",
+     "name_en": "customer",
+     "gender": "f",
+     "name": "Loussa"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "Do you have anything for a cough? My son has been coughing for three days.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé mio résse jou za ligé? Leu rèssa mio zagete ligédan jou croume creuri."
+    },
+    {
+     "spk": "S1",
+     "en": "Honey, thyme and a little pine resin. Boil it, let him breathe the steam.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Bratran, rumjeu zi za blait aidiait diédu. Raupais fè, nélete fè tansouque za quémésse."
+    },
+    {
+     "spk": "S2",
+     "en": "How much is it?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nausse vrar jé fè?"
+    },
+    {
+     "spk": "S1",
+     "en": "Three coins, but bring the jar back and the next one is two.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Croume vratrisi, guait draudant za lauchais quait zi za reule rausse jé daume."
+    },
+    {
+     "spk": "S2",
+     "en": "I only have two now.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè déne mio daume poui."
+    },
+    {
+     "spk": "S1",
+     "en": "Then pay me two now and the rest when he is well.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Lia daque pè daume poui zi za soino seuque fè jé féque."
+    },
+    {
+     "spk": "S2",
+     "en": "Thank you. Really.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Mérsil bé. Cevmant."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00005"
+  },
+  {
+   "source": "Original",
+   "ref": "orig006",
+   "category": "storytelling",
+   "mood": "warm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "old soldier",
+     "gender": "m",
+     "name": "Lompleau"
+    },
+    {
+     "id": "S2",
+     "name_en": "young recruit",
+     "gender": "m",
+     "name": "Chiblu"
+    },
+    {
+     "id": "S3",
+     "name_en": "barmaid",
+     "gender": "f",
+     "name": "Saussa"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Forty winters ago we held the bridge at the black river. Nine of us. Nine.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[thoughtful]",
+     "text": "Pouga rauveuli tréton ju zauvete za trér ké za frir gaugi. Seune dè ju. Seune."
+    },
+    {
+     "spk": "S2",
+     "en": "Against how many?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Grait nausse leule?"
+    },
+    {
+     "spk": "S1",
+     "en": "Nobody counted. When the sun came up, the river was the colour of wine.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dauve frogete. Seuque za rassé prauvete lauge, za frir jé za lémsesse dè zait."
+    },
+    {
+     "spk": "S3",
+     "en": "Every year the river gets redder and the enemy gets bigger.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Miait zime za frir brour mécon zi za truve brour crésson."
+    },
+    {
+     "spk": "S1",
+     "en": "Every year my knees get older, so the story must get stronger.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Miait zime leu fauquusi brour bleunon, lia za madé fréte brour voutièllon."
+    },
+    {
+     "spk": "S2",
+     "en": "And then what happened?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi lia lan tontauvete?"
+    },
+    {
+     "spk": "S1",
+     "en": "Then the rain came. Three days of rain. And on the fourth morning, they were gone.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia za drile prauvete. Croume creuri dè drile. Zi ké za lér freve, kon jé témete."
+    },
+    {
+     "spk": "S2",
+     "en": "Just gone?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Cleau témete?"
+    },
+    {
+     "spk": "S1",
+     "en": "Just gone. Sometimes the river decides who wins, boy. Not the sword.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Cleau témete. Greume za frir cénmansi vrou chétrou, teusse. zou za nopri teu."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00006"
+  },
+  {
+   "source": "Original",
+   "ref": "orig007",
+   "category": "storytelling",
+   "mood": "eerie",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "grandmother",
+     "gender": "f",
+     "name": "Tainvi"
+    },
+    {
+     "id": "S2",
+     "name_en": "child",
+     "gender": "f",
+     "name": "Réru"
+    },
+    {
+     "id": "S3",
+     "name_en": "child",
+     "gender": "m",
+     "name": "Réru"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "In the forest beyond the mill, there is a stone that sings at night.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Ké za crouron siait za crufime, bou jé za léssa meu reclé ké lésse."
+    },
+    {
+     "spk": "S3",
+     "en": "Stones cannot sing.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Léssasi quiait zou reclé teu."
+    },
+    {
+     "spk": "S1",
+     "en": "This one can. Low and slow, like a mother humming to her baby.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu rausse quiait. Néve zi flaul, gueur za vouguio drousmadan vé fè rouito."
+    },
+    {
+     "spk": "S2",
+     "en": "Did you hear it?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Bé viait fè?"
+    },
+    {
+     "spk": "S1",
+     "en": "Once. I was younger than you. I followed the song until the trees were black around me.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Monser. Pè jé bloron cauve bé. Pè plalgavete za quuge téve za glausi jé gaugi ruque pè."
+    },
+    {
+     "spk": "S3",
+     "en": "And then?",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[nervous]",
+     "text": "Zi lia?"
+    },
+    {
+     "spk": "S1",
+     "en": "Then your grandfather found me, asleep against the stone, with frost in my hair.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia zan étru gueuquete pè, tidait grait za léssa, kou bécou ké leu feussi."
+    },
+    {
+     "spk": "S2",
+     "en": "Was the stone angry?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé za léssa druran?"
+    },
+    {
+     "spk": "S1",
+     "en": "No, little one. I think it was lonely. Now go to sleep.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Nèk, blait rausse. Pè loume fè jé quecloman. Poui téme v'udro."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00007"
+  },
+  {
+   "source": "Original",
+   "ref": "orig008",
+   "category": "storytelling",
+   "mood": "funny",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "merchant",
+     "gender": "m",
+     "name": "Vauri"
+    },
+    {
+     "id": "S2",
+     "name_en": "merchant",
+     "gender": "m",
+     "name": "Vauri"
+    },
+    {
+     "id": "S3",
+     "name_en": "merchant",
+     "gender": "f",
+     "name": "Vauri"
+    },
+    {
+     "id": "S4",
+     "name_en": "guard",
+     "gender": "m",
+     "name": "Vébu"
+    }
+   ],
+   "n_speakers": 4,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Did I ever tell you about the goat that crossed the mountains with me?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zér quèsson bé crir za lopleu meu lérquivete za vravi kou pè?"
+    },
+    {
+     "spk": "S3",
+     "en": "Only twice this week.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Déne néque meu alusse."
+    },
+    {
+     "spk": "S1",
+     "en": "Then this is the third time. She ate my map on the first day.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia meu jé za jeuque pouque. Fè quéle leu zéte ké za louque creur."
+    },
+    {
+     "spk": "S2",
+     "en": "So how did you find the pass?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Lia nausse bé gueuque za pombro?"
+    },
+    {
+     "spk": "S1",
+     "en": "I followed the goat. She knew the way better than the map.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè plalgavete za lopleu. Fè vrérete za noume fécon cauve za zéte."
+    },
+    {
+     "spk": "S4",
+     "en": "And where is this clever goat now?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi bou jé meu lopleu nicron poui?"
+    },
+    {
+     "spk": "S1",
+     "en": "She married a shepherd on the other side. I came back alone.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Fè trivainvete za gorté ké za péve trir. Pè prauvete quait mèvi."
+    },
+    {
+     "spk": "S3",
+     "en": "Married!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[laughs]",
+     "text": "Mige!"
+    },
+    {
+     "spk": "S1",
+     "en": "In her way. She never looked back, not even once.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ké fè noume. Fè zou zér chauvete teu quait, zou gléle monser teu."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00008"
+  },
+  {
+   "source": "Original",
+   "ref": "orig009",
+   "category": "storytelling",
+   "mood": "heavy",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "veteran",
+     "gender": "m",
+     "name": "Chaucri"
+    },
+    {
+     "id": "S2",
+     "name_en": "healer",
+     "gender": "f",
+     "name": "Craba"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "You never talk about the siege.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé zou zér lonva teu crir za népri."
+    },
+    {
+     "spk": "S1",
+     "en": "There is not much to say. We were hungry, then we were very hungry.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou jé zou vrar vé greur teu. Ju jé muglale, lia ju jé méve muglale."
+    },
+    {
+     "spk": "S2",
+     "en": "Your brother was there.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Zan liaru jé bou."
+    },
+    {
+     "spk": "S1",
+     "en": "He was. He gave me his bread on the last night. Said he was not hungry.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Fè jé. Fè fauvete pè pon plalait ké za geau lésse. Greurete fè jé zou muglale teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Was he?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé fè?"
+    },
+    {
+     "spk": "S1",
+     "en": "He was the hungriest man I ever knew. ...He did not see the morning.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[sad]",
+     "text": "Fè jé za muglalon céque pè zér vrérete.... Fè zou cleu teu za lér."
+    },
+    {
+     "spk": "S2",
+     "en": "I am sorry.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Pè jé dézou."
+    },
+    {
+     "spk": "S1",
+     "en": "Do not be. Every morning I see is a little bit his.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Mio zou jé teu. Lér miait pè cleu jé za blait quainquer pon."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00009"
+  },
+  {
+   "source": "Original",
+   "ref": "orig010",
+   "category": "storytelling",
+   "mood": "adventure",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "scout",
+     "gender": "f",
+     "name": "Liata"
+    },
+    {
+     "id": "S2",
+     "name_en": "captain",
+     "gender": "m",
+     "name": "Pafror"
+    },
+    {
+     "id": "S3",
+     "name_en": "soldier",
+     "gender": "m",
+     "name": "Mecdéte"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "We went in through the old drain. Water up to our knees, rats everywhere.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju témete ké vrine za bleune drachésse. Proule lauge vé pon fauquusi, gauponsi grile."
+    },
+    {
+     "spk": "S3",
+     "en": "Rats. Of course there were rats.",
+     "emotion": "disgust",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[disgusted]",
+     "text": "Gauponsi. Dè brecra bou jé gauponsi."
+    },
+    {
+     "spk": "S1",
+     "en": "At the end, a gate. Rusted shut. Torven pulled so hard his face went purple.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ké za tiait, za sarfré. Épiavete quènete. Fraussais viabivete lia réque pon quieau témete rèma."
+    },
+    {
+     "spk": "S2",
+     "en": "Did it open?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Mio fè tiébla?"
+    },
+    {
+     "spk": "S1",
+     "en": "No. The wall next to it fell down instead.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Nèk. Za vaintute reule vé fè maunete chaune pauplo."
+    },
+    {
+     "spk": "S3",
+     "en": "That sounds like Torven.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[laughs]",
+     "text": "Meu lieau gueur Vabia."
+    },
+    {
+     "spk": "S1",
+     "en": "So we walked into the cellar through the hole, and the guards were asleep on the wine barrels.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia ju prégete vé za clouprait vrine za vraque, zi za pauvisi jé tidait ké za zait deurquisi."
+    },
+    {
+     "spk": "S2",
+     "en": "And the key?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi za biédu?"
+    },
+    {
+     "spk": "S1",
+     "en": "Around the fat one's neck. He never woke up.",
+     "emotion": "powerful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[confident]",
+     "text": "Ruque za jièrait rausse poge. Fè zou zér sauvrirete teu lauge."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00010"
+  },
+  {
+   "source": "Original",
+   "ref": "orig011",
+   "category": "dispute",
+   "mood": "heated",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "guard",
+     "gender": "m",
+     "name": "Vébu"
+    },
+    {
+     "id": "S2",
+     "name_en": "farmer",
+     "gender": "m",
+     "name": "Lièté"
+    },
+    {
+     "id": "S3",
+     "name_en": "farmer wife",
+     "gender": "f",
+     "name": "Lièté"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Stop. Nobody passes the gate after dark.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ladé. Dauve mészi za sarfré guéte guiait."
+    },
+    {
+     "spk": "S2",
+     "en": "We live on the other side! Our children are inside.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju veuge ké za péve trir! Pon pronfainsi jé bleque."
+    },
+    {
+     "spk": "S1",
+     "en": "Rules are rules. Come back at dawn.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dèssainsi jé dèssainsi. Preau quait ké maumu."
+    },
+    {
+     "spk": "S3",
+     "en": "Our son is six years old and alone in that house!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Pon rèssa jé raume zimi bleune zi mèvi ké meu crale!"
+    },
+    {
+     "spk": "S1",
+     "en": "And if I open this gate for you, I open it for everyone.",
+     "emotion": "powerful",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[firmly]",
+     "text": "Zi brésse pè tiébla meu sarfré jou bé, pè tiébla fè jou zouque."
+    },
+    {
+     "spk": "S2",
+     "en": "Then open it for everyone! Who is out there? Nobody!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Lia tiébla fè jou zouque! Vrou jé plauve bou? Dauve!"
+    },
+    {
+     "spk": "S1",
+     "en": "...Fine. Quickly. And if the captain asks, you climbed the wall.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "... Frait. Brér. Zi brésse za gleu gloume, bé vèrivete za vaintute."
+    },
+    {
+     "spk": "S3",
+     "en": "Thank you. Thank you.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Mérsil bé. Mérsil bé."
+    }
+   ],
+   "energy": "high",
+   "id": "ORI00011"
+  },
+  {
+   "source": "Original",
+   "ref": "orig012",
+   "category": "dispute",
+   "mood": "heated",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "brother",
+     "gender": "m",
+     "name": "Aipé"
+    },
+    {
+     "id": "S2",
+     "name_en": "brother",
+     "gender": "m",
+     "name": "Aipé"
+    },
+    {
+     "id": "S3",
+     "name_en": "mother",
+     "gender": "f",
+     "name": "Fléjo"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Father left the mill to me. Everyone knows it.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Auflond zèvete za crufime vé pè. Zouque vrér fè."
+    },
+    {
+     "spk": "S2",
+     "en": "Father left the mill to both of us, and you know it.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Auflond zèvete za crufime vé prère dè ju, zi bé vrér fè."
+    },
+    {
+     "spk": "S1",
+     "en": "You were gone for six years! Six years, and now you want half?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé jé témete jou raume zimi! Raume zimi, zi poui bé préne aijon?"
+    },
+    {
+     "spk": "S2",
+     "en": "I was gone because he sent me away! To pay his debts!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Pè jé témete groque fè blourete pè chume! Vé daque pon pluti!"
+    },
+    {
+     "spk": "S3",
+     "en": "Enough. Both of you, sit down.",
+     "emotion": "powerful",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[firmly]",
+     "text": "Lansin. Crecrage dè bé, vrute chaune."
+    },
+    {
+     "spk": "S1",
+     "en": "Mother, he...",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vouguio, fè..."
+    },
+    {
+     "spk": "S3",
+     "en": "I said sit. Your father wanted you to work it together. Not to fight over it like dogs.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè greurete vrute. Zan auflond prénete bé vé dége fè tauge. zou vé guésse teu cége fè gueur peussosi."
+    },
+    {
+     "spk": "S2",
+     "en": "...I did not come back for the mill. I came back for you.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[quietly]",
+     "text": "... Pè zou preau teu quait jou za crufime. Pè prauvete quait jou bé."
+    },
+    {
+     "spk": "S3",
+     "en": "I know, son. I know.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Pè vrér, rèssa. Pè vrér."
+    }
+   ],
+   "energy": "high",
+   "id": "ORI00012"
+  },
+  {
+   "source": "Original",
+   "ref": "orig013",
+   "category": "dispute",
+   "mood": "tense",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "merchant",
+     "gender": "f",
+     "name": "Vauri"
+    },
+    {
+     "id": "S2",
+     "name_en": "tax collector",
+     "gender": "m",
+     "name": "Trassé"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "Your stall pays the market tax. Five silver.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zan détser daque za cloute cètais. Guule plér."
+    },
+    {
+     "spk": "S1",
+     "en": "I paid last week.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè daquete geau alusse."
+    },
+    {
+     "spk": "S2",
+     "en": "This is this week.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu jé meu alusse."
+    },
+    {
+     "spk": "S1",
+     "en": "The tax is every month, not every week. Everyone knows that.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Za cètais jé miait nouifré, zou miait alusse teu. Zouque vrér meu."
+    },
+    {
+     "spk": "S2",
+     "en": "The lord changed it.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Za preugar ziégèvete fè."
+    },
+    {
+     "spk": "S1",
+     "en": "Then show me the paper with his seal.",
+     "emotion": "disgust",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[skeptical]",
+     "text": "Lia jiait pè za gaque kou pon napeu."
+    },
+    {
+     "spk": "S2",
+     "en": "I do not have the paper here.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zou mio teu za gaque bou."
+    },
+    {
+     "spk": "S1",
+     "en": "Then come back with the paper, and I pay. Not before.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia prauvete quait kou za gaque, zi pè daque. zou fove teu."
+    }
+   ],
+   "energy": "high",
+   "id": "ORI00013"
+  },
+  {
+   "source": "Original",
+   "ref": "orig014",
+   "category": "dispute",
+   "mood": "heated",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "soldier",
+     "gender": "m",
+     "name": "Mecdéte"
+    },
+    {
+     "id": "S2",
+     "name_en": "soldier",
+     "gender": "m",
+     "name": "Mecdéte"
+    },
+    {
+     "id": "S3",
+     "name_en": "sergeant",
+     "gender": "m",
+     "name": "Trecreau"
+    },
+    {
+     "id": "S4",
+     "name_en": "cook",
+     "gender": "f",
+     "name": "Vérseu"
+    }
+   ],
+   "n_speakers": 4,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "That was my bread. I put it on the barrel.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu jé leu plalait. Pè crérete fè ké za deurqui."
+    },
+    {
+     "spk": "S2",
+     "en": "There was no name on it.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou jé nèk césse ké fè."
+    },
+    {
+     "spk": "S1",
+     "en": "It does not need a name! It was on MY barrel!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Fè zou léme teu za césse! Fè jé ké leu deurqui!"
+    },
+    {
+     "spk": "S4",
+     "en": "There is more bread. Stop shouting in my kitchen.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Bou jé bélon plalait. Ladé étoin ké leu vrule."
+    },
+    {
+     "spk": "S2",
+     "en": "See? More bread. Go get some.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Cleu? Bélon plalait. Téme brour jieau."
+    },
+    {
+     "spk": "S1",
+     "en": "I do not want more bread, I want MY bread!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Pè zou préne teu bélon plalait, pè préne leu plalait!"
+    },
+    {
+     "spk": "S3",
+     "en": "Quiet! Both of you, outside. Now.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 3,
+     "tags": "[shouts]",
+     "text": "Mévoué! Crecrage dè bé, deume. Poui."
+    },
+    {
+     "spk": "S4",
+     "en": "Every night the same war. Over bread.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Miait lésse za quère chontron. Cége plalait."
+    }
+   ],
+   "energy": "high",
+   "id": "ORI00014"
+  },
+  {
+   "source": "Original",
+   "ref": "orig015",
+   "category": "small_talk",
+   "mood": "calm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "villager",
+     "gender": "f",
+     "name": "Vaincou"
+    },
+    {
+     "id": "S2",
+     "name_en": "villager",
+     "gender": "f",
+     "name": "Vaincou"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Morning. The wind is cold today.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Léran. Za létran jé flaur roubrige."
+    },
+    {
+     "spk": "S2",
+     "en": "It came from the mountains last night. My door was shaking.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè prauvete dè za vravi geau lésse. Leu veului jé veutédan."
+    },
+    {
+     "spk": "S1",
+     "en": "Snow before the end of the month, I think.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Blébeu fove za tiait dè za nouifré, pè loume."
+    },
+    {
+     "spk": "S2",
+     "en": "My knee says the same. It always knows.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Leu fauquu greur za quère. Fè dreute vrér."
+    },
+    {
+     "spk": "S1",
+     "en": "Better than any priest.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Fécon cauve pleuge dreussa."
+    },
+    {
+     "spk": "S2",
+     "en": "Are you going to the market?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé bé téman vé za cloute?"
+    },
+    {
+     "spk": "S1",
+     "en": "Later. I need wool, and maybe some onions.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Guimpa. Pè léme fèllait, zi déssi jieau aissonsi."
+    },
+    {
+     "spk": "S2",
+     "en": "Ask for Berta. She has the good onions this year.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Gloume jou Cropleu. Fè mio za prait aissonsi meu zime."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00015"
+  },
+  {
+   "source": "Original",
+   "ref": "orig016",
+   "category": "small_talk",
+   "mood": "calm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "guard",
+     "gender": "m",
+     "name": "Vébu"
+    },
+    {
+     "id": "S2",
+     "name_en": "guard",
+     "gender": "m",
+     "name": "Vébu"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Quiet night.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lésse mévoué."
+    },
+    {
+     "spk": "S2",
+     "en": "Too quiet. I like a little noise. A dog, a drunk, something.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Flait mévoué. Pè gueur za blait zigran. Za peusso, za tècar, béme."
+    },
+    {
+     "spk": "S1",
+     "en": "You want a drunk? Wait until the tavern closes.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé préne za tècar? Branlan téve za traugi drimamait."
+    },
+    {
+     "spk": "S2",
+     "en": "True. How is your wife?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Roin. Nausse jé zan ziénou?"
+    },
+    {
+     "spk": "S1",
+     "en": "Tired. The baby does not sleep. So nobody sleeps.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Praclissete. Za rouito zou udro teu. Lia udrosi dauve."
+    },
+    {
+     "spk": "S2",
+     "en": "Mine was the same. It gets better after the first teeth.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Leu jé za quère. Fè brour fécon guéte za louque vuveu."
+    },
+    {
+     "spk": "S1",
+     "en": "I hope so. I fell asleep standing yesterday.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Pè sieau lia. Pè maunete tidait quéssondan fuque."
+    },
+    {
+     "spk": "S2",
+     "en": "Standing? That is a soldier.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Quéssondan? Meu jé za getva."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00016"
+  },
+  {
+   "source": "Original",
+   "ref": "orig017",
+   "category": "small_talk",
+   "mood": "warm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "mother",
+     "gender": "f",
+     "name": "Fléjo"
+    },
+    {
+     "id": "S2",
+     "name_en": "father",
+     "gender": "m",
+     "name": "Lénale"
+    },
+    {
+     "id": "S3",
+     "name_en": "daughter",
+     "gender": "f",
+     "name": "Aimuge"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Wash your hands before you touch the bread.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Chéceau zan guussi fove bé pocreau za plalait."
+    },
+    {
+     "spk": "S3",
+     "en": "They are clean.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon jé flainviou."
+    },
+    {
+     "spk": "S2",
+     "en": "They are the colour of the garden.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Kon jé za lémsesse dè za lauque."
+    },
+    {
+     "spk": "S3",
+     "en": "It is good dirt.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé prait lipra."
+    },
+    {
+     "spk": "S1",
+     "en": "Good dirt goes in the garden, not on the table.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Prait lipra téme ké za lauque, zou ké za brèda teu."
+    },
+    {
+     "spk": "S2",
+     "en": "How was the river today?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nausse jé za frir flaur?"
+    },
+    {
+     "spk": "S3",
+     "en": "I saw a fish as long as my arm!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Pè sachérete za zasse trère dréque trère leu rijiait!"
+    },
+    {
+     "spk": "S2",
+     "en": "As long as your arm, or as long as my arm?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Trère dréque trère zan rijiait, queve trère dréque trère leu rijiait?"
+    },
+    {
+     "spk": "S3",
+     "en": "As long as your arm. Almost.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Trère dréque trère zan rijiait. Naton."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00017"
+  },
+  {
+   "source": "Original",
+   "ref": "orig018",
+   "category": "small_talk",
+   "mood": "calm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "traveller",
+     "gender": "m",
+     "name": "Fisri"
+    },
+    {
+     "id": "S2",
+     "name_en": "traveller",
+     "gender": "m",
+     "name": "Fisri"
+    },
+    {
+     "id": "S3",
+     "name_en": "traveller",
+     "gender": "f",
+     "name": "Fisri"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "How far to the next village?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nausse céte vé za reule mafreu?"
+    },
+    {
+     "spk": "S3",
+     "en": "Half a day if the road is dry.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Aijon za creur brésse za taul jé voin."
+    },
+    {
+     "spk": "S2",
+     "en": "It is never dry.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé zou zér voin teu."
+    },
+    {
+     "spk": "S3",
+     "en": "Then a full day.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia za creur tréti."
+    },
+    {
+     "spk": "S1",
+     "en": "Do they have an inn?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon mio za caudoi?"
+    },
+    {
+     "spk": "S3",
+     "en": "They have a barn and a woman who makes very good soup.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon mio za cozti zi za vaplou vrou tége méve prait chèsson."
+    },
+    {
+     "spk": "S2",
+     "en": "That is better than most inns.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu jé prèllon cauve zévon lounuico."
+    },
+    {
+     "spk": "S1",
+     "en": "Then we walk for the soup.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Lia ju prége jou za chèsson."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00018"
+  },
+  {
+   "source": "Original",
+   "ref": "orig019",
+   "category": "small_talk",
+   "mood": "calm",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "fisherman",
+     "gender": "m",
+     "name": "Lagreau"
+    },
+    {
+     "id": "S2",
+     "name_en": "fisherman",
+     "gender": "m",
+     "name": "Lagreau"
+    },
+    {
+     "id": "S3",
+     "name_en": "boy",
+     "gender": "m",
+     "name": "Lidé"
+    },
+    {
+     "id": "S4",
+     "name_en": "fishwife",
+     "gender": "f",
+     "name": "Ossou"
+    }
+   ],
+   "n_speakers": 4,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Nets are full of weed again.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vévi jé tréti dè turgru zeute."
+    },
+    {
+     "spk": "S2",
+     "en": "The storm pushed it in. Two more days, it goes out again.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Za tege vaunièvete fè ké. Daume bélon creuri, fè téme plauve zeute."
+    },
+    {
+     "spk": "S3",
+     "en": "Can I come on the boat tomorrow?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Quiait pè preau ké za péque piait?"
+    },
+    {
+     "spk": "S1",
+     "en": "If your mother says yes.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Brésse zan vouguio greur vèl."
+    },
+    {
+     "spk": "S4",
+     "en": "His mother says he can clean the fish today, then we see.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pon vouguio greur fè quiait flainviou za zasse flaur, lia ju cleu."
+    },
+    {
+     "spk": "S3",
+     "en": "Every day the fish.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Miait creur za zasse."
+    },
+    {
+     "spk": "S2",
+     "en": "Every day the fish for all of us, boy. Welcome to the sea.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Miait creur za zasse jou frisse dè ju, teusse. Lausse vé za bralan."
+    },
+    {
+     "spk": "S4",
+     "en": "And tell your father his supper is getting cold.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi quèsson zan auflond pon broucra jé brouran roubrige."
+    }
+   ],
+   "energy": "low",
+   "id": "ORI00019"
+  },
+  {
+   "source": "Original",
+   "ref": "orig020",
+   "category": "banter",
+   "mood": "playful",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "soldier",
+     "gender": "m",
+     "name": "Mecdéte"
+    },
+    {
+     "id": "S2",
+     "name_en": "soldier",
+     "gender": "f",
+     "name": "Mecdéte"
+    },
+    {
+     "id": "S3",
+     "name_en": "soldier",
+     "gender": "m",
+     "name": "Mecdéte"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I bet you a coin I can hit the crow on that post.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè lèré bé za vratri pè quiait nouissin za cracmé ké meu quur."
+    },
+    {
+     "spk": "S2",
+     "en": "You cannot hit the post.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Bé quiait zou nouissin teu za quur."
+    },
+    {
+     "spk": "S3",
+     "en": "He hit a post once. By accident.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè nouissainvete za quur monser. Clige bér."
+    },
+    {
+     "spk": "S1",
+     "en": "Watch and learn.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Sougué zi louda."
+    },
+    {
+     "spk": "S2",
+     "en": "...",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "..."
+    },
+    {
+     "spk": "S3",
+     "en": "The crow is laughing at you.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[laughs]",
+     "text": "Za cracmé j'ivieudan ké bé."
+    },
+    {
+     "spk": "S2",
+     "en": "Pay up.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Daque lauge."
+    },
+    {
+     "spk": "S1",
+     "en": "The wind moved it. The wind.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[sighs]",
+     "text": "Za létran quissete fè. Za létran."
+    }
+   ],
+   "energy": "medium",
+   "id": "ORI00020"
+  },
+  {
+   "source": "Original",
+   "ref": "orig021",
+   "category": "banter",
+   "mood": "playful",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "cook",
+     "gender": "f",
+     "name": "Vérseu"
+    },
+    {
+     "id": "S2",
+     "name_en": "stable boy",
+     "gender": "m",
+     "name": "Trouguait"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "What is in the pot today?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan jé ké za nélole flaur?"
+    },
+    {
+     "spk": "S1",
+     "en": "Soup.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Chèsson."
+    },
+    {
+     "spk": "S2",
+     "en": "What kind of soup?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan quusse dè chèsson?"
+    },
+    {
+     "spk": "S1",
+     "en": "The kind that is hot and wet. Do you want it or not?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Za quusse meu jé peme zi fiveu. Bé préne fè queve zou teu?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yesterday it was also hot and wet, and it tasted like boots.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fuque fè jé vaume peme zi fiveu, zi fè bièvete gueur panchauri."
+    },
+    {
+     "spk": "S1",
+     "en": "Yesterday you cleaned the boots in my water bucket.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fuque bé flainviouvete za panchauri ké leu proule éssile."
+    },
+    {
+     "spk": "S2",
+     "en": "...Ah. I will eat the soup.",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[nervous]",
+     "text": "... Ah. Pè mio quéle za chèsson."
+    }
+   ],
+   "energy": "medium",
+   "id": "ORI00021"
+  },
+  {
+   "source": "Original",
+   "ref": "orig022",
+   "category": "emotional",
+   "mood": "grief",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "widow",
+     "gender": "f",
+     "name": "Cérfeux"
+    },
+    {
+     "id": "S2",
+     "name_en": "neighbour",
+     "gender": "f",
+     "name": "Nèlleau"
+    }
+   ],
+   "n_speakers": 2,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "I brought some bread. And a little honey.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Pè drauvete jieau plalait. Zi za blait bratran."
+    },
+    {
+     "spk": "S1",
+     "en": "You did not have to.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé zou mio teu vé."
+    },
+    {
+     "spk": "S2",
+     "en": "I know. Have you eaten today?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè vrér. Mio bé quéle flaur?"
+    },
+    {
+     "spk": "S1",
+     "en": "I made two bowls this morning. Out of habit. Two bowls.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[sad]",
+     "text": "Pè tégete daume prér meu lér. Plauve dè déloule. Daume prér."
+    },
+    {
+     "spk": "S2",
+     "en": "Then I will eat the other one with you.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Lia pè mio quéle za péve rausse kou bé."
+    },
+    {
+     "spk": "S1",
+     "en": "He always burned his tongue. Every morning. He never waited.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè dreute clurauvete pon délait. Miait lér. Fè zou zér branlanvete teu."
+    },
+    {
+     "spk": "S2",
+     "en": "He never waited for anything. That was him.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Fè zou zér branlanvete teu jou résse. Meu jé fè."
+    }
+   ],
+   "energy": "medium",
+   "id": "ORI00022"
+  },
+  {
+   "source": "Original",
+   "ref": "orig023",
+   "category": "emotional",
+   "mood": "fear",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "healer",
+     "gender": "f",
+     "name": "Craba"
+    },
+    {
+     "id": "S2",
+     "name_en": "wounded soldier",
+     "gender": "m",
+     "name": "Anait"
+    },
+    {
+     "id": "S3",
+     "name_en": "soldier",
+     "gender": "m",
+     "name": "Mecdéte"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "I cannot feel my hand. I cannot feel my hand!",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 3,
+     "tags": "[panicked]",
+     "text": "Pè quiait zou vame teu leu guusse. Pè quiait zou vame teu leu guusse!"
+    },
+    {
+     "spk": "S1",
+     "en": "Look at me. Look at me. Breathe.",
+     "emotion": "powerful",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[firmly]",
+     "text": "Cheau ké pè. Cheau ké pè. Tansouque."
+    },
+    {
+     "spk": "S3",
+     "en": "Is it bad?",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[worried]",
+     "text": "Jé fè saneu?"
+    },
+    {
+     "spk": "S1",
+     "en": "It is deep, but it is clean. Hold this. Press hard.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé zauve, guait fè jé flainviou. Frétja meu. Nigé réque."
+    },
+    {
+     "spk": "S2",
+     "en": "Am I going to lose it?",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[nervous]",
+     "text": "Jé pè téman vé nér fè?"
+    },
+    {
+     "spk": "S1",
+     "en": "Not today. Today you lose a little blood and a lot of pride.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[calmly]",
+     "text": "Zou flaur teu. Flaur bé nér za blait lacaur zi za drir dè peulait."
+    },
+    {
+     "spk": "S2",
+     "en": "...That is not funny.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "... Meu jé zou sauque teu."
+    },
+    {
+     "spk": "S3",
+     "en": "It is a little funny.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[chuckles]",
+     "text": "Fè jé za blait sauque."
+    }
+   ],
+   "energy": "medium",
+   "id": "ORI00023"
+  },
+  {
+   "source": "Original",
+   "ref": "orig024",
+   "category": "emotional",
+   "mood": "joy",
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "father",
+     "gender": "m",
+     "name": "Lénale"
+    },
+    {
+     "id": "S2",
+     "name_en": "midwife",
+     "gender": "f",
+     "name": "Vèlleau"
+    },
+    {
+     "id": "S3",
+     "name_en": "grandmother",
+     "gender": "f",
+     "name": "Tainvi"
+    }
+   ],
+   "n_speakers": 3,
+   "lines": [
+    {
+     "spk": "S2",
+     "en": "A girl. Healthy and loud.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Za jeuve. Russé zi laulant."
+    },
+    {
+     "spk": "S1",
+     "en": "A girl! Can I see her?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Za jeuve! Quiait pè cleu fè?"
+    },
+    {
+     "spk": "S2",
+     "en": "Wash your hands first. You smell like a horse.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Chéceau zan guussi louque. Bé toitrete gueur za oubru."
+    },
+    {
+     "spk": "S3",
+     "en": "He always smells like a horse.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[laughs]",
+     "text": "Fè dreute toitrete gueur za oubru."
+    },
+    {
+     "spk": "S1",
+     "en": "She is so small. Look at her hands.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Fè jé lia pliplait. Cheau ké fè guussi."
+    },
+    {
+     "spk": "S3",
+     "en": "She has your mother's nose. Poor thing.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Fè mio zan vouguio dombait. Cluve blale."
+    },
+    {
+     "spk": "S1",
+     "en": "Mother!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[laughs]",
+     "text": "Vouguio!"
+    }
+   ],
+   "energy": "medium",
+   "id": "ORI00024"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C2E026",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "It would be the most hilarious natural one-- eight.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè mio jé za zévon pèpa zéme rausse, cauvou."
+    },
+    {
+     "spk": "S2",
+     "en": "Eight? Okay. It happens but--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Cauvou? Tavé. Fè tonteau guait,"
+    },
+    {
+     "spk": "S1",
+     "en": "It's not beautiful yet--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé zou ralene crage teu,"
+    },
+    {
+     "spk": "S2",
+     "en": "The trick is very visible, what you did, the kid still seems amused.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Za lanteu jé méve clèmeu, lan bé mio, za roimo glait rèban rèpoudroule."
+    },
+    {
+     "spk": "S1",
+     "en": "I give him the bauble.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè feau fè za quinou."
+    },
+    {
+     "spk": "S2",
+     "en": "Smiles. Frumpkin ruffles his feathers, looks a bit spooked.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Queumi. Zèta juquieau pon brèdèsi, cheau za quainquer clagouidou."
+    },
+    {
+     "spk": "S1",
+     "en": "I give him a little scratch. The horses?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè feau fè za blait chasfou. Za oubrusi?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "TALIESIN",
+     "gender": "m",
+     "name": "Glèssou"
+    },
+    {
+     "id": "S2",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD07496"
+  },
+  {
+   "source": "Friends",
+   "ref": "s06_e20_c06",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Oh my God!",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Oh leu Miadé!"
+    },
+    {
+     "spk": "S2",
+     "en": "And all of the sudden his hands weren't the problem anymore.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi frisse dè za drané pon guussi jé zou za chautsant prauque teu."
+    },
+    {
+     "spk": "S3",
+     "en": "Was it...",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé fè..."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, Boy Scouts could've camped under it!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, Lidé Balseau bréle mio cifrèvete seusse fè!"
+    },
+    {
+     "spk": "S1",
+     "en": "You ate my sandwich?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé quéle leu reuté?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Ross Geller",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S2",
+     "name_en": "Phoebe Buffay",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI03767"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E078",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I feel like we want to catch up with our father's army before they're anywhere near the walls of the city, because, well, that'd be stupid.",
+     "emotion": "anger",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Pè vame gueur ju préne v'eurou lauge kou pon auflond fobléne fove kon jé drate pleule za vaintuti dè za trouque, groque, féque, meu mio jé creurmu."
+    },
+    {
+     "spk": "S2",
+     "en": "We can go meet them if that's the next move.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju quiait téme géque kon brésse meu jé za reule quisse."
+    },
+    {
+     "spk": "S3",
+     "en": "And strategize when we get there? Once we see their forces, and what they have to offer?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi tètotait seuque ju brour bou? Monser ju cleu pon péquisi, zi lan kon mio vé quéque?"
+    },
+    {
+     "spk": "S4",
+     "en": "Percy, do you still have that map of Emon?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Noufreau, bé glait mio meu zéte dè Quéco?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yes, somewhere.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, prele."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "LIAM",
+     "gender": "m",
+     "name": "Delcheau"
+    },
+    {
+     "id": "S2",
+     "name_en": "TALIESIN",
+     "gender": "m",
+     "name": "Glèssou"
+    },
+    {
+     "id": "S3",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S4",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD06606"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-229",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Well, this has been fun.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, meu mio zagete drègete."
+    },
+    {
+     "spk": "S2",
+     "en": "Yes. Yes, thanks for letting me use your phone... and for saving my life.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl. Vèl, mérsil jou nélan pè trule zan prage... zi jou rédélan leu treque."
+    },
+    {
+     "spk": "S1",
+     "en": "Well, goodbye Chandler. I had a great blackout. See ya.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, kazé Tédou. Pè mio za pléque plilé. Cleu crar."
+    },
+    {
+     "spk": "S2",
+     "en": "Hi, um, I'm account number 7143457.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bénou, euh, pè jé sosse nésse nadulé oudou utrérseu reuqueu pèdousse urévo oudou traintais reuqueu pirouvplait nadulé."
+    },
+    {
+     "spk": "S2",
+     "en": "And, uh, I don't know if you got any of that, but I would really like a copy of the tape.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi, euh, pè zou vrér teu brésse bé brourete pleuge dè meu, guait pè mio cevmant gueur za méchu dè za manvré."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Jill",
+     "gender": "f",
+     "name": "Mivait"
+    },
+    {
+     "id": "S2",
+     "name_en": "Chandler",
+     "gender": "m",
+     "name": "Tédou"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "MEL00612"
+  },
+  {
+   "source": "Friends",
+   "ref": "s09_e18_c02",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I'll do it!! It'll get the casserole stink off of mine.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio mio fè!! Fè mio brour za cidirer grupeuvete crur dè leu."
+    },
+    {
+     "spk": "S2",
+     "en": "I hope I win!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè sieau pè chétrou!"
+    },
+    {
+     "spk": "S3",
+     "en": "Well, it doesn't really matter ... you're both wishing for the same thing, right?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, fè zou cevmant céne teu... bé jé prère sounan jou za quère blale, raur?"
+    },
+    {
+     "spk": "S1",
+     "en": "I can't tell you what I'm wishing for! Else...you know...won't come true!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè quiait zou quèsson teu bé lan pè jé sounan jou! Souré... bé vrér... mio zou preau teu roin!"
+    },
+    {
+     "spk": "S3",
+     "en": "Right! .. but we \"know\" what you're wishing for!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Raur!.. Guait ju vrér lan bé jé sounan jou!"
+    },
+    {
+     "spk": "S1",
+     "en": "Can't really say!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Quiait zou cevmant greur teu!"
+    },
+    {
+     "spk": "S3",
+     "en": "I understand, but you're wishing for what we think you're wishing for, aren't you?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè taincrer, guait bé jé sounan jou lan ju loume bé jé sounan jou, jé zou bé teu?"
+    },
+    {
+     "spk": "S1",
+     "en": "I'm not really comfortable with these questions!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé zou cevmant mége kou meu lifrousi teu!"
+    },
+    {
+     "spk": "S2",
+     "en": "One, two, three!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Rausse, daume, croume!"
+    },
+    {
+     "spk": "S1",
+     "en": "I won, hey!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè chétrouvete, hé!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S2",
+     "name_en": "Phoebe Buffay",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI04971"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E035",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "It's that black orb!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé meu zéndouivi gaugi!"
+    },
+    {
+     "spk": "S2",
+     "en": "I didn't know. Where can we plug it in at?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zou vrér teu. Bou quiait ju ranton fè ké ké?"
+    },
+    {
+     "spk": "S3",
+     "en": "So, you guys push on, making your way to the cavern and heading back towards the undercroft vicinity of Whitestone.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia, bé reubra vauniais ké, téjan zan noume vé za vapulou zi guètan quait vé za tièvé pémsou dè Fufleu."
+    },
+    {
+     "spk": "S4",
+     "en": "Yeah. Let me know when we leave that big-ass room that the ziggurat is in. We're still in it, right?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl. Néle pè vrér seuque ju zeve meu peucha vreau meu za bérait jé ké. Ju jé glait ké fè, raurete?"
+    },
+    {
+     "spk": "S3",
+     "en": "You guys have just now made your way towards the exit tunnel, so you're just now leaving.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé reubra mio cleau poui tégete zan noume vé za cédrou chérplon, lia bé jé cleau poui zèvan."
+    },
+    {
+     "spk": "S4",
+     "en": "I remember the tunnels sucking booby-trap-wise.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè clér za chérplonsi dréfédan vevié."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "LIAM",
+     "gender": "m",
+     "name": "Delcheau"
+    },
+    {
+     "id": "S2",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    },
+    {
+     "id": "S3",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S4",
+     "name_en": "TRAVIS",
+     "gender": "m",
+     "name": "Tuqué"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD06015"
+  },
+  {
+   "source": "Friends",
+   "ref": "s06_e15_c02",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Come on!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Prauvete ké!"
+    },
+    {
+     "spk": "S2",
+     "en": "Oh wait, don't you have to pay for your, Busty Ladies?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh branlan, zou bé mio teu vé daque jou zan, Tarasse Drénait?"
+    },
+    {
+     "spk": "S1",
+     "en": "No, it's okay. Some-some kid asked me to pick it up for him, but I don't...",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk, fè jé tavé. Zoican roimo gloumete pè vé lauvime fè lauge jou fè, guait pè zou teu..."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh yeah? Okay.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh vèl? Tavé."
+    },
+    {
+     "spk": "S1",
+     "en": "Okay.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé."
+    },
+    {
+     "spk": "S2",
+     "en": "But! Don't you have to give him his money back?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Guait! zou bé mio teu vé feau fè pon vouque quait?"
+    },
+    {
+     "spk": "S1",
+     "en": "Uh-huh. Hey, here you go buddy. Sorry, no porn for you. Okay, let's go see Monica!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Drèmé. Hé, bou bé téme daufer. Dézou, nèk foursoin jou bé. Tavé, néle jé téme cleu Irou!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Ross Geller",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI03691"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C2E044",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I'll run after her, but it's half speed, so I'll get 45 feet.",
+     "emotion": "fear",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio feusse guéte fè, guait fè jé soume aijon, lia pè mio brour pèdousse quimabran zuqui."
+    },
+    {
+     "spk": "S2",
+     "en": "You still don't see her.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé glait zou cleu teu fè."
+    },
+    {
+     "spk": "S1",
+     "en": "I don't see her! That's it.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zou cleu teu fè! Meu jé fè."
+    },
+    {
+     "spk": "S2",
+     "en": "All right, that ends your turn. Yasha?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou raur, meu tiait zan bloutra. Sanflu?"
+    },
+    {
+     "spk": "S3",
+     "en": "Can you hold until you--?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Quiait bé zeau téve bé,?"
+    },
+    {
+     "spk": "S2",
+     "en": "He used action, movement, and bonus.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè trulete flouge, frusse, zi quièmu."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S2",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S3",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD07748"
+  },
+  {
+   "source": "Friends",
+   "ref": "s03_e23_c07",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Hey Pete.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Hé Rèto."
+    },
+    {
+     "spk": "S2",
+     "en": "Hi, how ya doing?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bénou, nausse crar rétan?"
+    },
+    {
+     "spk": "S3",
+     "en": "Ahh, Pete, the other day when you said you needed to talk, umm, just so I know, is it good news or bad news.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dreupoin, Rèto, za péve creur seuque bé greurete bé lémete vé lonva, foupi, cleau lia pè vrér, jé fè prait glour queve saneu glour."
+    },
+    {
+     "spk": "S4",
+     "en": "Oh, it's good news. No, it's definitely good news. Hold on a second, I have another call. Hey, how's it going?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, fè jé prait glour. Nèk, fè jé saumilmant prait glour. Frétja ké za pruque, pè mio diait blana. Hé, nausse jé fè téman?"
+    },
+    {
+     "spk": "S3",
+     "en": "Oh no-no-no, it's still me.",
+     "emotion": "fear",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh cror, fè jé glait pè."
+    },
+    {
+     "spk": "S4",
+     "en": "Ah, no it's not. I've got picture-in-picture here. Yeah. Yeah, okay. I'm gonna have to call you back later. Monica? You. I'm gonna have to call you back.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ah, nèk fè jé zou teu. Pè mio brourete bruvré bou. Vèl. Vèl, tavé. Pè jé téman vé mio vé blana bé quait guimpa. Irou? Bé. Pè jé téman vé mio vé blana bé quait."
+    },
+    {
+     "spk": "S3",
+     "en": "Oh, oh, okay umm, so I'll see you soon.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, oh, tavé foupi, lia pè mio cleu bé brége."
+    },
+    {
+     "spk": "S4",
+     "en": "Okay, I love you.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé, pè zère bé."
+    },
+    {
+     "spk": "S3",
+     "en": "I love you.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zère bé."
+    },
+    {
+     "spk": "S1",
+     "en": "I love you, love you.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zère bé, zère bé."
+    },
+    {
+     "spk": "S3",
+     "en": "Okay. Well, it's good news. It's good news.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé. Féque, fè jé prait glour. Fè jé prait glour."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "#ALL#",
+     "gender": "u",
+     "name": "Javé"
+    },
+    {
+     "id": "S2",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S3",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S4",
+     "name_en": "Peter Becker",
+     "gender": "u",
+     "name": "Routra"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI02634"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-787",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Hey Joey, I got some beer for you.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Hé Céssais, pè brourete jieau plaufrou jou bé."
+    },
+    {
+     "spk": "S2",
+     "en": "Uh, don't you mean \"for whom?\"",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Euh, zou bé guur teu jou vrère?"
+    },
+    {
+     "spk": "S1",
+     "en": "Sure, listen I was gonna order some pizza, you wanna share one?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Preume, créjou pè jé téman vé cacrin jieau dirclu, bé préne vé plubran rausse?"
+    },
+    {
+     "spk": "S2",
+     "en": "Pizza, heh, its not like I never had that before...ba dum bum cheshhh.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Unié, quudauvete, pon zou gueur pè zou zér mio teu meu fove... gépi puctrait nitcou flarbèman."
+    },
+    {
+     "spk": "S1",
+     "en": "Is there something wrong?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé bou béme caucha?"
+    },
+    {
+     "spk": "S2",
+     "en": "All right, All right, let's just get this out in the open okay?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou raur, Zédou raur, néle jé cleau brour meu plauve ké za tavé tiébla?"
+    },
+    {
+     "spk": "S2",
+     "en": "You're hot.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé jé peme."
+    },
+    {
+     "spk": "S2",
+     "en": "I'm lovable.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé douvata."
+    },
+    {
+     "spk": "S2",
+     "en": "Clearly there's a vibe going on between us.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pouéman bou jé za cecral téman ké dauque ju."
+    },
+    {
+     "spk": "S2",
+     "en": "But, we're roommates and it's a huge mistake for us to continue down this road.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Guait, ju jé douméli zi fè jé za réli tarfé jou ju vé dainvou chaune meu taul."
+    },
+    {
+     "spk": "S1",
+     "en": "Joey...",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Céssais..."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Janine",
+     "gender": "u",
+     "name": "Trèvique"
+    },
+    {
+     "id": "S2",
+     "name_en": "Joey",
+     "gender": "m",
+     "name": "Céssais"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "MEL01119"
+  },
+  {
+   "source": "Friends",
+   "ref": "s09_e24_c10",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I'm just saying, I have a cabin in the Adirondacks if you ever want to get away from the city, well, that'd be just nifty!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé cleau greuran, pè mio za drougui ké za Nolait brésse bé zér préne vé brour chume dè za trouque, féque, meu mio jé cleau filégreu!"
+    },
+    {
+     "spk": "S2",
+     "en": "Ooh, well. Ah, I kinda have got a lot on my plate right now, not that I wouldn't love a weekend in the country with a strange man.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Choitait, féque. Ah, pè vunseu mio brourete za drir ké leu rouéssou raur poui, zou meu pè mio zou zère teu za prouque ké za trete kou za céque traubain."
+    },
+    {
+     "spk": "S3",
+     "en": "Jarvis?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bruru?"
+    },
+    {
+     "spk": "S1",
+     "en": "Oh, you're back... this is my wife, Nancy.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, bé jé quait... meu jé leu ziénou, Souté."
+    },
+    {
+     "spk": "S2",
+     "en": "Get Out!",
+     "emotion": "anger",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Brour plauve!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Jarvis Oberblau",
+     "gender": "u",
+     "name": "Bruru"
+    },
+    {
+     "id": "S2",
+     "name_en": "Ross Geller",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S3",
+     "name_en": "Woman",
+     "gender": "u",
+     "name": "Rarti"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI05108"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E086",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Yeah, we can.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, ju quiait."
+    },
+    {
+     "spk": "S2",
+     "en": "We need to make camp? You need to rest? Or can we go now?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju léme vé tége cifrais? Bé léme vé soino? Queve quiait ju téme poui?"
+    },
+    {
+     "spk": "S1",
+     "en": "I'm good. After this we'll probably have-- No, I'm good. I mean--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé prait. Guéte meu ju mio aijantaumant mio, nèk, pè jé prait. Pè guur,"
+    },
+    {
+     "spk": "S3",
+     "en": "We Treestride, we get a ship, and then--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju pouira, ju brour za zaute, zi lia,"
+    },
+    {
+     "spk": "S1",
+     "en": "And then I'll be resting.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi lia pè mio jé soinodan."
+    },
+    {
+     "spk": "S3",
+     "en": "-- we spend a night on the ship.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": ", Ju jonlait za lésse ké za zaute."
+    },
+    {
+     "spk": "S4",
+     "en": "Ooh, I like it.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Choitait, pè gueur fè."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    },
+    {
+     "id": "S2",
+     "name_en": "LIAM",
+     "gender": "m",
+     "name": "Delcheau"
+    },
+    {
+     "id": "S3",
+     "name_en": "TALIESIN",
+     "gender": "m",
+     "name": "Glèssou"
+    },
+    {
+     "id": "S4",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD06721"
+  },
+  {
+   "source": "Friends",
+   "ref": "s02_e11_c04",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "There she is.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou fè jé."
+    },
+    {
+     "spk": "S2",
+     "en": "Mom!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dimu!"
+    },
+    {
+     "spk": "S1",
+     "en": "Sweetie! So this is where you work? Oh, it's wonderful! Is it a living room? Is it a restaurant? Who can tell? But I guess that's the fun.",
+     "emotion": "joy",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Gétan! Lia meu jé bou bé dége? Oh, fè jé routait! Jé fè za limbran vreau? Jé fè za zéssait? Vrou quiait quèsson? Guait pè capla meu jé za drege."
+    },
+    {
+     "spk": "S2",
+     "en": "Pretty much.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Treuvlé vrar."
+    },
+    {
+     "spk": "S1",
+     "en": "Monica! You look gorgeous! Last time I saw you, it was eat or be eaten.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Irou! Bé cheau lèfi! Geau jeuque pè sachérete bé, fè jé quéle queve jé quélete."
+    },
+    {
+     "spk": "S2",
+     "en": "This is Joey, and Phoebe, and this is Chandler, and you remember Ross.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu jé Céssais, zi Révasse, zi meu jé Tédou, zi bé clér Dréchaque."
+    },
+    {
+     "spk": "S1",
+     "en": "Oh hello, Ross.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh bénou, Dréchaque."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Sandra Green",
+     "gender": "u",
+     "name": "Vapé"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI01984"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E037",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Because he knows everything about everyone.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Groque fè vrér treau crir zouque."
+    },
+    {
+     "spk": "S2",
+     "en": "He just has really nice hair.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè cleau mio cevmant feussi blondrin."
+    },
+    {
+     "spk": "S1",
+     "en": "Isn't that the same thing?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé zou meu za quère blale teu?"
+    },
+    {
+     "spk": "S2",
+     "en": "It's different from actually knowing things.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé plote dè crénman vréran blali."
+    },
+    {
+     "spk": "S3",
+     "en": "I honestly think that if Asum doesn't know, nobody knows. Asum is our source of information here.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè vémman loume meu brésse Soubleu zou vrér teu, dauve vrér. Soubleu jé pon neule dè coudo bou."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S2",
+     "name_en": "TALIESIN",
+     "gender": "m",
+     "name": "Glèssou"
+    },
+    {
+     "id": "S3",
+     "name_en": "LIAM",
+     "gender": "m",
+     "name": "Delcheau"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD06043"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E107",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Do we need a bigger vessel?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju léme za crésson mèssér?"
+    },
+    {
+     "spk": "S2",
+     "en": "I have a feeling you don't believe this ship will make it back, do you?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio za clile bé zou jieu teu meu zaute mio tége fè quait, bé?"
+    },
+    {
+     "spk": "S3",
+     "en": "\"Well, that would not behoove me; I wish to keep my ships at dock where they're safe.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, meu mio zou flépon teu pè; pè soune vé dieau leu zauti ké dénsi bou kon jé vége."
+    },
+    {
+     "spk": "S2",
+     "en": "Of course. Yep.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dè brecra. Vèl."
+    },
+    {
+     "spk": "S4",
+     "en": "She's got a high-ass insurance policy on this bitch.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé brourete za bavan dévou dejcoué ké meu céme."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S2",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    },
+    {
+     "id": "S3",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S4",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "CRD07019"
+  },
+  {
+   "source": "Friends",
+   "ref": "s05_e18_c02",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Whoa-whoa dad? There's a dad in the commercial?",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bleule imé? Bou jé za bleule ké za cloule?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah the dad and Ben eat soup and pretend to enjoy it.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl za bleule zi Pertou quéle chèsson zi cedrou vé choué fè."
+    },
+    {
+     "spk": "S1",
+     "en": "Whoa, hey, maybe I'll go down there with ya and see if I can get an audition to play the dad. I mean who better to play Ben's father than his godfather.",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ouah, hé, déssi pè mio téme chaune bou kou crar zi cleu brésse pè quiait brour za difeu vé fléne za bleule. Pè guur vrou cléque vé fléne Pertou auflonlond cauve pon vauba."
+    },
+    {
+     "spk": "S2",
+     "en": "You're not his godfather.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé jé zou pon vauba teu."
+    },
+    {
+     "spk": "S1",
+     "en": "What?! Are you kidding?!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan?! Jé bé roimodan?!"
+    },
+    {
+     "spk": "S2",
+     "en": "Of course I am! Okay, let's go godfather.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dè brecra pè jé! Tavé, néle jé téme vauba."
+    },
+    {
+     "spk": "S1",
+     "en": "All right!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou raur!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S2",
+     "name_en": "Ross Geller",
+     "gender": "m",
+     "name": "Dréchaque"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI03357"
+  },
+  {
+   "source": "Friends",
+   "ref": "s06_e14_c01",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Joey we know you steal our food.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Céssais ju vrér bé vreutoule pon franton."
+    },
+    {
+     "spk": "S2",
+     "en": "I'm good.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé prait."
+    },
+    {
+     "spk": "S1",
+     "en": "Oh, are the drapes still closed hon?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, jé za lonchansi glait traugete couupon?"
+    },
+    {
+     "spk": "S3",
+     "en": "Yeah. And y'know who should've shut their drapes? Is that perverted old couple two doors over.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl. Zi bé vrér vrou vousse mio quènete pon lonchansi? Jé meu chadait bleune quive daume veuluisi cége."
+    },
+    {
+     "spk": "S2",
+     "en": "Is that a swing?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé meu za vréfo?"
+    },
+    {
+     "spk": "S3",
+     "en": "Oh don't even ask!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh zou gléle gloume teu!"
+    },
+    {
+     "spk": "S2",
+     "en": "Yuck!",
+     "emotion": "disgust",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Coujdé!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Chandler Bing",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S3",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "FRI03670"
+  },
+  {
+   "source": "MELD",
+   "ref": "test-180",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "...I'm, I'm okay.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "... Pè jé, pè jé tavé."
+    },
+    {
+     "spk": "S1",
+     "en": "That sounds good. I'll call you- or you call me, whatever...",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu lieau prait. Pè mio blana bé queve bé blana pè, freau..."
+    },
+    {
+     "spk": "S1",
+     "en": "Okay.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé."
+    },
+    {
+     "spk": "S2",
+     "en": "Bye.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kazé."
+    },
+    {
+     "spk": "S3",
+     "en": "Whoo-hoo!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Zivra!"
+    },
+    {
+     "spk": "S4",
+     "en": "Yeah, there you go!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, bou bé téme!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Chandler",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S2",
+     "name_en": "All",
+     "gender": "u",
+     "name": "Zédou"
+    },
+    {
+     "id": "S3",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S4",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "small_talk",
+   "energy": "low",
+   "id": "MEL00303"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C2E034",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "He goes, \"Not haunted, but there are elements to it--\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè téme, zou ciplanvete teu, guait bou jé tréjlonsi vé fè,"
+    },
+    {
+     "spk": "S2",
+     "en": "I give him a little .",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè feau fè za blait."
+    },
+    {
+     "spk": "S1",
+     "en": "He's like .",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé gueur."
+    },
+    {
+     "spk": "S1",
+     "en": "He goes, \"There also-- There are things that help maintain the Sluice ducts, and occasionally help protect elements of the bay if ever it's under attack.\"",
+     "emotion": "fear",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[hesitant]",
+     "text": "Fè téme, bou vaume, bou jé blali meu drausse néqui za Lideau inibasi, zi jaclanman drausse tréjlonsi chouve dè za roucriait brésse zér fè jé seusse beusse."
+    },
+    {
+     "spk": "S2",
+     "en": "I bet you're first in line to protect the city against an attack, aren't you?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè lèré bé jé louque ké dainsisse vé chouve za trouque grait za beusse, jé zou bé teu?"
+    },
+    {
+     "spk": "S1",
+     "en": "\"I mean, there's been-- You know. About a year ago they had this one ship that came into the-- There were these thieves-- And I happened to be on job at the moment and so-- yeah!\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè guur, bou jé zagete, bé vrér. Crir za zime tréton kon mio meu rausse zaute meu prauvete vé za, bou jé meu dèpansi, zi pè tontauvete vé jé ké craurain ké za cloge zi lia, vèl!"
+    },
+    {
+     "spk": "S2",
+     "en": "Wow! So interesting. So, have you been down there?",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ouah! Lia caboulan. Lia, mio bé zagete chaune bou?"
+    },
+    {
+     "spk": "S1",
+     "en": "\"I haven't been down in the Sluice area, there. The entrance, as far as I know, is mostly hidden, the one inside the city.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio zou zagete teu chaune ké za Lideau siouju, bou. Za oulait, trère céte trère pè vrér, jé zévman blépravete, za rausse bleque za trouque."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, so there's one inside the city?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, lia bou jé rausse bleque za trouque?"
+    },
+    {
+     "spk": "S1",
+     "en": "\"Somewhere, I don't know.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Prele, pè zou vrér teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh wow. I heard there was one in the ocean!",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Oh ouah. Pè viait bou jé rausse ké za chécha!"
+    },
+    {
+     "spk": "S1",
+     "en": "\"Yeah, there's two or three, I think, that are right down off the side-- Here, come here.\" And he leads you over.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, bou jé daume queve croume, pè loume, meu jé raur chaune crur za trir, bou, prauvete bou. Zi fè quér bé cége."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S2",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD07600"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C2E003",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Two people in the boat.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Daume grausi ké za péque."
+    },
+    {
+     "spk": "S2",
+     "en": "Do these silhouettes look proportionate to each other?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Mio meu veubreuzieusi cheau mourumour vé tieau péve?"
+    },
+    {
+     "spk": "S1",
+     "en": "They look proportionate to each other.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon cheau mourumour vé tieau péve."
+    },
+    {
+     "spk": "S3",
+     "en": "Does one look like Gorilla Grodd and---",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Mio rausse cheau gueur Lédete Aussul zi,"
+    },
+    {
+     "spk": "S1",
+     "en": "They both look vaguely humanoid and regular.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon prère cheau cévfièmant putré zi vapeu."
+    },
+    {
+     "spk": "S2",
+     "en": "Which way did the fisherman go?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Noume lan za chatresse téme?"
+    },
+    {
+     "spk": "S1",
+     "en": "They are a little bit to the west along the bank in the direction of the city. The city is northwest of you currently. If you were to continue around the lake--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon jé za blait quainquer vé za jianglait leuge za zirqué ké za reprou dè za trouque. Za trouque jé traviron dè bé dacbaman. Brésse bé jé vé dainvou ruque za tranroi,"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S2",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    },
+    {
+     "id": "S3",
+     "name_en": "TRAVIS",
+     "gender": "m",
+     "name": "Tuqué"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD07166"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E096",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "A penis!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Za aintive!"
+    },
+    {
+     "spk": "S2",
+     "en": "Wow.",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Ouah."
+    },
+    {
+     "spk": "S2",
+     "en": "Jesus.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Radeu."
+    },
+    {
+     "spk": "S3",
+     "en": "You watch as his head turns in a confused way. He goes, \"Um.\" And he puts his finger in his ear and clears it out and goes, \"I'm sorry, what?\"",
+     "emotion": "sadness",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Bé sougué trère pon guete bloutra ké za noume dribeau. Fè téme, euh. Zi fè crér pon jotin ké pon naintond zi poué fè plauve zi téme, pè jé dézou, lan?"
+    },
+    {
+     "spk": "S4",
+     "en": "Like not a very nice person?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Gueur zou za méve bréve blondrin teu?"
+    },
+    {
+     "spk": "S3",
+     "en": "\"Oh, yes, he was--\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, vèl, fè jé,"
+    },
+    {
+     "spk": "S4",
+     "en": "Rude.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meloi."
+    },
+    {
+     "spk": "S3",
+     "en": "\"-- a bit... he was not the kindest or most forthcoming of guests, but he seemed to be a busy man of much esteem and left before I could finish making his tea.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": ", Za quainquer... fè jé zou za quusson queve zévon ipreu dè roumoizi teu, guait fè rèbanvete vé jé za céque glusse dè cripé vrar zi zèvete fove pè bréle trésson téjan pon treusse."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    },
+    {
+     "id": "S2",
+     "name_en": "TRAVIS",
+     "gender": "m",
+     "name": "Tuqué"
+    },
+    {
+     "id": "S3",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S4",
+     "name_en": "ASHLEY",
+     "gender": "f",
+     "name": "Doziait"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD06864"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E106",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "She extends her hand to you.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè ifrait fè guusse vé bé."
+    },
+    {
+     "spk": "S2",
+     "en": "Well, this is new.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, meu jé déque."
+    },
+    {
+     "spk": "S1",
+     "en": "\"And should your friends succeed, there is far much more to look forward to learning.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi vousse zan lanzièsi druvou, bou jé céte vrar bélon vé cheau cefrer vé loudadan."
+    },
+    {
+     "spk": "S2",
+     "en": "Excellent. But some of those little wispy things, I don't trust them, you know. If they get out of order, we should wispy thing grab. How will we remember that?",
+     "emotion": "anger",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Clulnou. Guait jieau dè meu blait blali launaja, pè zou clifou teu kon, bé vrér. Brésse kon brour plauve dè cacrin, ju vousse launaja blale aureute. Nausse mio ju clér meu?"
+    },
+    {
+     "spk": "S1",
+     "en": "\"This is going to be a very good conversation to have.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Meu jé téman vé jé za méve prait fafeu vé mio."
+    },
+    {
+     "spk": "S2",
+     "en": "We need a mnemonic device. Come! We'll think of one.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju léme za classu feudan. Preau! Ju mio loume dè rausse."
+    },
+    {
+     "spk": "S1",
+     "en": "\"Very well. We shall. As for the rest of you, I feel my power is waned, and I don't have the means of sending you away myself. But if you are able to return under your own power?\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Méve féque. Ju mio. Trère jou za soino dè bé, pè vame leu groute jé tetdreuvete, zi pè zou mio teu za guuri dè blouran bé chume vaursove. Guait brésse bé jé tréle vé flate seusse zan guéle groute?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S2",
+     "name_en": "DARIN",
+     "gender": "u",
+     "name": "Célzu"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD07007"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E113",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I bamf Trinket out.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè frécrafé Meutcoui plauve."
+    },
+    {
+     "spk": "S1",
+     "en": "If you want to Polymorph him?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Brésse bé préne vé Saufrer fè?"
+    },
+    {
+     "spk": "S2",
+     "en": "Now's the time? Polymorph only lasts-- is it an hour or ten minutes? I've got to learn this.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Poui za jeuque? Saufrer déne geau, jé fè za guége queve dréve préssi? Pè mio brourete vé louda meu."
+    },
+    {
+     "spk": "S3",
+     "en": "Polymorph, I think, is an hour with concentration. Could be wrong, but I think it is. Do note, you still have another series of staircases that are pretty tight.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Saufrer, pè loume, jé za guége kou froumoi. Bréle jé caucha, guait pè loume fè jé. Voné, bé glait mio diait racro dè plicaulési meu jé treuvlé aimoui."
+    },
+    {
+     "spk": "S1",
+     "en": "Okay, we should go up. We should keep going.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé, ju vousse téme lauge. Ju vousse dieau téman."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    },
+    {
+     "id": "S2",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S3",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD07100"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C2E029",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Natural 20! [cheering]",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "[cheering] Zéme trivaneau!"
+    },
+    {
+     "spk": "S2",
+     "en": "Beau, as you squat down to get your hands in the position to grab it you're like, \"All right, time to go!\" As you go to reach for it, it's already lifted up.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lipéte, trère bé lurniobé chaune vé brour zan guussi ké za glique v'aureute fè bé jé gueur, Zédou raur, jeuque vé téme! Trère bé téme vé jouépra jou fè, fè jé vrir dilvavete lauge."
+    },
+    {
+     "spk": "S3",
+     "en": "Man, it was really light actually, I don't--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lèdune, fè jé cevmant bléto crénman, pè zou teu,"
+    },
+    {
+     "spk": "S2",
+     "en": "You see Keg there just holding it up, both arms overhead.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé cleu Autoque bou cleau zaudant fè lauge, prère rijièsi antère."
+    },
+    {
+     "spk": "S4",
+     "en": "'Sup.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Macleau."
+    },
+    {
+     "spk": "S3",
+     "en": "Beau is aroused.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lipéte jé nécvainvete."
+    },
+    {
+     "spk": "S2",
+     "en": "With that, Caleb scoots the table back into space to keep it held somewhat aloft.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kou meu, Chiautru fiquèvete za brèda quait vé veune vé dieau fè zauvete vrisso jianquemié."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S2",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S3",
+     "name_en": "MARISHA",
+     "gender": "f",
+     "name": "Vénou"
+    },
+    {
+     "id": "S4",
+     "name_en": "ASHLEY",
+     "gender": "f",
+     "name": "Doziait"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD07528"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E087",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "\"I've heard a thing or two.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio vièvete za blale queve daume."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, really?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, cevmant?"
+    },
+    {
+     "spk": "S1",
+     "en": "\"Yeah.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl."
+    },
+    {
+     "spk": "S3",
+     "en": "Is it a pirating vessel?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jé fè za mèssér soinsa?"
+    },
+    {
+     "spk": "S1",
+     "en": "\"Yeah.\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl."
+    },
+    {
+     "spk": "S1",
+     "en": "\"I was gonna let him finish his whole diatribe before we had a conversation, but he's one of 18 working companies out of the archipelago, so--\"",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé téman vé néle fè trésson pon fénor déjguait fove ju mio za fafeu, guait fè jé rausse dè zecro déjan bleuti plauve dè za danlumi, lia,"
+    },
+    {
+     "spk": "S4",
+     "en": "I believe it's arch-i-pelago.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jieu fè jé blouvouinia."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    },
+    {
+     "id": "S2",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    },
+    {
+     "id": "S3",
+     "name_en": "TALIESIN",
+     "gender": "m",
+     "name": "Glèssou"
+    },
+    {
+     "id": "S4",
+     "name_en": "TRAVIS",
+     "gender": "m",
+     "name": "Tuqué"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "storytelling",
+   "energy": "low",
+   "id": "CRD06737"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd670",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I need the books and you can have the rest",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme za teutrési zi bé quiait mio za soino"
+    },
+    {
+     "spk": "S2",
+     "en": "I need 2 books and the hat",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme lèri teutrési zi za sourait"
+    },
+    {
+     "spk": "S1",
+     "en": "I need 3 books and the ball",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme urévo teutrési zi za drar"
+    },
+    {
+     "spk": "S2",
+     "en": "Ok",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé"
+    },
+    {
+     "spk": "S1",
+     "en": "Confirming, i get 3 books and the ball",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ranédan, pè brour urévo teutrési zi za drar"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Vivile"
+    },
+    {
+     "id": "S2",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Liauro"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA08071"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd1802",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "You can have both balls if i can have the book and hats",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé quiait mio prère drari brésse pè quiait mio za teutré zi sourèsi"
+    },
+    {
+     "spk": "S2",
+     "en": "No deal you can hvae both balls if i can have the rest",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa bé quiait vrossoudreque prère drari brésse pè quiait mio za soino"
+    },
+    {
+     "spk": "S1",
+     "en": "No deal, the balls hold no value for me",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa, za drari zeau nèk pecfri jou pè"
+    },
+    {
+     "spk": "S2",
+     "en": "Well too bad then no deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque flait saneu lia nèk punsa"
+    },
+    {
+     "spk": "S1",
+     "en": "The book is a deal breaker for you?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Za teutré jé za punsa viavui jou bé?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yup",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl"
+    },
+    {
+     "spk": "S1",
+     "en": "Well i guess we are stuck then",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque capla pè ju jé reuda lia"
+    },
+    {
+     "spk": "S2",
+     "en": "Yup",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl"
+    },
+    {
+     "spk": "S1",
+     "en": "Sorry we couldn't agree",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dézou ju bréle zou reuge teu"
+    },
+    {
+     "spk": "S2",
+     "en": "Yup",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Lèreau"
+    },
+    {
+     "id": "S2",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Joili"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA07807"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd1252",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "If i can have the balls and the hat you can have the books",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Brésse pè quiait mio za drari zi za sourait bé quiait mio za teutrési"
+    },
+    {
+     "spk": "S2",
+     "en": "I want the books and hat",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè préne za teutrési zi sourait"
+    },
+    {
+     "spk": "S1",
+     "en": "Okay that seems reasonable.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé meu rèban poutéle."
+    },
+    {
+     "spk": "S2",
+     "en": "So deal?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia punsa?"
+    },
+    {
+     "spk": "S1",
+     "en": "Deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Punsa"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Jafrait"
+    },
+    {
+     "id": "S2",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Leupraume"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA08011"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd2585",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I need the book and 2 hats",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme za teutré zi lèri sourèsi"
+    },
+    {
+     "spk": "S2",
+     "en": "How about you have all the hats, and ill keep the book and ball.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nausse crir bé mio frisse za sourèsi, zi gror dieau za teutré zi drar."
+    },
+    {
+     "spk": "S1",
+     "en": "I have to have the book, you can have the rest",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio vé mio za teutré, bé quiait mio za soino"
+    },
+    {
+     "spk": "S2",
+     "en": "Nope. the book is mine.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk. Za teutré jé leu."
+    },
+    {
+     "spk": "S1",
+     "en": "Without the book, there is no deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Léte za teutré, bou jé nèk punsa"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Guéveau"
+    },
+    {
+     "id": "S2",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Neulvait"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA07859"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd2780",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "What do you want?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan bé préne?"
+    },
+    {
+     "spk": "S2",
+     "en": "Happiness, financial stability, the ability to eat cheesecake in unlimited amounts and not get fat. i'd also like those hats.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Notpron, lémcon praul, za doursieu vé quéle vropait k'ipausi crachou zi zou brour teu jièrait. Pè mio vaume gueur meu sourèsi."
+    },
+    {
+     "spk": "S1",
+     "en": "So would i ; i'll take 2 hats and 1 ball",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia mio pè; pè mio glé lèri sourèsi zi utrérseu drar"
+    },
+    {
+     "spk": "S2",
+     "en": "How about 1 ball 1 hat.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nausse crir utrérseu drar utrérseu sourait."
+    },
+    {
+     "spk": "S1",
+     "en": "No way ; 2 hats 1 ball or 4 hats",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk noume; lèri sourèsi utrérseu drar queve traintais sourèsi"
+    },
+    {
+     "spk": "S2",
+     "en": "I'm afriad we are not going to be able to make a deal then",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé clapeu ju jé zou téman teu vé jé tréle vé tége za punsa lia"
+    },
+    {
+     "spk": "S1",
+     "en": "Sounds that way.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Liausi meu noume."
+    },
+    {
+     "spk": "S2",
+     "en": "Welp if you change your mind you let me know if what you would like to renegotiate for.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bouterti brésse bé ziégait zan mecpru bé néle pè vrér brésse lan bé mio gueur vé dérdré jou."
+    },
+    {
+     "spk": "S1",
+     "en": "I have to be above 5 and need 2 hats 1 ball to get there",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio vé jé touéclé quimabran zi léme lèri sourèsi utrérseu drar vé brour bou"
+    },
+    {
+     "spk": "S2",
+     "en": "I think your lieing through your teeth i'll settle on 2 hats and the book.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè loume zan quifouidan vrine zan vuveusi pè mio uqué ké lèri sourèsi zi za teutré."
+    },
+    {
+     "spk": "S1",
+     "en": "I'm not lying, book is 0 hats and ball 2 each - we agree on 2 hats and book for you",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè jé zou quifouidan teu, teutré jé zandantait sourèsi zi drar lèri tieau ju reuge ké lèri sourèsi zi teutré jou bé"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Noutait"
+    },
+    {
+     "id": "S2",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Glépa"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA07933"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd3078",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "If i can have the hat and the books you can have the balls",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Brésse pè quiait mio za sourait zi za teutrési bé quiait mio za drari"
+    },
+    {
+     "spk": "S2",
+     "en": "I need atleast one book",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme tranveau rausse teutré"
+    },
+    {
+     "spk": "S1",
+     "en": "Okay that is acceptable.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé meu jé peuriait."
+    },
+    {
+     "spk": "S2",
+     "en": "You take hat and i take both balls?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé glé sourait zi pè glé prère drari?"
+    },
+    {
+     "spk": "S1",
+     "en": "I need the hat and one book",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme za sourait zi rausse teutré"
+    },
+    {
+     "spk": "S2",
+     "en": "Great i take one hat and 2 balls",
+     "emotion": "joy",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Pléque pè glé rausse sourait zi lèri drari"
+    },
+    {
+     "spk": "S1",
+     "en": "Deal.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Punsa."
+    },
+    {
+     "spk": "S2",
+     "en": "No i wrote wrong, you take hat and one book, i take balls and 1 book",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk pè glouvete caucha, bé glé sourait zi rausse teutré, pè glé drari zi utrérseu teutré"
+    },
+    {
+     "spk": "S1",
+     "en": "Okay deal!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé punsa!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Ichiait"
+    },
+    {
+     "id": "S2",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Jouéré"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA07792"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd2790",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I would like the book and both hats",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio gueur za teutré zi prère sourèsi"
+    },
+    {
+     "spk": "S2",
+     "en": "Book and one ball for you",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Teutré zi rausse drar jou bé"
+    },
+    {
+     "spk": "S1",
+     "en": "Ok",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé"
+    },
+    {
+     "spk": "S2",
+     "en": "Ok",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé"
+    },
+    {
+     "spk": "S1",
+     "en": "Sorry, i thought you meant hat",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dézou, pè loumete bé guur sourait"
+    },
+    {
+     "spk": "S2",
+     "en": "So what do we do",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lia lan ju mio"
+    },
+    {
+     "spk": "S1",
+     "en": "One hat one book",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Rausse sourait rausse teutré"
+    },
+    {
+     "spk": "S2",
+     "en": "No deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa"
+    },
+    {
+     "spk": "S1",
+     "en": "Both hats?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Crecrage sourèsi?"
+    },
+    {
+     "spk": "S2",
+     "en": "I need two hats",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme daume sourèsi"
+    },
+    {
+     "spk": "S1",
+     "en": "No deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Nilga"
+    },
+    {
+     "id": "S2",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Créjar"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA08077"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd111",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Hello, how about i get the hat and the books and you can have the balls?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bénou, nausse crir pè brour za sourait zi za teutrési zi bé quiait mio za drari?"
+    },
+    {
+     "spk": "S2",
+     "en": "Nah, that won't do. i can let you have the hat and one of the balls.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Quaintais, meu mio zou mio teu. Pè quiait néle bé mio za sourait zi rausse dè za drari."
+    },
+    {
+     "spk": "S1",
+     "en": "Could you trade a ball for a book?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bréle bé roufou za drar jou za teutré?"
+    },
+    {
+     "spk": "S2",
+     "en": "I rather like books. how about you get the hat and two balls?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè ziauna gueur teutrési. Nausse crir bé brour za sourait zi daume drari?"
+    },
+    {
+     "spk": "S1",
+     "en": "Ok i can make that deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé pè quiait tége meu punsa"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Flasquait"
+    },
+    {
+     "id": "S2",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Pouna"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA07829"
+  },
+  {
+   "source": "DealOrNoDeal",
+   "ref": "dnd1372",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "What would you like",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan mio bé gueur"
+    },
+    {
+     "spk": "S2",
+     "en": "The two books",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Za daume teutrési"
+    },
+    {
+     "spk": "S1",
+     "en": "No thanks,",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk mérsil,"
+    },
+    {
+     "spk": "S2",
+     "en": "What do you want",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan bé préne"
+    },
+    {
+     "spk": "S1",
+     "en": "I need two books and i give you all the rest",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè léme daume teutrési zi pè feau bé frisse za soino"
+    },
+    {
+     "spk": "S2",
+     "en": "Ill take one book and the hat",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Gror glé rausse teutré zi za sourait"
+    },
+    {
+     "spk": "S1",
+     "en": "No deal, i need two books",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa, pè léme daume teutrési"
+    },
+    {
+     "spk": "S2",
+     "en": "No deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa"
+    },
+    {
+     "spk": "S1",
+     "en": "No deal",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk punsa"
+    },
+    {
+     "spk": "S2",
+     "en": "All i want is 1 book and either the hat or two basketballs",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou pè préne j'utrérseu teutré zi seutou za sourait queve daume voufansi"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Buyer",
+     "gender": "u",
+     "name": "Blameu"
+    },
+    {
+     "id": "S2",
+     "name_en": "Seller",
+     "gender": "u",
+     "name": "Frélna"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "bargaining",
+   "energy": "low",
+   "id": "DEA08089"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-423",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Now, Mom, everything's going fine, really.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Poui, Géssa, treau jé téman frait, cevmant."
+    },
+    {
+     "spk": "S1",
+     "en": "Yeah, Ross is great.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, Dréchaque jé pléque."
+    },
+    {
+     "spk": "S1",
+     "en": "He's uh, he's in a whole other place.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé euh, fè jé ké za fénor péve bausse."
+    },
+    {
+     "spk": "S1",
+     "en": "No, he's gone.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk, fè jé témete."
+    },
+    {
+     "spk": "S1",
+     "en": "No no, you don't have to fly back, really.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk nèk, bé zou mio teu vé bleurtu quait, cevmant."
+    },
+    {
+     "spk": "S1",
+     "en": "What do you mean this might be your only chance?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Lan bé guur meu leuque jé zan déne acran?"
+    },
+    {
+     "spk": "S1",
+     "en": "Would you stop?",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[irritated]",
+     "text": "Mio bé ladé?"
+    },
+    {
+     "spk": "S1",
+     "en": "I'm only 26, I'm not even thinking about babies yet.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[irritated]",
+     "text": "Pè jé déne trivaneau gatamta, pè jé zou gléle louman teu crir rouitosi crage."
+    },
+    {
+     "spk": "S2",
+     "en": "Where have you been?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou mio bé zagete?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Chandler",
+     "gender": "m",
+     "name": "Tédou"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "dispute",
+   "energy": "high",
+   "id": "MEL00784"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-173",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Okay, you have 19 questions left. Use them wisely. Come on Joey! You can't win if you don't ask any",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Tavé, bé mio caumpraju lifrousi zèvete. Trule kon liframan. Preau ké Céssais! Bé quiait zou chétrou teu brésse bé zou gloume teu pleuge"
+    },
+    {
+     "spk": "S2",
+     "en": "What?!",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[surprised]",
+     "text": "Lan?!"
+    },
+    {
+     "spk": "S1",
+     "en": "Well, you promised me a fun road trip!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Féque, bé pénete pè za drege taul tréjdeau!"
+    },
+    {
+     "spk": "S1",
+     "en": "We've been on the road six hours and you've been asleep for five and a half!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Ju mio zagete ké za taul raume guégi zi bé mio zagete tidait jou guule zi za aijon!"
+    },
+    {
+     "spk": "S1",
+     "en": "We are switching at the next rest stop and",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Ju jé zénan ké za reule soino ladé zi"
+    },
+    {
+     "spk": "S2",
+     "en": "All right. All right.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou raur. Zédou raur."
+    },
+    {
+     "spk": "S1",
+     "en": "Yeah! And until then you are going to sing to me because the radio's broken and you are selfish but have a nice voice.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[frustrated]",
+     "text": "Vèl! Zi téve lia bé jé téman vé reclédan vé pè groque za susbiait méssa zi bé jé rèmait guait mio za chége blondrin."
+    },
+    {
+     "spk": "S2",
+     "en": "Really? I don't",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Cevmant? Pè zou teu"
+    },
+    {
+     "spk": "S1",
+     "en": "Sing!!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 3,
+     "tags": "[shouts]",
+     "text": "Reclédan!!"
+    },
+    {
+     "spk": "S3",
+     "en": "Morning!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Léran!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S2",
+     "name_en": "Joey",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S3",
+     "name_en": "Hitchhiker",
+     "gender": "u",
+     "name": "Deulér"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "dispute",
+   "energy": "high",
+   "id": "MEL00549"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-32",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "The actress!",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[surprised]",
+     "text": "Za caulege!"
+    },
+    {
+     "spk": "S1",
+     "en": "Thanks Rach.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Mérsil Ralait."
+    },
+    {
+     "spk": "S2",
+     "en": "So what are you gonna do?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Lia lan jé bé téman vé mio?"
+    },
+    {
+     "spk": "S1",
+     "en": "You have to tell her!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Bé mio vé quèsson fè!"
+    },
+    {
+     "spk": "S1",
+     "en": "You have to tell her!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Bé mio vé quèsson fè!"
+    },
+    {
+     "spk": "S1",
+     "en": "It's your moral obligation, as a friend, as a woman, I think it's a feminist issue!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[frustrated]",
+     "text": "Fè jé zan dionlère touichon, trère za lanziait, trère za vaplou, pè loume fè jé za loune nanveu!"
+    },
+    {
+     "spk": "S1",
+     "en": "Guys?",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[irritated]",
+     "text": "Cincleux?"
+    },
+    {
+     "spk": "S1",
+     "en": "Guys?",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Cincleux?"
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, yeah, you have to tell her.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, vèl, bé mio vé quèsson fè."
+    },
+    {
+     "spk": "S3",
+     "en": "Feminist issue. That's where I went!",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nanveu loune. Meu jé bou pè témete!"
+    },
+    {
+     "spk": "S4",
+     "en": "She is gonna hate me.",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[hesitant]",
+     "text": "Fè jé téman vé voune pè."
+    },
+    {
+     "spk": "S1",
+     "en": "Yeah, well...",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, féque..."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Ross",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S2",
+     "name_en": "Chandler",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S3",
+     "name_en": "Joey",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S4",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "dispute",
+   "energy": "high",
+   "id": "MEL00425"
+  },
+  {
+   "source": "MELD",
+   "ref": "test-116",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "She's not much of a phone person.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé zou vrar dè za prage bréve teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah, so, uh, so, uh, what's the deal with this father guy, I mean, if someone was havin' my baby somewhere, I'd wanna know about it, you know?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, lia, euh, lia, euh, lan jé za punsa kou meu auflond reubra, pè guur, brésse méte jé cagui leu rouito prele, pè mio préne vé vrér crir fè, bé vrér?"
+    },
+    {
+     "spk": "S1",
+     "en": "Hey, Knick fan, am I interested in your views on fatherhood? Uh, no.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[irritated]",
+     "text": "Hé, Vètouve chéma, jé pè vèvive ké zan cègi ké drala? Euh, nèk."
+    },
+    {
+     "spk": "S2",
+     "en": "Ok, look, maybe I should just go.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé, cheau, déssi pè vousse cleau téme."
+    },
+    {
+     "spk": "S1",
+     "en": "Maybe you should.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[irritated]",
+     "text": "Déssi bé vousse."
+    },
+    {
+     "spk": "S2",
+     "en": "Good luck, and uh, take care, huh?",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[wistful]",
+     "text": "Prait flér, zi euh, glé gréle, heu?"
+    },
+    {
+     "spk": "S2",
+     "en": "You know what the Celtics problem is? They let the players run the team.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé vrér lan za Chicré chautsant jé? Kon néle za guimi feusse za léque."
+    },
+    {
+     "spk": "S1",
+     "en": "Oh, that is so not true.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, meu jé lia zou roin teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, it is.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, fè jé."
+    },
+    {
+     "spk": "S1",
+     "en": "It isn't.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé zou teu."
+    },
+    {
+     "spk": "S2",
+     "en": "It is.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé."
+    },
+    {
+     "spk": "S1",
+     "en": "Isn't!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[frustrated]",
+     "text": "Jé zou teu!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Lydia",
+     "gender": "u",
+     "name": "Majlige"
+    },
+    {
+     "id": "S2",
+     "name_en": "Joey",
+     "gender": "m",
+     "name": "Céssais"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "dispute",
+   "energy": "high",
+   "id": "MEL00238"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-761",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Did you just flick me?",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Bé cleau trouvi pè?"
+    },
+    {
+     "spk": "S2",
+     "en": "OK, well, you wouldn't let me finish and I was jus- [Monica flicks her back] Ow. That hurt [flicks Monica]",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "[Monica flicks her back] [flicks Monica] Tavé, féque, bé mio zou néle teu pè trésson zi pè jé feuma aïe. Meu eutitete"
+    },
+    {
+     "spk": "S3",
+     "en": "Oh! All right. Now, let's not do this!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 3,
+     "tags": "[shouts]",
+     "text": "Oh! Zédou raur. Poui, néle jé zou mio teu meu!"
+    },
+    {
+     "spk": "S3",
+     "en": "Happy thoughts! Happy thoughts!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 3,
+     "tags": "[shouts]",
+     "text": "Gèransi queur! Gèransi queur!"
+    },
+    {
+     "spk": "S3",
+     "en": "OK, now I'm gonna kick some ass.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Tavé, poui pè jé téman vé doutan jieau trère."
+    },
+    {
+     "spk": "S2",
+     "en": "Ow! Ow! Ow!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 3,
+     "tags": "[shouts]",
+     "text": "Aïe! Aïe! Aïe!"
+    },
+    {
+     "spk": "S3",
+     "en": "Alright, now I will let go if you both stop.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé, poui pè mio néle téme brésse bé prère ladé."
+    },
+    {
+     "spk": "S2",
+     "en": "Fine!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[frustrated]",
+     "text": "Frait!"
+    },
+    {
+     "spk": "S1",
+     "en": "Fine!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[frustrated]",
+     "text": "Frait!"
+    },
+    {
+     "spk": "S3",
+     "en": "There we go.You know what, if we were in prison, you guys would be, like, my bitches.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou ju téme. Bé vrér lan, brésse ju jé ké bréldique, bé reubra mio jé, gueur, leu cémi."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel",
+     "gender": "f",
+     "name": "Deureusse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "dispute",
+   "energy": "high",
+   "id": "MEL01100"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E089",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I ate a lot of sugar and caffeine at the beginning of this show. I feel very strange.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè quéle za drir dè vunon zi rombeu ké za cildais dè meu jiait. Pè vame méve traubain."
+    },
+    {
+     "spk": "S2",
+     "en": "There's Big League Chew on the floor.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou j'Outia Céqueux Géfrait ké za plir."
+    },
+    {
+     "spk": "S1",
+     "en": "There is Big League Chew on the floor.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou j'Outia Céqueux Géfrait ké za plir."
+    },
+    {
+     "spk": "S2",
+     "en": "There's a little bit of Big League Chew.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bou jé za blait quainquer d'Outia Céqueux Géfrait."
+    },
+    {
+     "spk": "S3",
+     "en": "Ugh, gross!",
+     "emotion": "disgust",
+     "labelled": false,
+     "intensity": 2,
+     "tags": "[sighs]",
+     "text": "Rouigré, rimpait!"
+    },
+    {
+     "spk": "S4",
+     "en": "That is disgusting.",
+     "emotion": "disgust",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[dismissive]",
+     "text": "Meu jé puipondan."
+    },
+    {
+     "spk": "S1",
+     "en": "And probably in my lower intestine.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zi aijantaumant ké leu névon vérzému."
+    },
+    {
+     "spk": "S2",
+     "en": "Wait, wait. Wait.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Branlan, branlan. Branlan."
+    },
+    {
+     "spk": "S3",
+     "en": "Do not touch that, Taliesin.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zou pocreau teu meu, Glèssou."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "SAM",
+     "gender": "m",
+     "name": "Nautcro"
+    },
+    {
+     "id": "S2",
+     "name_en": "TALIESIN",
+     "gender": "m",
+     "name": "Glèssou"
+    },
+    {
+     "id": "S3",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    },
+    {
+     "id": "S4",
+     "name_en": "MATT",
+     "gender": "m",
+     "name": "Dounéle"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "dispute",
+   "energy": "high",
+   "id": "CRD06760"
+  },
+  {
+   "source": "Friends",
+   "ref": "s02_e18_c13",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I don't feel like talkin.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Pè zou vame teu gueur dritri."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh c'mon Joey, we care about you.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[gently]",
+     "text": "Oh prauvete ké Céssais, ju gréle crir bé."
+    },
+    {
+     "spk": "S3",
+     "en": "We're worried about you.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[calmly]",
+     "text": "Ju jé rauve crir bé."
+    },
+    {
+     "spk": "S4",
+     "en": "And some of us really have to pee.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Zi jieau dè ju cevmant mio vé lèllo."
+    },
+    {
+     "spk": "S4",
+     "en": "Sorry Joey",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[wistful]",
+     "text": "Dézou Céssais"
+    },
+    {
+     "spk": "S1",
+     "en": "Hey.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Hé."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Chandler Bing",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S4",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "dispute",
+   "energy": "high",
+   "id": "FRI02142"
+  },
+  {
+   "source": "MELD",
+   "ref": "dev-6",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Oh, it's so romantic to send people off on their honeymoon.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[cheerfully]",
+     "text": "Oh, fè jé lia chabru vé blour grausi crur ké pon édro."
+    },
+    {
+     "spk": "S2",
+     "en": "Y'know, Monica and Chandler are married. Ross and Rachel are having a baby. Maybe you and I should do something.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé vrér, Irou zi Tédou jé trivainvete. Dréchaque zi Deureusse jé crucan za rouito. Déssi bé zi pè vousse mio béme."
+    },
+    {
+     "spk": "S1",
+     "en": "All in good time my love.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou ké prait jeuque leu zère."
+    },
+    {
+     "spk": "S1",
+     "en": "All in good time.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Zédou ké prait jeuque."
+    },
+    {
+     "spk": "S1",
+     "en": "Oh shoot!",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[surprised]",
+     "text": "Oh tradasse!"
+    },
+    {
+     "spk": "S1",
+     "en": "I left my guitar in their apartment.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[wistful]",
+     "text": "Pè zèvete leu pligi ké pon clivra."
+    },
+    {
+     "spk": "S1",
+     "en": "Well you can let me in later.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque bé quiait néle pè ké guimpa."
+    },
+    {
+     "spk": "S2",
+     "en": "I don't have a key, they took mine to give to you.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zou mio teu za biédu, kon glévete leu vé feau vé bé."
+    },
+    {
+     "spk": "S1",
+     "en": "What?! They took mine to give to you!",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[surprised]",
+     "text": "Lan?! Kon glévete leu vé feau vé bé!"
+    },
+    {
+     "spk": "S2",
+     "en": "Why would they take away our keys?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Croge mio kon glé chume pon biédusi?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S2",
+     "name_en": "Joey",
+     "gender": "m",
+     "name": "Céssais"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "banter",
+   "energy": "medium",
+   "id": "MEL00031"
+  },
+  {
+   "source": "MELD",
+   "ref": "test-139",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "It's yours!",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè jé zan!"
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah well, I'm-I'm a slut.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Vèl féque, pè quige jé za ploucron."
+    },
+    {
+     "spk": "S1",
+     "en": "Me too.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè flait."
+    },
+    {
+     "spk": "S3",
+     "en": "Hi Jill!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Bénou Mivait!"
+    },
+    {
+     "spk": "S1",
+     "en": "Hey!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Hé!"
+    },
+    {
+     "spk": "S3",
+     "en": "Hi .",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bénou."
+    },
+    {
+     "spk": "S2",
+     "en": "Rachel.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Deureusse."
+    },
+    {
+     "spk": "S3",
+     "en": "Rachel! Well, you-you're not at home, you're-you're-you're right here.",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[surprised]",
+     "text": "Deureusse! Féque, réri jé zou ké zaume teu, bé géli géle jé raur bou."
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah I know, and I bet you thought it would be weird. But it's not!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Vèl pè vrér, zi pè lèré bé loumete fè mio jé treune. Guait fè jé zou teu!"
+    },
+    {
+     "spk": "S3",
+     "en": "Okay. So well I'll umm, I'll have her home by midnight.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé. Lia féque pè mio foupi, pè mio mio fè zaume clige sougra."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Jill",
+     "gender": "f",
+     "name": "Mivait"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel",
+     "gender": "f",
+     "name": "Deureusse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Ross",
+     "gender": "m",
+     "name": "Dréchaque"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "banter",
+   "energy": "medium",
+   "id": "MEL00263"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-629",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Ok, and this is Funny Clown. Funny Clown is only for after his naps, not before his naps or he won't sleep.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé, zi meu jé Gaupra Nièvou. Sauque Nièvou jé déne jou guéte pon forèlli, zou fove pon forèlli queve fè mio zou udro teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Carol, we've been through this before, ok?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Simplé, ju mio zagete vrine meu fove, tavé?"
+    },
+    {
+     "spk": "S2",
+     "en": "We have a good time.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Ju mio za prait jeuque."
+    },
+    {
+     "spk": "S2",
+     "en": "We laugh, we play.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Ju ivieu, ju fléne."
+    },
+    {
+     "spk": "S2",
+     "en": "It's like we're father and son.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Fè jé gueur ju j'auflond zi rèssa."
+    },
+    {
+     "spk": "S3",
+     "en": "Honey, relax. Ross is great with him. Don't look so surprised. I'm a lovely person.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Bratran, mavou. Dréchaque jé pléque kou fè. zou cheau teu lia saupais. Pè jé za bréve zieu."
+    },
+    {
+     "spk": "S4",
+     "en": "Oh, this is so cute.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Oh, meu jé lia éjan."
+    },
+    {
+     "spk": "S3",
+     "en": "Oh, I got that for him.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, pè brourete meu jou fè."
+    },
+    {
+     "spk": "S2",
+     "en": "My mommies love me. That's clever.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[cheerfully]",
+     "text": "Leu lipausi zère pè. Meu jé nicron."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Carol",
+     "gender": "f",
+     "name": "Simplé"
+    },
+    {
+     "id": "S2",
+     "name_en": "Ross",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S3",
+     "name_en": "Susan",
+     "gender": "f",
+     "name": "Souégo"
+    },
+    {
+     "id": "S4",
+     "name_en": "Rachel",
+     "gender": "f",
+     "name": "Deureusse"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "banter",
+   "energy": "medium",
+   "id": "MEL00983"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-350",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Umm, this is nice.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Foupi, meu jé blondrin."
+    },
+    {
+     "spk": "S2",
+     "en": "I know, it is isn't it?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[cheerfully]",
+     "text": "Pè vrér, fè jé jé zou fè teu?"
+    },
+    {
+     "spk": "S1",
+     "en": "No, I mean it, this feels really good. Is it a hundred percent cotton?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[warmly]",
+     "text": "Nèk, pè guur fè, meu vame cevmant prait. Jé fè za vute blaune chèri?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah! And I got it on sale, too.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Vèl! Zi pè brourete fè ké nieau, flait."
+    },
+    {
+     "spk": "S1",
+     "en": "Anyway, I should go, one of the lifeguards was just about to dismantle a nuclear device.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Troumou, pè vousse téme, rausse dè za largési jé cleau crir vé risrarait za classu cèreuque."
+    },
+    {
+     "spk": "S2",
+     "en": "Well, if you wanna get a drink later we can.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, brésse bé préne vé brour za vieau guimpa ju quiait."
+    },
+    {
+     "spk": "S1",
+     "en": "Oh yeah, that sounds great. Oh, and listen, it's, it's gonna be....",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh vèl, meu lieau pléque. Oh, zi créjou, fè jé, fè jé téman vé jé...."
+    },
+    {
+     "spk": "S2",
+     "en": "I know. Thanks.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè vrér. Mérsil."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Chandler",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "banter",
+   "energy": "medium",
+   "id": "MEL00728"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-563",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Would you ever be a surrogate for anyone?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Mio bé zér jé za rérègi jou fraur?"
+    },
+    {
+     "spk": "S2",
+     "en": "It depends on who asked.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Fè dineau ké vrou gloumete."
+    },
+    {
+     "spk": "S1",
+     "en": "What if I asked?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan brésse pè gloumete?"
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, Mon, sure.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh, Foucli, preume."
+    },
+    {
+     "spk": "S1",
+     "en": "Really?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Cevmant?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yes. You're not asking are you?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Vèl. Bé jé zou glouman teu jé bé?"
+    },
+    {
+     "spk": "S1",
+     "en": "No.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Nèk."
+    },
+    {
+     "spk": "S2",
+     "en": "Yes! Totally!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Vèl! Quionman!"
+    },
+    {
+     "spk": "S3",
+     "en": "Oh! Thank you! Thank you! Thank you! Yes! Thank you!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Oh! Mérsil bé! Mérsil bé! Mérsil bé! Vèl! Mérsil bé!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel",
+     "gender": "f",
+     "name": "Deureusse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Kathy",
+     "gender": "f",
+     "name": "Nantaur"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "banter",
+   "energy": "medium",
+   "id": "MEL00917"
+  },
+  {
+   "source": "Friends",
+   "ref": "s05_e18_c02",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Whoa-whoa, but her birthday isn't like for another month.",
+     "emotion": "surprise",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Imé, guait fè groudou jé zou gueur jou diait nouifré teu."
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah but if we throw her a party on her birthday, then it's not a surprise.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl guait brésse ju gléve fè za dinauve ké fè groudou, lia fè jé zou za nausmo teu."
+    },
+    {
+     "spk": "S3",
+     "en": "I think it's a great idea. Yeah, we could have a dinner party and just invite her close friends.",
+     "emotion": "joy",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Pè loume fè jé za pléque meuque. Vèl, ju bréle mio za mive dinauve zi cleau dréssi fè lanzièsi trauge."
+    },
+    {
+     "spk": "S1",
+     "en": "Ross!! We're having a surprise party for Rachel!!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dréchaque!! Ju jé crucan za nausmo dinauve jou Deureusse!!"
+    },
+    {
+     "spk": "S4",
+     "en": "Okay!!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Tavé!!"
+    },
+    {
+     "spk": "S1",
+     "en": "Done.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Péssa."
+    },
+    {
+     "spk": "S2",
+     "en": "Okay, great so do you want to do it together?",
+     "emotion": "joy",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Tavé, pléque lia bé préne vé mio fè tauge?"
+    },
+    {
+     "spk": "S3",
+     "en": "I would love to do it together!",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio zère vé mio fè tauge!"
+    },
+    {
+     "spk": "S1",
+     "en": "They're gonna do it together.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Kon jé téman vé mio fè tauge."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S2",
+     "name_en": "Phoebe Buffay",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S4",
+     "name_en": "Ross Geller",
+     "gender": "m",
+     "name": "Dréchaque"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "banter",
+   "energy": "medium",
+   "id": "FRI03356"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-439",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Well, I don't think this, y'know.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Féque, pè zou loume teu meu, bé vrér."
+    },
+    {
+     "spk": "S2",
+     "en": "No, no, no, I wouldn't do you myself, I mean that would be weird.",
+     "emotion": "disgust",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[dismissive]",
+     "text": "Nèk, nèk, nèk, pè mio zou mio teu bé vaursove, pè guur meu mio jé treune."
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah, no, I'll get one of the other girls to do it.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl, nèk, pè mio brour rausse dè za péve jeuvi vé mio fè."
+    },
+    {
+     "spk": "S2",
+     "en": "Oh, this will be so much fun!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Oh, meu mio jé lia drege vrar!"
+    },
+    {
+     "spk": "S2",
+     "en": "Hey!",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[surprised]",
+     "text": "Hé!"
+    },
+    {
+     "spk": "S2",
+     "en": "Are you excited?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Jé bé tichivete?"
+    },
+    {
+     "spk": "S1",
+     "en": "Yeah! Hey, do Monica and Rachel work there?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Vèl! Hé, Irou zi Deureusse dége bou?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Frank",
+     "gender": "m",
+     "name": "Goussa"
+    },
+    {
+     "id": "S2",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "banter",
+   "energy": "medium",
+   "id": "MEL00799"
+  },
+  {
+   "source": "Friends",
+   "ref": "s01_e01_c04",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "It's a beautiful thing.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[cheerfully]",
+     "text": "Fè jé za ralene blale."
+    },
+    {
+     "spk": "S2",
+     "en": "What's this?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan jé meu?"
+    },
+    {
+     "spk": "S1",
+     "en": "I would have to say that is an 'L'-shaped bracket.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio mio vé greur meu jé za Coumo panéssete vèssait."
+    },
+    {
+     "spk": "S2",
+     "en": "Which goes where?",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lan téme bou?"
+    },
+    {
+     "spk": "S1",
+     "en": "I have no idea.",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[hesitant]",
+     "text": "Pè mio nèk meuque."
+    },
+    {
+     "spk": "S2",
+     "en": "Done with the bookcase!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Péssa kou za nipri!"
+    },
+    {
+     "spk": "S1",
+     "en": "All finished!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Zédou tréssonvete!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Chandler Bing",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "banter",
+   "energy": "medium",
+   "id": "FRI01374"
+  },
+  {
+   "source": "Friends",
+   "ref": "s05_e23_c02",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Oh yeah, so you can walk around naked.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Oh vèl, lia bé quiait prége ruque quéssé."
+    },
+    {
+     "spk": "S2",
+     "en": "No! So I can be by myself. Y'know? Have a little alone time.",
+     "emotion": "sadness",
+     "labelled": false,
+     "intensity": 2,
+     "tags": "[sad]",
+     "text": "Nèk! Lia pè quiait jé clige vaursove. Bé vrér? Mio za blait jeuque mèvi."
+    },
+    {
+     "spk": "S1",
+     "en": "Naked alone time.",
+     "emotion": "sadness",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Quéssévete jeuque mèvi."
+    },
+    {
+     "spk": "S2",
+     "en": "No! Phoebe just because I'm alone doesn't mean I wanna walk around naked. I mean, you live alone, you don't walk around naked.",
+     "emotion": "sadness",
+     "labelled": false,
+     "intensity": 2,
+     "tags": "[sad]",
+     "text": "Nèk! Révasse cleau groque pè jé mèvi zou guur teu pè préne vé prége ruque quéssé. Pè guur, bé veuge mèvi, bé zou prége teu ruque quéssé."
+    },
+    {
+     "spk": "S1",
+     "en": "Uh-huh! Why do you think it takes me so long to answer the door?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Drèmé! Croge bé loume fè glé pè lia dréque vé lèco za veului?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Phoebe Buffay",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "FRI03455"
+  },
+  {
+   "source": "Friends",
+   "ref": "s01_e14_c02",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "You can not do this.",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[annoyed]",
+     "text": "Bé quiait zou mio teu meu."
+    },
+    {
+     "spk": "S2",
+     "en": "Do what, do what?",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[hesitant]",
+     "text": "Mio lan, mio lan?"
+    },
+    {
+     "spk": "S1",
+     "en": "Roger wants to take her out tomorrow night.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Matreu préne vé glé fè plauve piait lésse."
+    },
+    {
+     "spk": "S2",
+     "en": "No! Phoebes! Don't you remember why you dumped the guy?",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[worried]",
+     "text": "Nèk! Conili! zou bé clér teu croge bé bérguivete za reubra?"
+    },
+    {
+     "spk": "S3",
+     "en": "'Cause he was creepy, and mean, and a little frightening... alright, still, it's nice to have a date on Valentine's Day!",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[nervous]",
+     "text": "Dréne fè jé peutusse, zi guur, zi za blait dourère... tavé, glait, fè jé blondrin vé mio za trute ké Cizver Pefleau!"
+    },
+    {
+     "spk": "S1",
+     "en": "But Phoebe, you can go out with a creepy guy any night of the year. I know I do.",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[calmly]",
+     "text": "Guait Révasse, bé quiait téme plauve kou za peutusse reubra pleuge lésse dè za zime. Pè vrér pè mio."
+    },
+    {
+     "spk": "S2",
+     "en": "Well, what are you guys doing tomorrow night?",
+     "emotion": "peaceful",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[calmly]",
+     "text": "Féque, lan jé bé macré rétan piait lésse?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Phoebe Buffay",
+     "gender": "f",
+     "name": "Révasse"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "FRI01587"
+  },
+  {
+   "source": "Friends",
+   "ref": "s03_e01_c04",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Getting it away from me would be job one.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Brouran fè chume dè pè mio jé craurain rausse."
+    },
+    {
+     "spk": "S2",
+     "en": "It's weird, but you know what I don't wanna throw this away. I mean this is like all I have left of him, gross, drain hair. Ooh!",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[worried]",
+     "text": "Fè jé treune, guait bé vrér lan pè zou préne teu vé gléve meu chume. Pè guur meu jé gueur frisse pè mio zèvete dè fè, rimpait, drachésse feussi. Choitait!"
+    },
+    {
+     "spk": "S3",
+     "en": "Ooh. Oh. It looks like, like a tiny little person drowning in your cereal.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Choitait. Oh. Fè cheau gueur, gueur za draute blait bréve bormèdan ké zan clèpér."
+    },
+    {
+     "spk": "S2",
+     "en": "God, what is wrong with me.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Glir, lan jé caucha kou pè."
+    },
+    {
+     "spk": "S1",
+     "en": "You need to get some sleep.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bé léme vé brour jieau udro."
+    },
+    {
+     "spk": "S2",
+     "en": "I need to get some Richard.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[wistful]",
+     "text": "Pè léme vé brour jieau Onsais."
+    },
+    {
+     "spk": "S4",
+     "en": "Monica, you broke up with him for a reason.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Irou, bé grourete lauge kou fè jou za faincher."
+    },
+    {
+     "spk": "S2",
+     "en": "I know, I know. I'm just so tired of-of missing him. I'm tired of wondering why hasn't he called. Why hasn't he called!",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[sad]",
+     "text": "Pè vrér, pè vrér. Pè jé cleau lia toumole cleuque pavradan fè. Pè jé praclissete dè quulan croge mio zou fè blanavete teu. Croge mio zou fè blanavete teu!"
+    },
+    {
+     "spk": "S3",
+     "en": "Maybe, because you told him not to.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Déssi, groque bé quèssonvete fè zou vé teu."
+    },
+    {
+     "spk": "S2",
+     "en": "What are you the memory woman?",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[irritated]",
+     "text": "Lan jé bé za trive vaplou?"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Ross Geller",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S2",
+     "name_en": "Monica Geller",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S3",
+     "name_en": "Phoebe Buffay",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S4",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "FRI02281"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-763",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Hi.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bénou."
+    },
+    {
+     "spk": "S2",
+     "en": "Hi.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Bénou."
+    },
+    {
+     "spk": "S1",
+     "en": "Hi, listen, I'm sorry about before.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Bénou, créjou, pè jé dézou crir fove."
+    },
+    {
+     "spk": "S1",
+     "en": "I don't need to have a game room.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè zou léme teu vé mio za zaul vreau."
+    },
+    {
+     "spk": "S1",
+     "en": "I mean when I was a kid I only played those games because I couldn't get girls, and now I",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè guur seuque pè jé za roimo pè déne flénete meu zauli groque pè bréle zou brour teu jeuvi, zi poui pè"
+    },
+    {
+     "spk": "S2",
+     "en": "Stop it Chandler. I'm sorry too.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Ladé fè Tédou. Pè jé dézou flait."
+    },
+    {
+     "spk": "S1",
+     "en": "Really?",
+     "emotion": "surprise",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[curious]",
+     "text": "Cevmant?"
+    },
+    {
+     "spk": "S2",
+     "en": "Yeah! Oh yes!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[frustrated]",
+     "text": "Vèl! Oh vèl!"
+    },
+    {
+     "spk": "S1",
+     "en": "Ohh.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Lèva."
+    },
+    {
+     "spk": "S2",
+     "en": "Listen, we don't have to make that a guest room, we can think of something to do with the room together.",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Créjou, ju zou mio teu vé tége meu za roumoi vreau, ju quiait loume dè béme vé mio kou za vreau tauge."
+    },
+    {
+     "spk": "S1",
+     "en": "That's a great idea! We can",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[excited]",
+     "text": "Meu jé za pléque meuque! Ju quiait"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Chandler",
+     "gender": "m",
+     "name": "Tédou"
+    },
+    {
+     "id": "S2",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    }
+   ],
+   "n_speakers": 2,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "MEL01102"
+  },
+  {
+   "source": "MELD",
+   "ref": "train-387",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "Oh, Ross you're right, I don't know why I always thought this was real grass.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[wistful]",
+     "text": "Oh, Dréchaque bé jé raur, pè zou vrér teu croge pè dreute loumete meu jé chacbime ceve."
+    },
+    {
+     "spk": "S2",
+     "en": "Hey, are you okay?",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[amused]",
+     "text": "Hé, jé bé tavé?"
+    },
+    {
+     "spk": "S3",
+     "en": "My wife's a lesbian.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Leu ziénou za clérquait."
+    },
+    {
+     "spk": "S4",
+     "en": "Cool!!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Reuve!!"
+    },
+    {
+     "spk": "S4",
+     "en": "Ross, Joey. Joey, Ross.",
+     "emotion": "sadness",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[softly]",
+     "text": "Dréchaque, Céssais. Céssais, Dréchaque."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Phoebe",
+     "gender": "f",
+     "name": "Révasse"
+    },
+    {
+     "id": "S2",
+     "name_en": "Monica",
+     "gender": "f",
+     "name": "Irou"
+    },
+    {
+     "id": "S3",
+     "name_en": "Ross",
+     "gender": "m",
+     "name": "Dréchaque"
+    },
+    {
+     "id": "S4",
+     "name_en": "Joey",
+     "gender": "m",
+     "name": "Céssais"
+    }
+   ],
+   "n_speakers": 4,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "MEL00759"
+  },
+  {
+   "source": "Friends",
+   "ref": "s01_e13_c08",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "What's the matter with you?!",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[nervous]",
+     "text": "Lan jé za céne kou bé?!"
+    },
+    {
+     "spk": "S2",
+     "en": "I thought it was Chandler!",
+     "emotion": "joy",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[happily]",
+     "text": "Pè loumete fè jé Tédou!"
+    },
+    {
+     "spk": "S3",
+     "en": "What? What?",
+     "emotion": "fear",
+     "labelled": true,
+     "intensity": 1,
+     "tags": "[hesitant]",
+     "text": "Lan? Lan?"
+    },
+    {
+     "spk": "S2",
+     "en": "You were supposed to be in there so I could see your thing!",
+     "emotion": "anger",
+     "labelled": true,
+     "intensity": 2,
+     "tags": "[angry]",
+     "text": "Bé jé paqueuvete vé jé ké bou lia pè bréle cleu zan blale!"
+    },
+    {
+     "spk": "S3",
+     "en": "Sorry, my my thing was in there with me.",
+     "emotion": "neutral",
+     "labelled": true,
+     "intensity": 0,
+     "tags": "",
+     "text": "Dézou, leu leu blale jé ké bou kou pè."
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "Joey Tribbiani",
+     "gender": "m",
+     "name": "Céssais"
+    },
+    {
+     "id": "S2",
+     "name_en": "Rachel Green",
+     "gender": "f",
+     "name": "Deureusse"
+    },
+    {
+     "id": "S3",
+     "name_en": "Chandler Bing",
+     "gender": "m",
+     "name": "Tédou"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "FRI01584"
+  },
+  {
+   "source": "CRD3",
+   "ref": "C1E003",
+   "lines": [
+    {
+     "spk": "S1",
+     "en": "I gave you some mirrors! Do you remember?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè fauvete bé jieau levrisi! Bé clér?"
+    },
+    {
+     "spk": "S2",
+     "en": "I have mirrors.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Pè mio levrisi."
+    },
+    {
+     "spk": "S3",
+     "en": "We do have a big dressing mirror.",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Ju mio mio za crésse tacra levri."
+    },
+    {
+     "spk": "S2",
+     "en": "But that's more for--",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Guait meu jé bélon jou,"
+    },
+    {
+     "spk": "S1",
+     "en": "For looking around corners?",
+     "emotion": "neutral",
+     "labelled": false,
+     "intensity": 0,
+     "tags": "",
+     "text": "Jou chaudant ruque vapusi?"
+    },
+    {
+     "spk": "S2",
+     "en": "I don't know if that's going to help.",
+     "emotion": "fear",
+     "labelled": false,
+     "intensity": 1,
+     "tags": "[hesitant]",
+     "text": "Pè zou vrér teu brésse meu jé téman vé drausse."
+    },
+    {
+     "spk": "S1",
+     "en": "It could help!",
+     "emotion": "fear",
+     "labelled": false,
+     "intensity": 2,
+     "tags": "[worried]",
+     "text": "Fè bréle drausse!"
+    }
+   ],
+   "speakers": [
+    {
+     "id": "S1",
+     "name_en": "LAURA",
+     "gender": "f",
+     "name": "Rièssi"
+    },
+    {
+     "id": "S2",
+     "name_en": "LIAM",
+     "gender": "m",
+     "name": "Delcheau"
+    },
+    {
+     "id": "S3",
+     "name_en": "TRAVIS",
+     "gender": "m",
+     "name": "Tuqué"
+    }
+   ],
+   "n_speakers": 3,
+   "category": "emotional",
+   "energy": "medium",
+   "id": "CRD05593"
+  }
+ ]
+}

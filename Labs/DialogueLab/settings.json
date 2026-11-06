@@ -1,0 +1,95 @@
+{
+ "open.light": false,
+ "light": {
+  "exposure": 1.25,
+  "key": 2.6,
+  "keyAz": -2,
+  "keyEl": 35,
+  "keyWarm": 0.5,
+  "fill": 0.45,
+  "rim": 1.2,
+  "ambient": 0.55
+ },
+ "emo": 1.1,
+ "open.camera": true,
+ "bodyLayer": {
+  "alive": false,
+  "gestures": false,
+  "selfTouch": false,
+  "amount": 0.95,
+  "size": 0.5
+ },
+ "open.emotion": true,
+ "open.motion": false,
+ "motionEdit": {
+  "pose": 1,
+  "blendIn": 0.45,
+  "inEaseIn": 0.4,
+  "inEaseOut": 0.6,
+  "hold": -0.4,
+  "blendOut": 0.7,
+  "outEaseIn": 0.5,
+  "outEaseOut": 0.5,
+  "sway": 1,
+  "strength": 1
+ },
+ "open.layers": true,
+ "motionRanges": {
+  "pose": 8,
+  "r": {
+   "blendIn": [
+    0.656411530815109,
+    0.730177206393329
+   ],
+   "inEaseIn": [
+    0.347116052814454,
+    0.45
+   ],
+   "inEaseOut": [
+    0.577831827658096,
+    0.627866574009729
+   ],
+   "hold": [
+    -0.0202120609675282,
+    0.0725646123260439
+   ],
+   "blendOut": [
+    0.725430748840292,
+    0.9
+   ],
+   "outEaseIn": [
+    0.4,
+    0.6
+   ],
+   "outEaseOut": [
+    0.4,
+    0.6
+   ],
+   "sway": [
+    1,
+    1
+   ],
+   "strength": [
+    0.770974155069583,
+    0.891848906560636
+   ]
+  },
+  "loaded": "mw4luv1g"
+ },
+ "panelW": 220,
+ "motionLast": {
+  "1": "mw4ksfv7",
+  "2": "mw4ksvtz",
+  "3": "mw4llojl",
+  "4": "mw4lnsln",
+  "5": "mw4lqccw",
+  "6": "mw4lr6b1",
+  "7": "mw4ltqyr",
+  "8": "mw4luv1g"
+ },
+ "open.playback": false,
+ "motionWho": "S1",
+ "nodGain": 4,
+ "idleSway": 0.776923076923077,
+ "idleSwaySpk": 0.551282051282051
+}

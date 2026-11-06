@@ -1,0 +1,346 @@
+{
+ "name": "ab_apples_latin",
+ "language": "Latin (classical, translated by Claude)",
+ "voices": {
+  "S1": {
+   "name": "George - Warm, Captivating Storyteller",
+   "voice_id": "JBFqnCBsd6RMkjVDRZzb"
+  },
+  "S2": {
+   "name": "Jessica - Playful, Bright, Warm",
+   "voice_id": "cgSgspJ2msm6clMCkdW9"
+  }
+ },
+ "variants": [
+  {
+   "id": "v3_la",
+   "model": "eleven_v3"
+  },
+  {
+   "id": "v4_la",
+   "model": "eleven_v4"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "[warmly]",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Salve! Mala recentia, prima luce lecta. Duo nummi pro corbe.",
+   "words": [
+    {
+     "g": "Salve!",
+     "src": 0
+    },
+    {
+     "g": "Mala",
+     "src": 3
+    },
+    {
+     "g": "recentia,",
+     "src": 2
+    },
+    {
+     "g": "prima",
+     "src": 5
+    },
+    {
+     "g": "luce",
+     "src": 6
+    },
+    {
+     "g": "lecta.",
+     "src": 4
+    },
+    {
+     "g": "Duo",
+     "src": 7
+    },
+    {
+     "g": "nummi",
+     "src": 8
+    },
+    {
+     "g": "pro",
+     "src": 9
+    },
+    {
+     "g": "corbe.",
+     "src": 10
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Duo nummi? Mihi paulum contusa videntur.",
+   "words": [
+    {
+     "g": "Duo",
+     "src": 0
+    },
+    {
+     "g": "nummi?",
+     "src": 1
+    },
+    {
+     "g": "Mihi",
+     "src": 8
+    },
+    {
+     "g": "paulum",
+     "src": 5
+    },
+    {
+     "g": "contusa",
+     "src": 6
+    },
+    {
+     "g": "videntur.",
+     "src": 3
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[chuckles]",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Contusa? Lentigines sunt. Mala quoque lentigines habent.",
+   "words": [
+    {
+     "g": "Contusa?",
+     "src": 0
+    },
+    {
+     "g": "Lentigines",
+     "src": 3
+    },
+    {
+     "g": "sunt.",
+     "src": 2
+    },
+    {
+     "g": "Mala",
+     "src": 4
+    },
+    {
+     "g": "quoque",
+     "src": 7
+    },
+    {
+     "g": "lentigines",
+     "src": 6
+    },
+    {
+     "g": "habent.",
+     "src": 5
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[amused]",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Ergo lentigines nummo uno constant, et mala altero.",
+   "words": [
+    {
+     "g": "Ergo",
+     "src": 0
+    },
+    {
+     "g": "lentigines",
+     "src": 2
+    },
+    {
+     "g": "nummo",
+     "src": 5
+    },
+    {
+     "g": "uno",
+     "src": 4
+    },
+    {
+     "g": "constant,",
+     "src": 3
+    },
+    {
+     "g": "et",
+     "src": 6
+    },
+    {
+     "g": "mala",
+     "src": 8
+    },
+    {
+     "g": "altero.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "Ah, dura es mulier. Nummus et semis, et pirum addo.",
+   "words": [
+    {
+     "g": "Ah,",
+     "src": 0
+    },
+    {
+     "g": "dura",
+     "src": 4
+    },
+    {
+     "g": "es",
+     "src": 2
+    },
+    {
+     "g": "mulier.",
+     "src": 5
+    },
+    {
+     "g": "Nummus",
+     "src": 6
+    },
+    {
+     "g": "et",
+     "src": 7
+    },
+    {
+     "g": "semis,",
+     "src": 9
+    },
+    {
+     "g": "et",
+     "src": 10
+    },
+    {
+     "g": "pirum",
+     "src": 14
+    },
+    {
+     "g": "addo.",
+     "src": 12
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "Nummus unus et pirum, et cras redeo.",
+   "words": [
+    {
+     "g": "Nummus",
+     "src": 1
+    },
+    {
+     "g": "unus",
+     "src": 0
+    },
+    {
+     "g": "et",
+     "src": 2
+    },
+    {
+     "g": "pirum,",
+     "src": 4
+    },
+    {
+     "g": "et",
+     "src": 5
+    },
+    {
+     "g": "cras",
+     "src": 9
+    },
+    {
+     "g": "redeo.",
+     "src": 7
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[sighs]",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Cotidie redis, et cotidie pecuniam perdo. Esto. Nummus unus.",
+   "words": [
+    {
+     "g": "Cotidie",
+     "src": 1
+    },
+    {
+     "g": "redis,",
+     "src": 3
+    },
+    {
+     "g": "et",
+     "src": 5
+    },
+    {
+     "g": "cotidie",
+     "src": 7
+    },
+    {
+     "g": "pecuniam",
+     "src": 10
+    },
+    {
+     "g": "perdo.",
+     "src": 9
+    },
+    {
+     "g": "Esto.",
+     "src": 11
+    },
+    {
+     "g": "Nummus",
+     "src": 13
+    },
+    {
+     "g": "unus.",
+     "src": 12
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[warmly]",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "Numquam pecuniam perdis. Gratias tibi, amice vetus.",
+   "words": [
+    {
+     "g": "Numquam",
+     "src": 1
+    },
+    {
+     "g": "pecuniam",
+     "src": 3
+    },
+    {
+     "g": "perdis.",
+     "src": 2
+    },
+    {
+     "g": "Gratias",
+     "src": 4
+    },
+    {
+     "g": "tibi,",
+     "src": 5
+    },
+    {
+     "g": "amice",
+     "src": 7
+    },
+    {
+     "g": "vetus.",
+     "src": 6
+    }
+   ]
+  }
+ ]
+}

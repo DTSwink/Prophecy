@@ -1,0 +1,120 @@
+{
+ "name": "r4",
+ "voices": {
+  "S1": {
+   "name": "Marcel_FR",
+   "voice_id": "kENkNtk0xyzG09WW40xE"
+  }
+ },
+ "defaults": {
+  "model_id": "eleven_v4",
+  "seed": 1234
+ },
+ "requests": [
+  {
+   "id": "00_G_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[speaking French with a thick southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_G_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[speaking French with a thick southern French accent] [warmly] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "04_G_s1234",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 1234,
+   "text": "[speaking French with a thick southern French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "04_G_s77",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 77,
+   "text": "[speaking French with a thick southern French accent] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "00_Hdbl_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! [thick French accent from the south of France] Pomas frescas, culhidas a l'alba. [thick French accent from the south of France] Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Hdbl_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! [thick French accent from the south of France] Pomas frescas, culhidas a l'alba. [thick French accent from the south of France] Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Anowarm_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Anowarm_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] Bonjorn! Pomas frescas, culhidas a l'alba. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Alite_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomos frescos, culhidos a l'albo. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Alite_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [warmly] Bonjorn! Pomos frescos, culhidos a l'albo. Dos sòus lo panièr."
+  },
+  {
+   "id": "00_Amist_s1234",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 1234,
+   "text": "[thick French accent from the south of France] [warmly] Bonjour! Poumo fresco, culido a l'aubo. Dous sòu lou panié."
+  },
+  {
+   "id": "00_Amist_s77",
+   "speaker": "S1",
+   "line": "00",
+   "seed": 77,
+   "text": "[thick French accent from the south of France] [warmly] Bonjour! Poumo fresco, culido a l'aubo. Dous sòu lou panié."
+  },
+  {
+   "id": "04_A_s9",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 9,
+   "text": "[thick French accent from the south of France] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "04_A_s11",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 11,
+   "text": "[thick French accent from the south of France] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  },
+  {
+   "id": "04_A_s13",
+   "speaker": "S1",
+   "line": "04",
+   "seed": 13,
+   "text": "[thick French accent from the south of France] Ai, ès una femna dura. Un sòu e mièg, e t'apondi una pera."
+  }
+ ]
+}

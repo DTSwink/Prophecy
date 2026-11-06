@@ -1,0 +1,1115 @@
+{
+"T": 33.76,
+"lines": [
+{
+"id": "00_S1",
+"spk": "S1",
+"start": 0.0,
+"dur": 4.8,
+"words": [
+[
+"Bonjorn!",
+0.298,
+0.96,
+6.72
+],
+[
+"Pomas",
+1.12,
+1.44,
+15.46
+],
+[
+"frescas,",
+1.48,
+2.12,
+7.66
+],
+[
+"culhidas",
+2.24,
+2.64,
+10.71
+],
+[
+"a",
+2.72,
+2.747,
+7.7
+],
+[
+"l'alba.",
+2.773,
+3.32,
+0.89
+],
+[
+"Dos",
+3.52,
+3.68,
+10.8
+],
+[
+"s\u00f2us",
+3.76,
+4.0,
+14.47
+],
+[
+"lo",
+4.08,
+4.16,
+13.25
+],
+[
+"pani\u00e8r.",
+4.24,
+4.88,
+3.51
+]
+],
+"phraseEnds": [
+[
+0.96,
+true,
+0.16
+],
+[
+2.12,
+false,
+0.12
+],
+[
+3.32,
+true,
+0.2
+],
+[
+4.88,
+true,
+9.0
+]
+]
+},
+{
+"id": "01_S2",
+"spk": "S2",
+"start": 4.8,
+"dur": 2.72,
+"words": [
+[
+"Dos",
+0.24,
+0.4,
+8.96
+],
+[
+"s\u00f2us?",
+0.44,
+0.84,
+22.99
+],
+[
+"Me",
+1.04,
+1.12,
+6.61
+],
+[
+"semblan",
+1.2,
+1.44,
+9.55
+],
+[
+"un",
+1.56,
+1.68,
+5.16
+],
+[
+"pauc",
+1.72,
+1.84,
+19.72
+],
+[
+"macadas.",
+1.96,
+2.8,
+11.2
+]
+],
+"phraseEnds": [
+[
+0.84,
+true,
+0.2
+],
+[
+2.8,
+true,
+9.0
+]
+]
+},
+{
+"id": "02_S1",
+"spk": "S1",
+"start": 7.52,
+"dur": 5.28,
+"words": [
+[
+"Macadas?",
+1.04,
+1.88,
+7.47
+],
+[
+"Son",
+2.08,
+2.32,
+15.44
+],
+[
+"de",
+2.4,
+2.48,
+7.24
+],
+[
+"pigas.",
+2.56,
+3.36,
+1.83
+],
+[
+"Las",
+3.48,
+3.6,
+7.65
+],
+[
+"pomas",
+3.64,
+3.92,
+14.38
+],
+[
+"tanben",
+4.0,
+4.4,
+11.05
+],
+[
+"an",
+4.44,
+4.48,
+3.03
+],
+[
+"de",
+4.56,
+4.64,
+2.45
+],
+[
+"pigas.",
+4.76,
+5.28,
+-0.68
+]
+],
+"phraseEnds": [
+[
+1.88,
+true,
+0.2
+],
+[
+3.36,
+true,
+0.12
+],
+[
+5.28,
+true,
+9.0
+]
+]
+},
+{
+"id": "03_S2",
+"spk": "S2",
+"start": 12.8,
+"dur": 3.76,
+"words": [
+[
+"Alara",
+0.08,
+0.48,
+16.39
+],
+[
+"las",
+0.56,
+0.8,
+13.01
+],
+[
+"pigas",
+0.88,
+1.12,
+15.63
+],
+[
+"c\u00f2stan",
+1.2,
+1.6,
+13.9
+],
+[
+"un",
+1.68,
+1.84,
+20.0
+],
+[
+"s\u00f2u,",
+1.88,
+2.2,
+21.43
+],
+[
+"e",
+2.32,
+2.4,
+18.61
+],
+[
+"las",
+2.52,
+2.64,
+13.76
+],
+[
+"pomas",
+2.68,
+2.96,
+13.77
+],
+[
+"un",
+3.04,
+3.12,
+16.46
+],
+[
+"autre.",
+3.2,
+3.76,
+9.94
+]
+],
+"phraseEnds": [
+[
+2.2,
+false,
+0.12
+],
+[
+3.76,
+true,
+9.0
+]
+]
+},
+{
+"id": "04_S1",
+"spk": "S1",
+"start": 16.560000000000002,
+"dur": 5.04,
+"words": [
+[
+"Ai,",
+0.16,
+0.64,
+2.49
+],
+[
+"\u00e8s",
+0.72,
+0.88,
+3.53
+],
+[
+"una",
+1.0,
+1.12,
+4.62
+],
+[
+"femna",
+1.2,
+1.6,
+6.07
+],
+[
+"dura.",
+1.64,
+2.4,
+0.34
+],
+[
+"Un",
+2.48,
+2.56,
+7.55
+],
+[
+"s\u00f2u",
+2.64,
+2.76,
+15.75
+],
+[
+"e",
+2.8,
+2.88,
+11.6
+],
+[
+"mi\u00e8g,",
+2.96,
+3.52,
+1.99
+],
+[
+"e",
+3.56,
+3.6,
+0.0
+],
+[
+"t'apondi",
+3.64,
+4.04,
+7.61
+],
+[
+"una",
+4.08,
+4.24,
+7.16
+],
+[
+"pera.",
+4.32,
+5.04,
+-0.1
+]
+],
+"phraseEnds": [
+[
+0.64,
+false,
+0.08
+],
+[
+2.4,
+true,
+0.08
+],
+[
+3.52,
+false,
+0.04
+],
+[
+5.04,
+true,
+9.0
+]
+]
+},
+{
+"id": "05_S2",
+"spk": "S2",
+"start": 21.6,
+"dur": 2.64,
+"words": [
+[
+"Un",
+0.16,
+0.24,
+8.63
+],
+[
+"s\u00f2u",
+0.4,
+0.56,
+19.3
+],
+[
+"e",
+0.64,
+0.693,
+18.08
+],
+[
+"la",
+0.747,
+0.8,
+11.1
+],
+[
+"pera,",
+0.96,
+1.36,
+9.85
+],
+[
+"e",
+1.52,
+1.6,
+10.42
+],
+[
+"t\u00f2rni",
+1.68,
+2.0,
+15.34
+],
+[
+"deman.",
+2.04,
+2.72,
+7.11
+]
+],
+"phraseEnds": [
+[
+0.24,
+false,
+0.16
+],
+[
+0.8,
+false,
+0.16
+],
+[
+1.36,
+false,
+0.16
+],
+[
+2.72,
+true,
+9.0
+]
+]
+},
+{
+"id": "06_S1",
+"spk": "S1",
+"start": 24.240000000000002,
+"dur": 6.08,
+"words": [
+[
+"Cada",
+1.04,
+1.28,
+8.23
+],
+[
+"jorn",
+1.36,
+1.6,
+5.53
+],
+[
+"t\u00f2rnas,",
+1.68,
+2.48,
+10.14
+],
+[
+"e",
+2.56,
+2.64,
+2.31
+],
+[
+"cada",
+2.72,
+2.96,
+7.73
+],
+[
+"jorn",
+3.04,
+3.28,
+3.83
+],
+[
+"p\u00e8rdi",
+3.44,
+3.76,
+3.56
+],
+[
+"d'argent.",
+3.787,
+4.56,
+-1.13
+],
+[
+"Va",
+4.64,
+4.72,
+4.24
+],
+[
+"plan.",
+4.84,
+5.36,
+0.18
+],
+[
+"Un",
+5.4,
+5.44,
+4.21
+],
+[
+"s\u00f2u.",
+5.52,
+6.08,
+2.34
+]
+],
+"phraseEnds": [
+[
+2.48,
+false,
+0.08
+],
+[
+3.28,
+false,
+0.16
+],
+[
+4.56,
+true,
+0.08
+],
+[
+5.36,
+true,
+0.04
+],
+[
+6.08,
+true,
+9.0
+]
+]
+},
+{
+"id": "07_S2",
+"spk": "S2",
+"start": 30.32,
+"dur": 3.44,
+"words": [
+[
+"P\u00e8rdes",
+0.16,
+0.48,
+12.62
+],
+[
+"pas",
+0.6,
+0.72,
+14.63
+],
+[
+"jamai",
+0.8,
+1.04,
+10.97
+],
+[
+"d'argent.",
+1.12,
+1.92,
+3.73
+],
+[
+"Merc\u00e9,",
+2.08,
+2.56,
+6.86
+],
+[
+"vi\u00e8lh",
+2.64,
+2.88,
+4.45
+],
+[
+"amic.",
+3.08,
+3.52,
+0.0
+]
+],
+"phraseEnds": [
+[
+1.92,
+true,
+0.16
+],
+[
+2.56,
+false,
+0.08
+],
+[
+2.88,
+false,
+0.2
+],
+[
+3.52,
+true,
+9.0
+]
+]
+}
+],
+"emotions": [
+{
+"char": "S1",
+"line": "00_S1",
+"preset": "WARM",
+"intensity": 0.6,
+"on": -0.002,
+"attack": 0.5,
+"off": 2.12,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "00_S1",
+"preset": "HAPPY",
+"intensity": 0.4,
+"on": 1.94,
+"attack": 0.5,
+"off": 3.32,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "00_S1",
+"preset": "WARM",
+"intensity": 0.5,
+"on": 3.22,
+"attack": 0.5,
+"off": 4.88,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "00_S1",
+"preset": "WARM",
+"intensity": 0.3,
+"on": 1.36,
+"attack": 1.0,
+"off": 2.72,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "00_S1",
+"preset": "SKEPTIC",
+"intensity": 0.5,
+"on": 4.08,
+"attack": 1.0,
+"off": 5.48,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "01_S2",
+"preset": "SURPRISE",
+"intensity": 0.45,
+"on": 4.74,
+"attack": 0.5,
+"off": 5.64,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "01_S2",
+"preset": "SKEPTIC",
+"intensity": 0.55,
+"on": 5.54,
+"attack": 0.5,
+"off": 7.6,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "01_S2",
+"preset": "SMUG",
+"intensity": 0.3,
+"on": 6.22,
+"attack": 0.5,
+"off": 7.6,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "01_S2",
+"preset": "SURPRISE",
+"intensity": 0.3,
+"on": 5.6,
+"attack": 1.0,
+"off": 6.24,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "01_S2",
+"preset": "OFFENDED",
+"intensity": 0.5,
+"on": 8.0,
+"attack": 1.0,
+"off": 8.2,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "02_S1",
+"preset": "INDIGNANT",
+"intensity": 0.6,
+"on": 8.26,
+"attack": 0.5,
+"off": 9.4,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "02_S1",
+"preset": "HAPPY",
+"intensity": 0.45,
+"on": 9.3,
+"attack": 0.5,
+"off": 10.88,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "02_S1",
+"preset": "HAPPY",
+"intensity": 0.6,
+"on": 10.7,
+"attack": 0.5,
+"off": 12.8,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "02_S1",
+"preset": "WARM",
+"intensity": 0.3,
+"on": 9.8,
+"attack": 1.0,
+"off": 10.0,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "02_S1",
+"preset": "HAPPY",
+"intensity": 0.45,
+"on": 11.28,
+"attack": 1.0,
+"off": 13.4,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "03_S2",
+"preset": "SMUG",
+"intensity": 0.55,
+"on": 12.58,
+"attack": 0.5,
+"off": 16.56,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "03_S2",
+"preset": "HAPPY",
+"intensity": 0.3,
+"on": 14.82,
+"attack": 0.5,
+"off": 16.56,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "03_S2",
+"preset": "THINK",
+"intensity": 0.4,
+"on": 13.68,
+"attack": 1.0,
+"off": 15.0,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "03_S2",
+"preset": "SURPRISE",
+"intensity": 0.35,
+"on": 15.04,
+"attack": 1.0,
+"off": 15.6,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "03_S2",
+"preset": "EXASPERATED",
+"intensity": 0.35,
+"on": 15.6,
+"attack": 1.0,
+"off": 17.16,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "03_S2",
+"preset": "WARM",
+"intensity": 0.25,
+"on": 16.32,
+"attack": 1.0,
+"off": 17.16,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "04_S1",
+"preset": "EXASPERATED",
+"intensity": 0.55,
+"on": 16.42,
+"attack": 0.5,
+"off": 18.96,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "04_S1",
+"preset": "WARM",
+"intensity": 0.3,
+"on": 16.98,
+"attack": 0.5,
+"off": 18.96,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "04_S1",
+"preset": "WARM",
+"intensity": 0.45,
+"on": 18.74,
+"attack": 0.5,
+"off": 21.6,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "04_S1",
+"preset": "SURPRISE",
+"intensity": 0.2,
+"on": 19.9,
+"attack": 0.5,
+"off": 21.6,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "04_S1",
+"preset": "SMUG",
+"intensity": 0.5,
+"on": 18.56,
+"attack": 1.0,
+"off": 19.56,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "04_S1",
+"preset": "THINK",
+"intensity": 0.4,
+"on": 19.52,
+"attack": 1.0,
+"off": 20.68,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "04_S1",
+"preset": "HAPPY",
+"intensity": 0.3,
+"on": 21.0,
+"attack": 1.0,
+"off": 22.2,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "05_S2",
+"preset": "THINK",
+"intensity": 0.35,
+"on": 21.46,
+"attack": 0.5,
+"off": 22.96,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "05_S2",
+"preset": "SKEPTIC",
+"intensity": 0.2,
+"on": 21.46,
+"attack": 0.5,
+"off": 22.96,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "05_S2",
+"preset": "WARM",
+"intensity": 0.55,
+"on": 22.82,
+"attack": 0.5,
+"off": 24.32,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "05_S2",
+"preset": "OFFENDED",
+"intensity": 0.3,
+"on": 22.24,
+"attack": 1.0,
+"off": 23.56,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "05_S2",
+"preset": "WARM",
+"intensity": 0.4,
+"on": 23.6,
+"attack": 1.0,
+"off": 24.92,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "06_S1",
+"preset": "EXASPERATED",
+"intensity": 1.0,
+"on": 24.98,
+"attack": 0.5,
+"off": 28.8,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "06_S1",
+"preset": "WARM",
+"intensity": 0.55,
+"on": 28.58,
+"attack": 0.5,
+"off": 30.32,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "06_S1",
+"preset": "SMUG",
+"intensity": 0.45,
+"on": 27.12,
+"attack": 1.0,
+"off": 29.4,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "06_S1",
+"preset": "HAPPY",
+"intensity": 0.55,
+"on": 29.36,
+"attack": 1.0,
+"off": 30.92,
+"speaking": false
+},
+{
+"char": "S2",
+"line": "07_S2",
+"preset": "SMUG",
+"intensity": 0.5,
+"on": 30.18,
+"attack": 0.5,
+"off": 32.24,
+"speaking": true
+},
+{
+"char": "S2",
+"line": "07_S2",
+"preset": "HAPPY",
+"intensity": 0.6,
+"on": 32.1,
+"attack": 0.5,
+"off": 33.84,
+"speaking": true
+},
+{
+"char": "S1",
+"line": "07_S2",
+"preset": "EXASPERATED",
+"intensity": 0.2,
+"on": 31.2,
+"attack": 1.0,
+"off": 32.84,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "07_S2",
+"preset": "WARM",
+"intensity": 0.35,
+"on": 31.2,
+"attack": 1.0,
+"off": 32.84,
+"speaking": false
+},
+{
+"char": "S1",
+"line": "07_S2",
+"preset": "HAPPY",
+"intensity": 0.6,
+"on": 33.28,
+"attack": 1.0,
+"off": 34.44,
+"speaking": false
+}
+]
+}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dialogue Lab</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="view"></div>
+<div id="hud">
+  <div id="title">Dialogue Lab <span id="scene"></span></div>
+  <div id="line"></div>
+</div>
+<div id="panelGrip" title="Drag to resize the panel"></div>
+<div id="panel">
+  <details data-sec="layers" open>
+    <summary>Layers</summary>
+    <label><input type="checkbox" id="lyFace" checked> Face (speech, listening, emotions)</label>
+    <label><input type="checkbox" id="lyWrinkle" checked> Wrinkles + skin colour</label>
+    <label><input type="checkbox" id="lyHead" checked> Head motion</label>
+    <div class="slider"><span>Listener nods</span><input type="range" id="nodGain" min="1" max="4" step="any"><output id="nodVal"></output></div>
+    <label><input type="checkbox" id="lyBody" checked> Body idle (fingers incl.)</label>
+  </details>
+  <details data-sec="emotion" open>
+    <summary>Emotion</summary>
+    <div class="slider"><span>Strength</span><input type="range" id="emo" list="emoTicks"><output id="emoVal"></output></div>
+    <datalist id="emoTicks"></datalist>
+    <div class="row"><button id="emoReset">Approved 1.6×</button></div>
+    <div class="hint" id="emoLevels"></div>
+  </details>
+  <details data-sec="motion" open>
+    <summary>Motion</summary>
+    <div class="row"><select id="mPose"></select><button id="mRename" title="Rename the selected pose with the name typed in the name box">✎ rename</button></div>
+    <div id="mSliders"></div>
+    <canvas id="mCurve" width="220" height="56"></canvas>
+    <div class="hint" id="mTake"></div>
+    <div class="row"><button id="mPlay">▶ Preview</button><button id="mPlayMin" class="small" title="Play with every parameter at its left (min) bound">◂ min</button><button id="mPlayMax" class="small" title="Play with every parameter at its right (max) bound">max ▸</button><button id="mStop">■ Stop</button><label class="inline"><input type="checkbox" id="mLoop"> loop</label><span class="hint" id="mLen"></span></div>
+    <div class="row"><input id="mName" placeholder="name (optional)"><button id="mSave">Save</button><button id="mSaveNew" class="small" title="Save the current ranges as another profile for this pose">Save as new</button></div>
+    <div id="mList"></div>
+    <div class="hint" id="mState"></div>
+    <div class="label sub">On the dialogue</div>
+    <label><input type="checkbox" id="spOn"> Place saved profiles on the speech (play / scrub)</label>
+    <div id="spList"></div>
+  </details>
+  <details data-sec="camera" open>
+    <summary>Camera</summary>
+    <div class="row"><button data-cam="two">Two-shot</button><button data-cam="S1">Seller</button><button data-cam="S2">Customer</button><button data-cam="full">Full body</button><button data-cam="hands">Hands</button></div>
+  </details>
+  <details data-sec="light">
+    <summary>Light</summary>
+    <div id="lights"></div>
+    <div class="row"><button id="lightReset">Reset light</button></div>
+  </details>
+  <details data-sec="playback">
+    <summary>Playback</summary>
+    <div class="row"><button data-speed="0.25">¼×</button><button data-speed="0.5">½×</button><button data-speed="1" class="on">1×</button></div>
+    <div class="hint">Audio plays at 1× only.</div>
+  </details>
+  <div class="group snap">
+    <button id="snap">Snapshot for Claude</button>
+    <div class="hint" id="snapState"></div>
+    <div class="hint" id="saveState"></div>
+  </div>
+</div>
+<div id="transport">
+  <button id="play">▶</button>
+  <input type="range" id="scrub" min="0" max="1000" value="0">
+  <span id="time">0.00 s</span>
+  <span id="frame"></span>
+</div>
+<div id="loading">Loading…</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+{
+ "name": "ab_apples_welsh",
+ "language": "Welsh (translated by Claude)",
+ "voices": {
+  "S1": {
+   "name": "George - Warm, Captivating Storyteller",
+   "voice_id": "JBFqnCBsd6RMkjVDRZzb"
+  },
+  "S2": {
+   "name": "Jessica - Playful, Bright, Warm",
+   "voice_id": "cgSgspJ2msm6clMCkdW9"
+  }
+ },
+ "variants": [
+  {
+   "id": "v3",
+   "model": "eleven_v3"
+  },
+  {
+   "id": "v4",
+   "model": "eleven_v4"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "S1",
+   "tags": "[warmly]",
+   "english": "Good morning! Fresh apples, picked at dawn. Two coins a basket.",
+   "text": "Bore da! Afalau ffres, wedi'u casglu ar doriad gwawr. Dau ddarn arian y fasged.",
+   "words": [
+    {
+     "g": "Bore",
+     "src": 1
+    },
+    {
+     "g": "da!",
+     "src": 0
+    },
+    {
+     "g": "Afalau",
+     "src": 3
+    },
+    {
+     "g": "ffres,",
+     "src": 2
+    },
+    {
+     "g": "wedi'u",
+     "src": 4
+    },
+    {
+     "g": "casglu",
+     "src": 4
+    },
+    {
+     "g": "ar",
+     "src": 5
+    },
+    {
+     "g": "doriad",
+     "src": 6
+    },
+    {
+     "g": "gwawr.",
+     "src": 6
+    },
+    {
+     "g": "Dau",
+     "src": 7
+    },
+    {
+     "g": "ddarn",
+     "src": 8
+    },
+    {
+     "g": "arian",
+     "src": 8
+    },
+    {
+     "g": "y",
+     "src": 9
+    },
+    {
+     "g": "fasged.",
+     "src": 10
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "Two coins? They look a little bruised to me.",
+   "text": "Dau ddarn arian? Maen nhw'n edrych braidd yn gleisiog i mi.",
+   "words": [
+    {
+     "g": "Dau",
+     "src": 0
+    },
+    {
+     "g": "ddarn",
+     "src": 1
+    },
+    {
+     "g": "arian?",
+     "src": 1
+    },
+    {
+     "g": "Maen",
+     "src": 2
+    },
+    {
+     "g": "nhw'n",
+     "src": 2
+    },
+    {
+     "g": "edrych",
+     "src": 3
+    },
+    {
+     "g": "braidd",
+     "src": 5
+    },
+    {
+     "g": "yn",
+     "src": 4
+    },
+    {
+     "g": "gleisiog",
+     "src": 6
+    },
+    {
+     "g": "i",
+     "src": 7
+    },
+    {
+     "g": "mi.",
+     "src": 8
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[chuckles]",
+   "english": "Bruised? Those are freckles. Apples have freckles too.",
+   "text": "Cleisiog? Brychni haul ydy'r rheina. Mae gan afalau frychni haul hefyd.",
+   "words": [
+    {
+     "g": "Cleisiog?",
+     "src": 0
+    },
+    {
+     "g": "Brychni",
+     "src": 3
+    },
+    {
+     "g": "haul",
+     "src": 3
+    },
+    {
+     "g": "ydy'r",
+     "src": 2
+    },
+    {
+     "g": "rheina.",
+     "src": 1
+    },
+    {
+     "g": "Mae",
+     "src": 5
+    },
+    {
+     "g": "gan",
+     "src": 5
+    },
+    {
+     "g": "afalau",
+     "src": 4
+    },
+    {
+     "g": "frychni",
+     "src": 6
+    },
+    {
+     "g": "haul",
+     "src": 6
+    },
+    {
+     "g": "hefyd.",
+     "src": 7
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[amused]",
+   "english": "Then the freckles cost one coin, and the apples another.",
+   "text": "Felly mae'r brychni'n costio un darn, a'r afalau un arall.",
+   "words": [
+    {
+     "g": "Felly",
+     "src": 0
+    },
+    {
+     "g": "mae'r",
+     "src": 1
+    },
+    {
+     "g": "brychni'n",
+     "src": 2
+    },
+    {
+     "g": "costio",
+     "src": 3
+    },
+    {
+     "g": "un",
+     "src": 4
+    },
+    {
+     "g": "darn,",
+     "src": 5
+    },
+    {
+     "g": "a'r",
+     "src": 6
+    },
+    {
+     "g": "afalau",
+     "src": 8
+    },
+    {
+     "g": "un",
+     "src": 9
+    },
+    {
+     "g": "arall.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "",
+   "english": "Ah, you are a hard woman. One and a half, and I add a pear.",
+   "text": "A, rwyt ti'n ddynes galed. Un a hanner, ac mi ychwanega i ellygen.",
+   "words": [
+    {
+     "g": "A,",
+     "src": 0
+    },
+    {
+     "g": "rwyt",
+     "src": 2
+    },
+    {
+     "g": "ti'n",
+     "src": 1
+    },
+    {
+     "g": "ddynes",
+     "src": 5
+    },
+    {
+     "g": "galed.",
+     "src": 4
+    },
+    {
+     "g": "Un",
+     "src": 6
+    },
+    {
+     "g": "a",
+     "src": 7
+    },
+    {
+     "g": "hanner,",
+     "src": 9
+    },
+    {
+     "g": "ac",
+     "src": 10
+    },
+    {
+     "g": "mi",
+     "src": 11
+    },
+    {
+     "g": "ychwanega",
+     "src": 12
+    },
+    {
+     "g": "i",
+     "src": 11
+    },
+    {
+     "g": "ellygen.",
+     "src": 14
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "",
+   "english": "One coin and the pear, and I come back tomorrow.",
+   "text": "Un darn a'r ellygen, ac mi ddof i'n ôl yfory.",
+   "words": [
+    {
+     "g": "Un",
+     "src": 0
+    },
+    {
+     "g": "darn",
+     "src": 1
+    },
+    {
+     "g": "a'r",
+     "src": 2
+    },
+    {
+     "g": "ellygen,",
+     "src": 4
+    },
+    {
+     "g": "ac",
+     "src": 5
+    },
+    {
+     "g": "mi",
+     "src": 6
+    },
+    {
+     "g": "ddof",
+     "src": 7
+    },
+    {
+     "g": "i'n",
+     "src": 6
+    },
+    {
+     "g": "ôl",
+     "src": 8
+    },
+    {
+     "g": "yfory.",
+     "src": 9
+    }
+   ]
+  },
+  {
+   "speaker": "S1",
+   "tags": "[sighs]",
+   "english": "Every day you come back, and every day I lose money. Fine. One coin.",
+   "text": "Bob dydd rwyt ti'n dod yn ôl, a bob dydd dw i'n colli arian. Iawn. Un darn.",
+   "words": [
+    {
+     "g": "Bob",
+     "src": 0
+    },
+    {
+     "g": "dydd",
+     "src": 1
+    },
+    {
+     "g": "rwyt",
+     "src": 2
+    },
+    {
+     "g": "ti'n",
+     "src": 2
+    },
+    {
+     "g": "dod",
+     "src": 3
+    },
+    {
+     "g": "yn",
+     "src": 4
+    },
+    {
+     "g": "ôl,",
+     "src": 4
+    },
+    {
+     "g": "a",
+     "src": 5
+    },
+    {
+     "g": "bob",
+     "src": 6
+    },
+    {
+     "g": "dydd",
+     "src": 7
+    },
+    {
+     "g": "dw",
+     "src": 8
+    },
+    {
+     "g": "i'n",
+     "src": 8
+    },
+    {
+     "g": "colli",
+     "src": 9
+    },
+    {
+     "g": "arian.",
+     "src": 10
+    },
+    {
+     "g": "Iawn.",
+     "src": 11
+    },
+    {
+     "g": "Un",
+     "src": 12
+    },
+    {
+     "g": "darn.",
+     "src": 13
+    }
+   ]
+  },
+  {
+   "speaker": "S2",
+   "tags": "[warmly]",
+   "english": "You never lose money. Thank you, old friend.",
+   "text": "Dwyt ti byth yn colli arian. Diolch, hen ffrind.",
+   "words": [
+    {
+     "g": "Dwyt",
+     "src": 0
+    },
+    {
+     "g": "ti",
+     "src": 0
+    },
+    {
+     "g": "byth",
+     "src": 1
+    },
+    {
+     "g": "yn",
+     "src": 2
+    },
+    {
+     "g": "colli",
+     "src": 2
+    },
+    {
+     "g": "arian.",
+     "src": 3
+    },
+    {
+     "g": "Diolch,",
+     "src": 4
+    },
+    {
+     "g": "hen",
+     "src": 6
+    },
+    {
+     "g": "ffrind.",
+     "src": 7
+    }
+   ]
+  }
+ ]
+}
