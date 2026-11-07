@@ -62,10 +62,13 @@ export function createPoser(C, poses) {
   const saved = new Map();
   const _a = new THREE.Quaternion(), _t = new THREE.Quaternion(), _v = new THREE.Vector3();
   function restore() { for (const [b, [q, p]] of saved) { b.quaternion.copy(q); b.position.copy(p); } saved.clear(); }
-  function apply(k, w, sway, strength) {
+  // upperOnly (sitting / walking): only spine-up bones, fully additive on whatever the body clip does (sway forced to 1)
+  const LOWER = /^(root|pelvis|thigh|calf|foot|ball|ik_)/;
+  function apply(k, w, sway, strength, upperOnly = false) {
     if (!(w > 0) || k <= 0 || k >= poses.count) return;
-    const a = w * strength;
+    const a = w * strength; if (upperOnly) sway = 1;
     for (const [name, e] of Object.entries(poses.bones)) {
+      if (upperOnly && LOWER.test(name)) continue;
       const b = C.bones[name]; if (!b) continue;
       if (!saved.has(b)) saved.set(b, [b.quaternion.clone(), b.position.clone()]);
       const [idleQ, idleP] = saved.get(b);  // the live idle of this frame (before any pose), even when poses chain

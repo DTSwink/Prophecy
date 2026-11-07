@@ -17,11 +17,26 @@
 </div>
 <div id="panelGrip" title="Drag to resize the panel"></div>
 <div id="panel">
+  <div id="scenTabs"><button data-scen="stand">Standing</button><button data-scen="walk">Walk</button><button data-scen="sit">Sit</button><button data-scen="group">Group</button></div>
+  <div id="scenCtl">
+    <div class="slider" data-for="stand"><span>Opening (0° = face to face)</span><input type="range" id="scOpen" min="0" max="160" step="any"><output id="scOpenV"></output></div>
+    <div class="slider" data-for="stand"><span>Distance</span><input type="range" id="scDist" min="0.5" max="1.6" step="any"><output id="scDistV"></output></div>
+    <div class="slider" data-for="sit"><span>Angle around the seated one</span><input type="range" id="scSitAng" min="0" max="120" step="any"><output id="scSitAngV"></output></div>
+    <div class="slider" data-for="sit"><span>Distance</span><input type="range" id="scSitDist" min="0.6" max="1.8" step="any"><output id="scSitDistV"></output></div>
+    <div class="slider" data-for="sit"><span>Gesture amplitude (seated)</span><input type="range" id="scSitGest" min="0" max="1" step="any"><output id="scSitGestV"></output></div>
+    <div class="slider" data-for="group"><span>People</span><input type="range" id="scPeople" min="3" max="4" step="1"><output id="scPeopleV"></output></div>
+    <div class="slider" data-for="group"><span>Spread</span><input type="range" id="scSpread" min="0.55" max="1.4" step="any"><output id="scSpreadV"></output></div>
+    <div class="slider" data-for="walk"><span>Spacing</span><input type="range" id="scGap" min="0.5" max="1.2" step="any"><output id="scGapV"></output></div>
+    <div class="hint" id="scenNote"></div>
+  </div>
   <details data-sec="layers" open>
     <summary>Layers</summary>
     <label><input type="checkbox" id="lyFace" checked> Face (speech, listening, emotions)</label>
     <label><input type="checkbox" id="lyWrinkle" checked> Wrinkles + skin colour</label>
     <label><input type="checkbox" id="lyHead" checked> Head motion</label>
+    <label><input type="checkbox" id="lyGaze" checked> Live gaze (eyes + head follow the layout)</label>
+    <label><input type="checkbox" id="lyNeck" checked> Neck breaks (look away to rest the neck)</label>
+    <div class="slider"><span>Head roll cut (ear-to-shoulder tilt, parent space)</span><input type="range" id="rollCut" min="0" max="1" step="any"><output id="rollCutV"></output></div>
     <div class="slider"><span>Listener nods</span><input type="range" id="nodGain" min="1" max="4" step="any"><output id="nodVal"></output></div>
     <label><input type="checkbox" id="lyBody" checked> Body idle (fingers incl.)</label>
     <div class="slider"><span>Idle sway speaking</span><input type="range" id="idleSwaySpk" min="0" max="1" step="any"><output id="swaySpkVal"></output></div>

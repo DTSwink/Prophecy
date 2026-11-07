@@ -68,7 +68,9 @@ export function planSpeech(script, motions, poseNames, takeAt, arms, opts = {}) 
           const s2 = ev.start + ev.P.blendIn + Math.max(ev.P.hold, 0.15);
           if (s2 > L.start + L.dur + 0.3) break;   // don't keep gesturing after the line
           const apex2 = s2 + P2.blendIn;
-          ev.P = { ...ev.P, hold: apex2 - ev.start - ev.P.blendIn, blendOut: 0.001 };  // stays on until the next arrives
+          // stays on until the next has arrived, then fades out (0.35 s): with a strength < 1 the next pose doesn't fully
+          // cover it, so an instant drop showed as a hand hitch (user, Nov 6)
+          ev.P = { ...ev.P, hold: apex2 - ev.start - ev.P.blendIn, blendOut: 0.35, outEaseIn: 0.5, outEaseOut: 0.5 };
           ev.chainedTo = n.name;
           ev = { char: id, line: L.id, start: s2, apex: apex2, P: P2, u: u2, motionId: n.id, motionName: n.name, pose: n.pose, mood, chain: ev.chain + 1 };
           events.push(ev); lastPose = n.pose;

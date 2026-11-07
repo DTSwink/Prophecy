@@ -76,7 +76,7 @@
   },
   "loaded": "mw4luv1g"
  },
- "panelW": 220,
+ "panelW": 264,
  "motionLast": {
   "1": "mw4ksfv7",
   "2": "mw4ksvtz",
@@ -91,5 +91,11 @@
  "motionWho": "S1",
  "nodGain": 4,
  "idleSway": 0.776923076923077,
- "idleSwaySpk": 0.551282051282051
+ "idleSwaySpk": 0.551282051282051,
+ "scen": "walk",
+ "scDist": 1.08697478991597,
+ "neckBreaks": true,
+ "scSitAng2": 0,
+ "scSitDist": 1.37699115044248,
+ "scOpen": 160
 }

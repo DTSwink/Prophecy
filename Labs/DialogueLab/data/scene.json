@@ -246,5 +246,23 @@
   8,
   9,
   10
- ]
+ ],
+ "clips": {
+  "Sit": {
+   "frames": 50,
+   "pelvisZ": [
+    0.114,
+    0.114
+   ],
+   "missing": []
+  },
+  "Walk": {
+   "frames": 122,
+   "pelvisZ": [
+    0.834,
+    0.941
+   ],
+   "missing": []
+  }
+ }
 }

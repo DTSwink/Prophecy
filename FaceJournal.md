@@ -297,3 +297,37 @@ Casual village talk that can escalate into real game events. Ideas kept for late
   - scene timing;
   - lab data.
 
+
+## Dialogue Lab: scenarios + live gaze (Nov 6 evening, cloud Claude)
+- Big tabs Standing / Walk / Sit. Standing: opening slider (0 = face to face, 110 = the old layout) + distance. Walk: side by side, in place (M_Neutral_Walk_Loop_F, root motion stripped) + spacing. Sit: Seller on `slashes/recoveries/sitting.fbx` (a ground sit, pelvis 0.11 m, so no stool), Customer standing around him (angle 0-120 deg from his forward + distance).
+- `lab_build.py --clip <Name> <fbx>` (repeatable) retargets extra body clips onto muted NLA tracks; export_frame_range off so each clip keeps its own length. Backup of the previous data in `build/backup_*_before_scenarios`.
+- Live gaze (`gaze.js` + app.js), layout independent, nothing baked: the eyeballs' baked PCA motion is dropped (mean shape kept) and each eyeball is rotated in the vertex shader about its own centre (bind space, after morphs, before skinning); optical axis = vertex at eye UV (0.5, 0.5). Target plan per scenario from the research: speaker looks away at turn start (back ~0.7 s in), on the partner for the last second, floor-holding glances at phrase ends; listener ~on the speaker with short downward breaks; walking: path ahead, glances at phrase/turn ends, scans. Head takes 0.6 of the turn (critically damped spring), eyes the rest (limits 30 yaw / 22 up / 26 down), closed loop pushes head then upper spine (spine_04/05) when the eyes hit their limit. Angles measured from the animated head (works with the slumped sit pose). Eye error <1 deg standing/walking; seated looking straight up at the partner ~5-7 deg short (neck + spine at their limits).
+- Not done: eyelid follow (lids keep their baked shapes), Unreal side (look morphs for the game).
+
+
+## Dialogue Lab: gaze refinements after the user's review (Nov 6 late)
+- Hand hitch (standing ~F123/142): a chained gesture dropped to 0 in 1 ms when the next pose arrived; with a profile strength < 1 the next pose doesn't fully cover it. Now it fades out over 0.35 s after the next one arrives (speech.js). No hand acceleration spikes left over the scene.
+- Gaze plan (gaze.js) rewritten: base attention track = partner blocks (1.5-3.5 s speaking, 2.5-5.5 s listening) alternating with neck relief every ~4.5-8 s (rest = neutral head + eyes ahead slightly down, soft = eyes on the partner with the head mostly relaxed, between = 35-70 % of the way from neutral to the partner); conversation events on top (turn-start look-away 0.7-1.2 s, phrase-end look-aways, turn-end on the partner, listener glances down 0.7-1.2 s, new speaker draws the eyes); overlays of the same kind < 1.2 s apart merge, any gap < 0.6 s is bridged (no double looks).
+- Walk: glance windows merged when < 2 s apart (no double look), capped 2.6 s, 55 % full look / 25 % eyes-only (head relaxed) / 20 % half-way; look-arounds (sideways or the ground ahead) only in clear gaps: never within 1.6 s after a glance or 1 s before one.
+- Healthy limits: neck yaw 50, up 28, down 35; upper back adds yaw 20 / up 10 / down 15; eyes 30 / 22 up / 26 down. The gaze turn bends mostly the lower neck (neck_01 .38, neck_02 .37, head .25; the baked head motion keeps its own split). Head spring slower (omega 6, torso 4). The closed loop that pushes the head when the eyes hit their limit is off for 'soft' / 'rest' and capped at 30 deg.
+- Neck fatigue: a continuous look at the partner that needs a strongly turned head relaxes it (head share down to 40 % after ~1.5-4 s, eyes keep the partner). Head yaw follow 0.5 standing / sitting. Measured over the scene: longest hold of the head > 30 deg 3.5-4.6 s standing, ~7 s for the Seller sitting on the ground (the Customer stands 75 deg to his side and above him), 2.5 s walking.
+
+
+## Dialogue Lab: neck shape, calm sitting, Group tab (Nov 6 night)
+- Neck: the gaze pitch now mostly straightens the lower neck (neck_01 .52, neck_02 .32, head .16; yaw .36/.34/.30) so a slumped sitter looking up lifts his neck instead of folding the head back on a bent neck (user sketch). Sitting allows 36 deg neck extension (the clip's neck starts bent forward).
+- Neck breaks checkbox (off = no relief looks, no relaxing of a held turned head).
+- Sit: "Calmer when sitting" (default on): the seated character's gestures and baked head motion at half.
+- Group tab (3 or 4 people, spread slider), horseshoe open to the camera. Bystanders B3/B4 are extra Boss copies with no face track of their own: they wear the face of whichever speaker is listening at that moment (closed mouth, blinks, listener reactions), 0.35 / 0.7 s later. Gaze from the research: Vertegaal et al. CHI 2001 (4-person: listeners look ~7x more at the speaker, 62 % vs 8.5 %; speakers ~3x more at the addressee, 40 % vs 12 %, but every listener gets glances), Holler & Kendrick 2015 (unaddressed listeners shift to the next speaker ~0.25 s before the turn ends in ~3/4 of cases). Implemented: speakers mostly on each other + inclusion glances to bystanders at phrase ends (45 %), listening speaker glances at a bystander now and then; bystanders on the current speaker (~80 %), anticipate the next speaker before the turn ends (75 %), glance at another listener now and then (35 % every 5-8 s).
+- Next for the group: a real multi-speaker script (new lines, voices, face solves) so the bystanders can talk.
+
+
+## Dialogue Lab: neck twist + seated gesture slider (Nov 7)
+- Each neck bone now turns about its own length (60 %, blended with the vertical; the head about its own up) instead of the world vertical: on the slumped sitting neck the old vertical turn swung the head sideways like a crane with no twist in the neck (user). Gaze angles are still measured in the world frame (yaw about the vertical, pitch = elevation), which splits a head looking at the ground correctly.
+- Sit: "Gesture amplitude (seated)" slider (default 50 %), gestures only; the head motion and listener nods are no longer scaled.
+
+
+## Dialogue Lab (Nov 7, 1:30): sit neck range, no head shaking, arrow keys
+- Sitting neck range up 50 / yaw 65 (head stops at the limit, eyes do the rest); the seated Seller now reaches the Customer's face at 75 deg.
+- Gaze plan is resolved into one cleaned sequence of looks: no look under 0.7 s, and a short look at someone else (< 1.6 s) between two looks at the same person is dropped (the group speaker's bystander -> listener -> bystander "shaking no"). Measured: no head yaw reversal > 12 deg within 1.6 s for any of the 4 people in Group.
+- Arrow keys: tap = one frame, hold = scrub at 1x after 0.12 s (no OS key-repeat delay); left = back.
+

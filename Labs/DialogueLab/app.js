@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { loadPoses, createPoser, weightAt, motionLength, poseNames, poseArms, DEFAULT_PARAMS } from './motion.js';
 import { planSpeech } from './speech.js';
+import { planGaze, gazeAt } from './gaze.js';
 
 const $ = (id) => document.getElementById(id);
 const meta = await (await fetch('data/scene.json')).json();
@@ -87,7 +88,18 @@ function headMaterial() {
 const MAT = {
   body: () => new THREE.MeshStandardMaterial({ color: 0x5f3e31, roughness: 0.7 }),  // ~ mean of the head colour map: no seam at the collar
   teeth: () => new THREE.MeshStandardMaterial({ map: T_.teeth, roughness: 0.35 }),
-  eye: () => new THREE.MeshStandardMaterial({ map: T_.eyes, roughness: 0.25 }),
+  eye: () => {   // live gaze: the eyeball is rotated about its centre in bind space (after the morphs, before skinning)
+    const m = new THREE.MeshStandardMaterial({ map: T_.eyes, roughness: 0.25 });
+    const U = { uEyeR: { value: new THREE.Matrix3() }, uEyeC: { value: new THREE.Vector3() } }; m.userData.E = U;
+    m.customProgramCacheKey = () => 'gazeEye';
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, U);
+      sh.vertexShader = 'uniform mat3 uEyeR; uniform vec3 uEyeC;\n' + sh.vertexShader
+        .replace('#include <morphnormal_vertex>', '#include <morphnormal_vertex>\n objectNormal = uEyeR * objectNormal;')
+        .replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\n transformed = uEyeR * (transformed - uEyeC) + uEyeC;');
+    };
+    return m;
+  },
   shell: () => new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.06, roughness: 0.02, metalness: 0, depthWrite: false }),
   hidden: () => new THREE.MeshBasicMaterial({ visible: false }),
   lash: () => new THREE.MeshStandardMaterial({ color: 0x1a1410, alphaMap: T_.lash, transparent: true, alphaTest: 0.25, roughness: 0.7 }),
@@ -97,30 +109,113 @@ const pickMat = (name) => name.startsWith('head') ? 'head' : name.startsWith('te
 
 // ---------- characters ----------
 const gltf = await new GLTFLoader().loadAsync('data/boss.glb');
+const CLIP = (n) => gltf.animations.find((a) => a.name === n);
+if (CLIP('Walk')) CLIP('Walk').tracks = CLIP('Walk').tracks.filter((tr) => tr.name !== 'root.position');  // walk in place
 const fwd0 = new THREE.Vector3(...meta.forwardGltf).normalize(); const UP = new THREE.Vector3(0, 1, 0);
 const camRight = fwd0.clone().cross(UP).multiplyScalar(-1);  // camera faces the characters: its right = their left
 const chars = {};
-for (const [id, side, turn] of [['S1', -1, 35], ['S2', 1, -35]]) {
+for (const [id, side, turn] of [['S1', -1, 35], ['S2', 1, -35], ['B3', 0, 0], ['B4', 0, 0]]) {   // B3/B4: listeners of the Group tab
   const root = SkeletonUtils.clone(gltf.scene); scene.add(root);
   root.position.copy(camRight.clone().multiplyScalar(side * 0.36));
   root.rotation.y = THREE.MathUtils.degToRad(turn);  // + = turn to own left (toward the partner for S1)
-  const meshes = [], head = [];
+  const meshes = [], head = [], eyes = [];
   root.traverse((o) => {
     if (!o.isSkinnedMesh && !o.isMesh) return;
     o.castShadow = o.receiveShadow = true; o.frustumCulled = false;
     const kind = pickMat(o.material.name || ''); o.material = kind === 'head' ? headMaterial() : MAT[kind]();
     if (kind === 'head') head.push(o.material);
+    if (kind === 'eye') { eyes.push(o); o.userData.isEye = true; }
     if (o.morphTargetDictionary) meshes.push(o);
   });
   const bones = {}; root.traverse((o) => { if (o.isBone) bones[o.name] = o; });
   const mixer = new THREE.AnimationMixer(root); const idle = mixer.clipAction(gltf.animations.find((a) => a.name === 'Idle') || gltf.animations[0]); idle.enabled = true; idle.play();
-  idle.time = id === 'S2' ? 4.3 : 0;  // desync the two idles
-  chars[id] = { root, meshes, head, bones, pre: [], damp: [], mixer, idle, c: part('c_' + id), w: part('w_' + id), h: part('h_' + id), turn };
+  idle.time = { S1: 0, S2: 4.3, B3: 2.1, B4: 6.7 }[id];  // desync the idles
+  if (id[0] === 'B') root.visible = false;
+  const acts = { idle };
+  for (const n of ['Sit', 'Walk']) if (CLIP(n)) { const a = mixer.clipAction(CLIP(n)); a.play(); a.setEffectiveWeight(0); if (id === 'S2') a.time = CLIP(n).duration * 0.37; acts[n.toLowerCase()] = a; }
+  chars[id] = { root, meshes, head, eyes, acts, act: idle, mean: null, bones, pre: [], damp: [], mixer, idle, c: meta.parts['c_' + id] ? part('c_' + id) : null, w: meta.parts['w_' + id] ? part('w_' + id) : null,
+    h: meta.parts['h_' + id] ? part('h_' + id) : null, delay: { B3: 0.35, B4: 0.7 }[id] || 0, amp: 1, turn };
+}
+
+// ---------- neck skin weights (Nov 7): the fitted Boss head mesh is 100 % 'head' from mid-neck up (the MetaHuman neck
+// joints were collapsed onto 'head' in the UEFN fit), so the whole upper neck moved rigidly with the skull and a turned
+// / lifted head showed a hard edge where the weights jump (~5 cm above neck_01). Re-spread them along the chain:
+// neck_01 -> neck_02 -> head by height along the neck, only on the neck tube (not the jaw / chin), blended out softly.
+// Runs once on the shared geometry (all characters). The Unreal asset needs the same fix in its source FBX.
+function fixNeckWeights(C) {
+  let H = null; C.root.traverse((o) => { if (o.isSkinnedMesh && C.head.includes(o.material)) H = o; });
+  if (!H || H.geometry.userData.neckFixed) return null;
+  C.root.updateMatrixWorld(true);
+  const B = H.skeleton.bones, ix = (n) => B.findIndex((b) => b.name === n);
+  const i1 = ix('neck_01'), i2 = ix('neck_02'), i3 = ix('head'); if (i1 < 0 || i2 < 0 || i3 < 0) return null;
+  const P1 = B[i1].getWorldPosition(new THREE.Vector3()), P2 = B[i2].getWorldPosition(new THREE.Vector3()), P3 = B[i3].getWorldPosition(new THREE.Vector3());
+  const ax = P3.clone().sub(P1).normalize(), Ln = P3.distanceTo(P1), u2 = P2.clone().sub(P1).dot(ax) / Ln;
+  const nodes = [[u2 / 2, i1], [(u2 + 1) / 2, i2], [1.05, i3]];   // segment middles: 100 % that bone
+  const g = H.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, v = new THREE.Vector3();
+  const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  let changed = 0;
+  for (let i = 0; i < P.count; i++) {
+    v.fromBufferAttribute(P, i); H.applyBoneTransform(i, v); v.applyMatrix4(H.matrixWorld);
+    const rel = v.clone().sub(P1), u = rel.dot(ax) / Ln, r = rel.clone().addScaledVector(ax, -rel.dot(ax)).length();
+    if (u < nodes[0][0] || u > nodes[2][0]) continue;
+    const f = sstep(0.078, 0.062, r) * sstep(nodes[0][0], nodes[0][0] + 0.12, u);   // neck tube only, fade in from below
+    if (f <= 0.01) continue;
+    const tgt = {};
+    for (let k = 0; k < 2; k++) { const [ua, ba] = nodes[k], [ub, bb] = nodes[k + 1]; if (u >= ua && u <= ub) { const a = (u - ua) / (ub - ua); tgt[ba] = 1 - a; tgt[bb] = a; } }
+    const w = {};
+    for (let k = 0; k < 4; k++) { const b = SI.getComponent(i, k), x = SW.getComponent(i, k); if (x > 0) w[b] = (w[b] || 0) + x * (1 - f); }
+    for (const [b, x] of Object.entries(tgt)) w[b] = (w[b] || 0) + x * f;
+    const top = Object.entries(w).sort((a, b) => b[1] - a[1]).slice(0, 4), sum = top.reduce((a, [, x]) => a + x, 0);
+    for (let k = 0; k < 4; k++) { SI.setComponent(i, k, top[k] ? +top[k][0] : 0); SW.setComponent(i, k, top[k] ? top[k][1] / sum : 0); }
+    changed++;
+  }
+  SI.needsUpdate = SW.needsUpdate = true; g.userData.neckFixed = true;
+  return changed;
+}
+const NECKFIX = /neckfix=1/.test(location.search) ? fixNeckWeights(chars.S1) : 0;   // REVERTED (Nov 7): it softened the jawline; original weights by default
+console.log('neck weights re-spread on', NECKFIX, 'vertices');
+
+// ---------- live gaze: eyeball geometry (centre, optical axis, head-fixed up/right) in bind space ----------
+const _A = new THREE.Matrix4(), _Ai = new THREE.Matrix4(), _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion();
+function eyeA(E, G, out) { return out.copy(E.matrixWorld).multiply(E.bindMatrixInverse).multiply(G.bone.matrixWorld).multiply(G.boneInv).multiply(E.bindMatrix); }
+for (const id in chars) {
+  const C = chars[id]; C.root.updateMatrixWorld(true);
+  const hq = C.bones.head.getWorldQuaternion(new THREE.Quaternion()).invert();   // face forward / up in head-bone space
+  { const sk = C.eyes[0] && C.eyes[0].skeleton, bq = (n) => { const i = sk.bones.findIndex((b) => b.name === n), q = new THREE.Quaternion(); sk.boneInverses[i].clone().invert().decompose(new THREE.Vector3(), q, new THREE.Vector3()); return q; };
+    if (sk) { C.relBind = bq('spine_05').invert().multiply(bq('head'));   // neutral head in chest space (bind pose)
+      C.restLocal = { neck_01: bq('spine_05').invert().multiply(bq('neck_01')), neck_02: bq('neck_01').invert().multiply(bq('neck_02')), head: bq('neck_02').invert().multiply(bq('head')) }; } }
+  C.headF = fwd0.clone().applyAxisAngle(UP, C.root.rotation.y).applyQuaternion(hq); C.headU = UP.clone().applyQuaternion(hq);
+  for (const E of C.eyes) {
+    const g = E.geometry, P = g.attributes.position, mi = E.morphTargetDictionary ? E.morphTargetDictionary.mu : undefined;
+    const MU = mi !== undefined ? g.morphAttributes.position[mi] : null, rel = g.morphTargetsRelative;
+    const pts = []; const c = new THREE.Vector3();
+    for (let i = 0; i < P.count; i++) {
+      const v = new THREE.Vector3().fromBufferAttribute(P, i);
+      if (MU) { const m = new THREE.Vector3().fromBufferAttribute(MU, i); if (rel) v.add(m); else v.copy(m); }
+      pts.push(v); c.add(v);
+    }
+    c.multiplyScalar(1 / pts.length);
+    const si = g.attributes.skinIndex, sw = g.attributes.skinWeight, cnt = {};
+    for (let i = 0; i < P.count; i += 7) { let bi = 0, bw = -1; for (let k = 0; k < 4; k++) if (sw.getComponent(i, k) > bw) { bw = sw.getComponent(i, k); bi = si.getComponent(i, k); } cnt[bi] = (cnt[bi] || 0) + 1; }
+    const bIdx = +Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0];
+    const G = { c, bone: E.skeleton.bones[bIdx], boneInv: E.skeleton.boneInverses[bIdx], yaw: 0, pitch: 0 };
+    eyeA(E, G, _A); _Ai.copy(_A).invert();
+    const fw = fwd0.clone().applyAxisAngle(UP, C.root.rotation.y).transformDirection(_Ai), up = UP.clone().transformDirection(_Ai);
+    const pr = pts.map((v) => v.clone().sub(c).dot(fw)).sort((a, b) => b - a), cut = pr[Math.max(0, Math.floor(pr.length * 0.03))];
+    const front = new THREE.Vector3(); let nf = 0; for (const v of pts) if (v.clone().sub(c).dot(fw) >= cut) { front.add(v); nf++; }
+    G.f = front.multiplyScalar(1 / nf).sub(c).normalize();          // fallback optical axis: centre -> cornea cap
+    const UV = g.attributes.uv;   // better: the pupil = the vertex at the centre of the eye texture (UV 0.5, 0.5)
+    if (UV) { let bi = -1, bd = 1e9; for (let i = 0; i < P.count; i++) { const du = UV.getX(i) - 0.5, dv = UV.getY(i) - 0.5; if (du * du + dv * dv < bd) { bd = du * du + dv * dv; bi = i; } }
+      if (bd < 1e-3) G.f = pts[bi].clone().sub(c).normalize(); }
+    G.u = up.clone().addScaledVector(G.f, -up.dot(G.f)).normalize(); G.r = G.f.clone().cross(G.u).normalize();
+    G.boneName = G.bone.name; E.userData.G = G; E.material.userData.E.uEyeC.value.copy(c);
+  }
 }
 
 // ---------- speech-pose motions (Motion section) ----------
 const POSES = loadPoses(gltf.animations.find((a) => a.name === 'Poses'));
 const posers = {}; for (const id in chars) posers[id] = createPoser(chars[id], POSES);
+const activeIds = () => Object.keys(chars).filter((id) => chars[id].root.visible);
 // motion being edited = a pose + a [min, max] range per parameter; every preview take samples inside the ranges
 const MR = { pose: 1, r: {} };
 let INST = { ...DEFAULT_PARAMS };           // the current take (sampled values)
@@ -154,13 +249,17 @@ function applyLight() {
 
 // ---------- cameras ----------
 const headPos = (id) => { const p = new THREE.Vector3(); chars[id].bones.head.getWorldPosition(p); return p; };
+let CURCAM = 'two';
 function setCam(kind) {
+  CURCAM = kind;
   scene.updateMatrixWorld(true);
-  const mid = headPos('S1').add(headPos('S2')).multiplyScalar(0.5);
+  const ids = Object.keys(chars).filter((id) => chars[id].root.visible);
+  const mid = ids.reduce((acc, id) => acc.add(headPos(id)), new THREE.Vector3()).multiplyScalar(1 / ids.length);
   let target = mid.clone(), pos;
-  if (kind === 'two') {  // heads in the upper third, shifted left of the control panel
-    target = mid.clone().add(UP.clone().multiplyScalar(-0.12)).add(camRight.clone().multiplyScalar(0.14));
-    pos = target.clone().add(fwd0.clone().multiplyScalar(2.4)).add(UP.clone().multiplyScalar(0.12));
+  if (kind === 'two') {  // heads in the upper third, shifted left of the control panel (a group: everyone)
+    const wide = ids.length > 2 ? 1.2 + SCEN.spread * 1.6 : 0;
+    target = mid.clone().add(UP.clone().multiplyScalar(-0.12 - wide * 0.05)).add(camRight.clone().multiplyScalar(0.14 + wide * 0.08));
+    pos = target.clone().add(fwd0.clone().multiplyScalar(2.4 + wide)).add(UP.clone().multiplyScalar(0.12 + wide * 0.1));
   } else if (kind === 'hands') {  // the seller's hands (fingers come from the idle)
     const hl = new THREE.Vector3(), hr = new THREE.Vector3(); chars.S1.bones.hand_l.getWorldPosition(hl); chars.S1.bones.hand_r.getWorldPosition(hr);
     target = hl.add(hr).multiplyScalar(0.5); const f = fwd0.clone().applyAxisAngle(UP, chars.S1.root.rotation.y);
@@ -194,39 +293,96 @@ function sample(p, f0, f1, a, i) {
   const v0 = p.a[o0 + f0 * p.w + i] * (1 - a) + p.a[o0 + f1 * p.w + i] * a, v1 = p.a[o1 + f0 * p.w + i] * (1 - a) + p.a[o1 + f1 * p.w + i] * a;
   return v0 * (1 - b) + v1 * b;
 }
+const frameAt = (tt) => { const fl = Math.min(Math.max(tt * FPS, 0), NF - 1), f0 = Math.floor(fl); return [f0, Math.min(f0 + 1, NF - 1), fl - f0]; };
+// a bystander (Group tab) has no face track of his own: he wears the face of whichever speaker is LISTENING at that
+// moment (closed mouth, blinks, listener reactions), a little later (B3 0.35 s, B4 0.7 s), neutral between turns
+function listenerMix(tt) {
+  const [g0, g1, ga] = frameAt(tt), fi = Math.round(tt * FPS);
+  const w1 = LW.S1[Math.min(NF - 1, Math.max(0, fi))] || 0, w2 = LW.S2[Math.min(NF - 1, Math.max(0, fi))] || 0;
+  return { g0, g1, ga, src: [[chars.S1, w1], [chars.S2, w2]] };
+}
+const mixVal = (M, key, i) => M.src.reduce((acc, [S, w]) => acc + (w > 1e-3 ? w * sample(S[key], M.g0, M.g1, M.ga, i) : 0), 0);
 function poseAt(t) {
   const fl = Math.min(Math.max(t * FPS, 0), NF - 1), f0 = Math.floor(fl), f1 = Math.min(f0 + 1, NF - 1), a = fl - f0;
-  for (const id in chars) {
-    const C = chars[id];
+  for (const id of activeIds()) {
+    const C = chars[id], M = C.c ? null : listenerMix(t - C.delay);
+    const val = (key, i) => (M ? mixVal(M, key, i) : sample(C[key], f0, f1, a, i));
     // face morphs: mu + sum c_k pc_k
     for (const m of C.meshes) {
       const d = m.morphTargetDictionary, inf = m.morphTargetInfluences;
       inf[d.mu] = L.face ? 1 : 0;
-      for (let k = 0; k < K; k++) inf[d['pc' + k]] = L.face ? sample(C.c, f0, f1, a, k) : 0;
+      const live = GZ.on && m.userData.isEye;   // live gaze replaces the eyeballs' baked gaze
+      for (let k = 0; k < K; k++) inf[d['pc' + k]] = L.face && !live ? val('c', k) : 0;
     }
     // wrinkle weights per map/pack/channel
     for (const mat of C.head) {
       const uW = mat.userData.U.uW.value; uW.forEach((v) => v.set(0, 0, 0, 0));
-      for (let i = 0; i < slot.length; i++) { const [mp, pk, ch] = slot[i]; if (mp < 0) continue; uW[mp * 10 + pk].setComponent(ch, sample(C.w, f0, f1, a, i)); }
+      for (let i = 0; i < slot.length; i++) { const [mp, pk, ch] = slot[i]; if (mp < 0) continue; uW[mp * 10 + pk].setComponent(ch, val('w', i)); }
       mat.userData.U.uWrinkle.value = L.wrinkle ? 1 : 0;
     }
-    C.yaw = sample(C.h, f0, f1, a, 0); C.pitch = sample(C.h, f0, f1, a, 1); C.roll = sample(C.h, f0, f1, a, 2);
+    C.yaw = val('h', 0); C.pitch = val('h', 1); C.roll = val('h', 2);
   }
+}
+// the head turns about its own neck axis (half the neck_01->head line, half the head's up), not the world vertical:
+// on a slumped / bent-forward neck a world-vertical turn swings the head sideways like a crane (user, Nov 7)
+function neckFrame(C) {
+  const n0 = C.bones.neck_01.getWorldPosition(new THREE.Vector3()), h0 = C.bones.head.getWorldPosition(new THREE.Vector3());
+  const hq = C.bones.head.getWorldQuaternion(new THREE.Quaternion());
+  const A = h0.sub(n0).normalize().add(C.headU.clone().applyQuaternion(hq)).normalize();
+  const hf = C.headF.clone().applyQuaternion(hq);
+  const F = hf.clone().addScaledVector(A, -hf.dot(A)).normalize(), R = F.clone().cross(A).normalize();
+  return (C.nf = { A, F, R, hf });
 }
 function applyHead(C) {
   C.pre.length = 0;
-  if (!L.head) return;
+  const gy = GZ.on ? C.gYaw || 0 : 0, gp = GZ.on ? C.gPitch || 0 : 0;
+  if (!L.head && !gy && !gp) return;
+  const by = L.head ? C.yaw : 0, bp = L.head ? C.pitch : 0, br = L.head ? C.roll : 0;
+  const chain = GZ.on && (Math.abs(C.sYaw || 0) > 0.05 || Math.abs(C.sPitch || 0) > 0.05)
+    ? [['spine_04', 0, 1], ['spine_05', 0, 1], ...SPLIT.map(([n, f]) => [n, f, 0])] : SPLIT.map(([n, f]) => [n, f, 0]);
   const fwd = fwd0.clone().applyAxisAngle(UP, C.root.rotation.y); const right = fwd.clone().cross(UP);
-  for (const [name, frac] of SPLIT) {
+  const CHILD = { neck_01: 'neck_02', neck_02: 'head' }, _ax = new THREE.Vector3(), _p0 = new THREE.Vector3(), _p1 = new THREE.Vector3();
+  // head roll (sideways tilt) before the turn: the twist along a forward-bent neck adds roll, which we take back out below
+  const H = C.bones.head, rollOf = () => {
+    const q = H.getWorldQuaternion(new THREE.Quaternion()), F = C.headF.clone().applyQuaternion(q), U = C.headU.clone().applyQuaternion(q);
+    const Rr = F.clone().cross(U), Uf = UP.clone().addScaledVector(F, -F.dot(UP)).normalize(), X = Uf.clone().cross(F);
+    return [Math.atan2(Rr.dot(Uf), Rr.dot(X)), F];
+  };
+  H.updateWorldMatrix(true, false);
+  const CH = C.bones.spine_05, Hb = H.getWorldQuaternion(new THREE.Quaternion()), Cb = CH.getWorldQuaternion(new THREE.Quaternion());   // neutral (pre-turn) head vs chest
+  for (const [name, frac, spine] of chain) {
     const b = C.bones[name]; if (!b) continue;
     C.pre.push([b, b.quaternion.clone()]);
-    qa.setFromAxisAngle(UP, THREE.MathUtils.degToRad(C.yaw * frac));
-    qb.setFromAxisAngle(right, THREE.MathUtils.degToRad(C.pitch * frac));
-    qc.setFromAxisAngle(fwd, THREE.MathUtils.degToRad(C.roll * frac));
-    const R = qa.multiply(qb).multiply(qc);
+    const gfy = GSPLIT_Y[name] || 0, gfp = GSPLIT_P[name] || 0;   // the baked head motion keeps its own split
+    const yy = spine ? C.sYaw * gfy : by * frac + gy * gfy, pp = spine ? C.sPitch * gfp : bp * frac + gp * gfp, rr = spine ? 0 : br * frac;
     b.updateWorldMatrix(true, false); b.getWorldQuaternion(qw); b.parent.getWorldQuaternion(qp);
+    // turn axis: the neck bone's own length (head: its up), 60 %, blended with the vertical: a bent neck twists along
+    // itself instead of swinging the head sideways (user, Nov 7)
+    _ax.copy(UP);
+    if (!spine) {
+      if (CHILD[name] && C.bones[CHILD[name]]) { b.getWorldPosition(_p0); C.bones[CHILD[name]].getWorldPosition(_p1); _p1.sub(_p0).normalize(); }
+      else _p1.copy(C.headU).applyQuaternion(qw);
+      if (_p1.dot(UP) < 0) _p1.negate();
+      const tw = CHILD[name] ? 0.6 : GZ.headTwist;   // the head itself: how much it turns about its own up (tilts the face) vs the vertical
+      _ax.multiplyScalar(1 - tw).addScaledVector(_p1, tw).normalize();
+    }
+    qa.setFromAxisAngle(_ax, THREE.MathUtils.degToRad(yy));
+    qb.setFromAxisAngle(right, THREE.MathUtils.degToRad(pp));
+    qc.setFromAxisAngle(fwd, THREE.MathUtils.degToRad(rr));
+    const R = qa.multiply(qb).multiply(qc);
     b.quaternion.copy(qp.invert().multiply(R.multiply(qw)));
     b.updateMatrixWorld(true);
+  }
+  if (GZ.rollCut > 0 && C.restLocal) {
+    // head ROLL (ear toward shoulder) in parent space (user, Nov 7, shown with the gizmo's green ring): each neck/head bone's
+    // rotation from its rest, in its own local frame; local Y is the face axis on this rig (forward = -Y, up = +X), so the
+    // twist about Y is that bone's roll. The chain's total roll is cut by rollCut, taken out at the head.
+    let roll = 0;
+    for (const n of ['neck_01', 'neck_02', 'head']) {
+      const b = C.bones[n], r = C.restLocal[n]; if (!b || !r) continue;
+      const D = r.clone().invert().multiply(b.quaternion); let tw = 2 * Math.atan2(D.y, D.w); roll += Math.atan2(Math.sin(tw), Math.cos(tw));
+    }
+    if (Math.abs(roll) > 1e-4) { H.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -GZ.rollCut * roll)); H.updateMatrixWorld(true); }
   }
 }
 
@@ -257,6 +413,18 @@ let audioRef = 0;
 function pause() { playing = false; $('play').textContent = '▶'; stopAudio(); }
 $('play').onclick = () => (playing ? pause() : play());
 addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); } });
+// arrows: a tap steps one frame, holding scrubs continuously (starts after 0.12 s, no OS key-repeat delay), left = back
+const ARROW = { dir: 0, since: 0 };
+addEventListener('keydown', (e) => {
+  if (e.code !== 'ArrowLeft' && e.code !== 'ArrowRight') return;
+  if (e.target && (e.target.type === 'text' || e.target.tagName === 'TEXTAREA')) return;
+  e.preventDefault(); if (e.repeat) return;
+  if (playing) pause();
+  ARROW.dir = e.code === 'ArrowLeft' ? -1 : 1; ARROW.since = performance.now();
+  t = Math.min(T, Math.max(0, t + ARROW.dir / FPS));
+});
+addEventListener('keyup', (e) => { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') ARROW.dir = 0; });
+addEventListener('blur', () => { ARROW.dir = 0; });
 $('scrub').oninput = (e) => { t = (+e.target.value / 1000) * T; if (playing) play(); };
 document.querySelectorAll('[data-speed]').forEach((b) => b.onclick = () => {
   speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach((x) => x.classList.toggle('on', x === b)); if (playing) play();
@@ -307,7 +475,7 @@ document.querySelectorAll('details[data-sec]').forEach((d) => {
 // ---- listener nods: amplify only the quick pitch movements of the head while a character listens ----
 // pitch = slow drift (zero-phase low-pass, ~0.8 s) + nods (the rest); only the nod part is scaled, only while listening
 const NOD = { gain: store.get('nodGain', 1) };
-for (const id in chars) { const C = chars[id]; C.hOrig = Float32Array.from(C.h.a); }
+for (const id in chars) { const C = chars[id]; if (C.h) C.hOrig = Float32Array.from(C.h.a); }
 function listenWeight(id) {  // 1 while the partner speaks, smooth 0.6 s ramps at turn changes
   const n = NF, w = new Float32Array(n);
   for (let f = 0; f < n; f++) { const t = f / FPS; let v = 0;
@@ -319,6 +487,7 @@ const LW = {}; for (const id in chars) LW[id] = listenWeight(id);
 function applyNodGain() {
   const k = Math.exp(-1 / (FPS * 0.8));
   for (const id in chars) {
+    if (!chars[id].h) continue;
     const C = chars[id], W = C.h.w, n = NF, p = new Float32Array(n);
     for (let f = 0; f < n; f++) p[f] = C.hOrig[f * W + 1];
     const base = Float32Array.from(p);
@@ -331,8 +500,8 @@ $('nodGain').value = NOD.gain; $('nodGain').oninput = (e) => { NOD.gain = +e.tar
 applyNodGain();
 
 // ---- idle sway: the game idle's motion (breathing, weight shifts) scaled around its own average pose; 1 = as authored ----
-const IDLE_MEAN = (() => {
-  const clip = gltf.animations.find((a) => a.name === 'Idle') || gltf.animations[0], m = {}, n = Math.round(clip.duration * 30) + 1;
+function clipMean(clip) {
+  if (!clip) return null; const m = {}, n = Math.round(clip.duration * 30) + 1;
   for (const tr of clip.tracks) {
     const [bone, prop] = tr.name.split('.'); if (bone.startsWith('ik_')) continue;
     const ip = tr.createInterpolant();
@@ -346,13 +515,16 @@ const IDLE_MEAN = (() => {
     }
   }
   return m;
-})();
+}
+const MEANS = { idle: clipMean(CLIP('Idle') || gltf.animations[0]), sit: clipMean(CLIP('Sit')) };
+for (const id in chars) chars[id].mean = MEANS.idle;
 // separate amounts while speaking / listening, cross-faded with the listen weight (smooth 0.6 s ramps at turn changes)
 const IDLE = { spk: store.get('idleSwaySpk', store.get('idleSway', 0.5)), lst: store.get('idleSwayLst', store.get('idleSway', 0.5)) };
 function swayFor(id, time) { const w = LW[id][Math.min(NF - 1, Math.max(0, Math.round(time * FPS)))]; return IDLE.spk + (IDLE.lst - IDLE.spk) * w; }
 function dampIdle(C, sway) {   // after the mixer: pull every idle bone toward its average by (1 - sway); undone at the next frame
   C.damp.length = 0; const k = 1 - sway; if (k <= 1e-4) return;
-  for (const [name, e] of Object.entries(IDLE_MEAN)) {
+  if (!C.mean) return;   // walking: no damping
+  for (const [name, e] of Object.entries(C.mean)) {
     const b = C.bones[name]; if (!b) continue;
     C.damp.push([b, b.quaternion.clone(), b.position.clone()]);
     if (e.q) b.quaternion.slerp(e.q, k);
@@ -363,6 +535,170 @@ for (const [key, el, out] of [['spk', 'idleSwaySpk', 'swaySpkVal'], ['lst', 'idl
   const show = () => { $(out).textContent = Math.round(IDLE[key] * 100) + '%'; };
   $(el).value = IDLE[key]; show();
   $(el).oninput = (e) => { IDLE[key] = +e.target.value; show(); store.set(el, IDLE[key]); };
+}
+
+// ---------- scenarios: Standing / Walk / Sit (big tabs), live layout + live gaze ----------
+const rad = THREE.MathUtils.degToRad, deg = THREE.MathUtils.radToDeg, clamp = THREE.MathUtils.clamp;
+const SCEN = { kind: store.get('scen', 'stand'), open: store.get('scOpen', 110), dist: store.get('scDist', 0.72), sitAng: store.get('scSitAng2', 75),
+  sitDist: store.get('scSitDist', 1.0), gap: store.get('scGap', 0.75), people: store.get('scPeople', 4), spread: store.get('scSpread', 0.8),
+  sitGest: store.get('scSitGest', 0.5) };
+const GZ = { on: store.get('gazeOn', true), relief: store.get('neckBreaks', true), rollCut: store.get('rollCut', 0.78), headTwist: 0.6, plan: null };   // 0.78 = what the user dialled in with the gizmo (Nov 7)
+// how much of a gaze turn the head takes (the eyes do the rest), per scenario; limits in degrees
+const HF = { stand: { y: 0.5, p: 0.5 }, sit: { y: 0.5, p: 0.55 }, walk: { y: 0.7, p: 0.5 }, group: { y: 0.55, p: 0.5 } };
+const EYE = { yaw: 30, up: 22, down: 26 };
+const NECK = { yaw: 50, up: 28, down: 35 }, SPINE = { yaw: 20, up: 10, down: 15 };   // comfortable ranges (deg)
+const NECK_UP = { sit: 40 }, NECK_YAW = { sit: 65 }, SPINE_UP = { sit: 18 };   // sitting: more room, the chest lifts more, the neck less
+// gaze turn split: yaw over the neck + head; pitch mostly from the lower neck so the neck straightens instead of the head
+// folding back on a bent neck (user, Nov 6: "rotate like the green line")
+const GSPLIT_Y = { spine_04: 0.5, spine_05: 0.5, neck_01: 0.36, neck_02: 0.34, head: 0.3 };
+const GSPLIT_P = { spine_04: 0.5, spine_05: 0.5, neck_01: 0.38, neck_02: 0.34, head: 0.28 };   // lower neck less than before: 0.52 made a long, straight 'giraffe' neck (Nov 7)
+const stool = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1, 0.42), new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 0.8 }));
+stool.castShadow = stool.receiveShadow = true; stool.visible = false; scene.add(stool);
+let stoolPending = 0, camPending = 0;
+function faceTo(C, d) { const b = d.clone().setY(0).normalize(), a = fwd0; C.root.rotation.y = Math.atan2(a.z * b.x - a.x * b.z, a.dot(b)); }
+function layout() {
+  const k = SCEN.kind, cr = camRight, f = fwd0, A = chars.S1, B = chars.S2;
+  if (k === 'stand') {   // opening 0 = face to face; each turns half the opening toward the camera
+    const h = rad(SCEN.open / 2);
+    A.root.position.copy(cr).multiplyScalar(-SCEN.dist / 2); B.root.position.copy(cr).multiplyScalar(SCEN.dist / 2);
+    faceTo(A, cr.clone().multiplyScalar(Math.cos(h)).addScaledVector(f, Math.sin(h)));
+    faceTo(B, cr.clone().multiplyScalar(-Math.cos(h)).addScaledVector(f, Math.sin(h)));
+  } else if (k === 'sit') {   // the Seller sits facing camera-right; the Customer stands around him at the slider angle, facing him
+    const f1 = f.clone().applyAxisAngle(UP, rad(35)), p1 = cr.clone().multiplyScalar(-0.4);   // seated one: 3/4 to the camera
+    A.root.position.copy(p1); faceTo(A, f1);
+    const dir = f1.clone().applyAxisAngle(UP, rad(SCEN.sitAng));   // 0 = right in front of him, + = round toward camera right
+    B.root.position.copy(p1).addScaledVector(dir, SCEN.sitDist); faceTo(B, dir.clone().negate());
+  } else if (k === 'group') {   // a horseshoe open to the camera, everyone facing its centre
+    const ctr = f.clone().multiplyScalar(-0.35), R = SCEN.spread, four = SCEN.people >= 4;
+    const ang = four ? { S1: 205, S2: 155, B3: 268, B4: 92 } : { S1: 215, S2: 145, B3: 270 };   // deg from the camera direction
+    for (const [id, a] of Object.entries(ang)) {
+      const C = chars[id], p = ctr.clone().add(f.clone().applyAxisAngle(UP, rad(a)).multiplyScalar(R));
+      C.root.position.copy(p); faceTo(C, ctr.clone().sub(p));
+    }
+  } else {   // walking side by side (in place), toward camera-right
+    const w = f.clone().applyAxisAngle(UP, rad(30)), side = w.clone().applyAxisAngle(UP, rad(90));
+    A.root.position.copy(side).multiplyScalar(-SCEN.gap / 2); B.root.position.copy(side).multiplyScalar(SCEN.gap / 2);
+    faceTo(A, w); faceTo(B, w);
+  }
+  for (const id in chars) chars[id].root.position.y = 0;
+  scene.updateMatrixWorld(true); if (k === 'sit') stoolPending = 2;
+}
+function placeStool() {   // seat top just under the hips of the sitting clip
+  const S = chars.S1.bones, a = new THREE.Vector3(), b = new THREE.Vector3(), pv = new THREE.Vector3();
+  if (!S.thigh_l || !S.thigh_r) return; S.thigh_l.getWorldPosition(a); S.thigh_r.getWorldPosition(b); S.pelvis.getWorldPosition(pv);
+  const top = (a.y + b.y) / 2 - 0.1; if (top < 0.25) { stool.visible = false; return; }   // ground sitting: no stool
+  const back = fwd0.clone().applyAxisAngle(UP, chars.S1.root.rotation.y).multiplyScalar(-0.04);
+  stool.scale.y = top; stool.position.set(pv.x + back.x, top / 2, pv.z + back.z); stool.rotation.y = chars.S1.root.rotation.y; stool.visible = true;
+}
+function setScenario(kind) {
+  for (const id in chars) { chars[id].fb = null; chars[id].hs = null; }   // gaze loop state starts fresh in a new layout
+  if (!['stand', 'walk', 'sit', 'group'].includes(kind)) kind = 'stand';
+  if (kind === 'walk' && !chars.S1.acts.walk) kind = 'stand'; if (kind === 'sit' && !chars.S1.acts.sit) kind = 'stand';
+  SCEN.kind = kind; store.set('scen', kind);
+  for (const id in chars) {
+    const C = chars[id], want = kind === 'walk' ? 'walk' : kind === 'sit' && id === 'S1' ? 'sit' : 'idle';
+    C.act = C.acts[want] || C.acts.idle; C.mean = want === 'walk' ? null : MEANS[want] || MEANS.idle;
+    C.root.visible = id[0] === 'S' || (kind === 'group' && (id === 'B3' || SCEN.people >= 4));
+    C.amp = kind === 'sit' && id === 'S1' ? SCEN.sitGest : 1;   // seated gesture amplitude (gestures only)
+  }
+  stool.visible = false; layout();
+  GZ.plan = SCRIPT ? planGaze(SCRIPT, kind, T, { relief: GZ.relief, ids: activeIds() }) : null; camPending = 2;
+  document.querySelectorAll('[data-scen]').forEach((b) => b.classList.toggle('on', b.dataset.scen === kind));
+  document.querySelectorAll('#scenCtl [data-for]').forEach((el) => { el.style.display = el.dataset.for === kind ? '' : 'none'; });
+  if (!chars.S1.acts.sit) $('scenNote').textContent = 'Sit / Walk clips not in this build yet.';
+}
+document.querySelectorAll('[data-scen]').forEach((b) => b.onclick = () => setScenario(b.dataset.scen));
+for (const [el, key, fmt] of [['scOpen', 'open', (v) => Math.round(v) + '°'], ['scDist', 'dist', (v) => v.toFixed(2) + ' m'], ['scSitAng', 'sitAng', (v) => Math.round(v) + '°'],
+  ['scSitDist', 'sitDist', (v) => v.toFixed(2) + ' m'], ['scGap', 'gap', (v) => v.toFixed(2) + ' m'], ['scSpread', 'spread', (v) => v.toFixed(2) + ' m'],
+  ['scPeople', 'people', (v) => Math.round(v) + ''], ['scSitGest', 'sitGest', (v) => Math.round(v * 100) + '%']]) {
+  const out = $(el + 'V'), show = () => { out.textContent = fmt(SCEN[key]); }, skey = { scSitAng: 'scSitAng2' }[el] || el;
+  $(el).value = SCEN[key]; show();
+  $(el).oninput = (e) => { SCEN[key] = el === 'scPeople' ? Math.round(+e.target.value) : +e.target.value; show(); store.set(skey, SCEN[key]);
+    if (el === 'scPeople') setScenario(SCEN.kind); else if (el === 'scSitGest') { if (SCEN.kind === 'sit') chars.S1.amp = SCEN.sitGest; } else layout(); };
+}
+{ const show = () => { $('rollCutV').textContent = Math.round(GZ.rollCut * 100) + '%'; };
+  $('rollCut').value = GZ.rollCut; show(); $('rollCut').oninput = (e) => { GZ.rollCut = +e.target.value; show(); store.set('rollCut', GZ.rollCut); }; }
+$('lyGaze').checked = GZ.on; $('lyGaze').onchange = (e) => { GZ.on = e.target.checked; store.set('gazeOn', GZ.on); };
+$('lyNeck').checked = GZ.relief; $('lyNeck').onchange = (e) => {   // neck breaks: relief looks + relaxing a long-held turned head
+  GZ.relief = e.target.checked; store.set('neckBreaks', GZ.relief); GZ.plan = SCRIPT ? planGaze(SCRIPT, SCEN.kind, T, { relief: GZ.relief, ids: activeIds() }) : null; };
+
+
+// gaze controller: target from the plan, head takes part of the turn (critically damped spring), eyes aim at the target
+const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
+function gazeHead(id, dt) {
+  const C = chars[id]; neckFrame(C);
+  if (!GZ.on || !GZ.plan || !GZ.plan[id]) { C.gYaw = C.gPitch = 0; C.gTarget = null; return; }
+  const g = gazeAt(GZ.plan[id], t); C.gz = g;
+  // who: the planned person, else the partner (speakers) / the current or last speaker (bystanders)
+  let who = g.who && chars[g.who] && chars[g.who].root.visible ? g.who : null;
+  if (!who) { if (id === 'S1' || id === 'S2') who = id === 'S1' ? 'S2' : 'S1';
+    else { let last = 'S1'; for (const l of meta.lines) if (l.start <= t + 0.05) last = l.speaker; who = last; } }
+  const O = chars[who]; C.gWho = who;
+  const eye = C.eyesW || headPos(id), pe = O.eyesW || headPos(who);
+  const fb = fwd0.clone().applyAxisAngle(UP, C.root.rotation.y);
+  // the animated head's own direction (body clip + gestures): "neutral neck"; angles are measured from it
+  const hf = C.nf.hf, hh = hf.clone().setY(0);
+  const P = pe.clone().sub(eye), dist = P.length();
+  let d;
+  if (g.kind === 'partner' || g.kind === 'soft' || g.kind === 'avert') d = P.clone();
+  else if (g.kind === 'rest') d = hf.clone().multiplyScalar(dist);
+  else if (g.kind === 'between') d = hf.clone().lerp(P.clone().normalize(), g.b).normalize().multiplyScalar(dist);
+  else { d = fb.clone().multiplyScalar(6); d.y = -0.7; }   // walking: the path ahead
+  if (g.kind === 'avert' || g.kind === 'scan' || g.kind === 'rest') {
+    d.applyAxisAngle(UP, rad(g.yaw)); const ax = d.clone().cross(UP).normalize(); d.applyAxisAngle(ax, rad(g.pitch));
+  }
+  C.gTarget = eye.clone().add(d);
+  const hor = d.clone().setY(0), gY = deg(Math.atan2(hh.z * hor.x - hh.x * hor.z, hh.dot(hor)));
+  const gP = deg(Math.atan2(d.y, hor.length())) - deg(Math.atan2(hf.y, hh.length()));
+  const H = HF[SCEN.kind];
+  // neck fatigue: holding a strongly turned head on the partner relaxes it after ~1.5 s (eyes keep the partner)
+  const strain = clamp((Math.hypot(gY * H.y, gP * H.p) - 18) / 22, 0, 1);
+  C.onP = g.kind === 'partner' && C.lastKind === 'partner' ? (C.onP || 0) + dt : 0; C.lastKind = g.kind;   // continuous hold
+  const held = clamp((C.onP - 1.5) / 2.5, 0, 1);
+  const k = g.hf ?? 1;   // (the automatic neck relaxing on long holds is off: neck breaks are only the speaker's planned ones)
+  // head share (k < 1: looking from the corner of the eyes, neck relaxed); pushed up when the eyes alone can't reach,
+  // except in 'soft' / 'rest' where eyes at their limit is the point
+  let hy = H.y * k * gY, hp = H.p * k * gP;
+  const reach = g.kind !== 'soft' && g.kind !== 'rest' && k > 0.9;
+  if (reach) {
+    if (Math.abs(gY - hy) > EYE.yaw - 2) hy = gY - Math.sign(gY) * (EYE.yaw - 2);
+    if (gP - hp > EYE.up - 2) hp = gP - (EYE.up - 2); if (gP - hp < -(EYE.down - 2)) hp = gP + (EYE.down - 2);
+  }
+  // closed loop: what the eyes still could not reach last frame goes to the head / torso (only when reaching)
+  const F = (C.fb ||= { y: 0, p: 0 }), ex = C.eyeEx || [0, 0], h0 = Math.min(dt, 0.05);
+  // eye yaw is + to the right, head yaw + to the left
+  for (const [kk, e] of [['y', -ex[0]], ['p', ex[1]]]) { F[kk] = reach && Math.abs(e) > 0.3 ? clamp(F[kk] + e * h0 * 4, -30, 30) : F[kk] * (1 - h0 * 3); }
+  hy += F.y; hp += F.p;
+  // healthy limits: the neck turns up to NECK, the upper back adds a little beyond that, the rest is not reached
+  const nUp = NECK_UP[SCEN.kind] ?? NECK.up, nY = NECK_YAW[SCEN.kind] ?? NECK.yaw;
+  const sy = clamp(hy - clamp(hy, -nY, nY), -SPINE.yaw, SPINE.yaw), sp = clamp(hp - clamp(hp, -NECK.down, nUp), -SPINE.down, SPINE_UP[SCEN.kind] ?? SPINE.up);
+  hy = clamp(hy, -nY, nY); hp = clamp(hp, -NECK.down, nUp);
+  const S = (C.hs ||= { y: hy, p: hp, sy, sp, vy: 0, vp: 0, vsy: 0, vsp: 0 }), w = 6, ws = 4;
+  for (let n = 0, h = dt / 2; n < 2; n++) {
+    S.vy += (w * w * (hy - S.y) - 2 * w * S.vy) * h; S.y += S.vy * h;
+    S.vp += (w * w * (hp - S.p) - 2 * w * S.vp) * h; S.p += S.vp * h;
+    S.vsy += (ws * ws * (sy - S.sy) - 2 * ws * S.vsy) * h; S.sy += S.vsy * h;   // the torso follows more slowly
+    S.vsp += (ws * ws * (sp - S.sp) - 2 * ws * S.vsp) * h; S.sp += S.vsp * h;
+  }
+  C.gYaw = S.y; C.gPitch = S.p; C.sYaw = S.sy; C.sPitch = S.sp;
+}
+function gazeEyes(C, dt) {
+  const ws = [], exs = [0, 0];
+  for (const E of C.eyes) {
+    const G = E.userData.G, U = E.material.userData.E; if (!G) continue;
+    if (!GZ.on || !C.gTarget) { U.uEyeR.value.identity(); continue; }
+    eyeA(E, G, _A); ws.push(G.c.clone().applyMatrix4(_A));
+    _Ai.copy(_A).invert(); const d = C.gTarget.clone().applyMatrix4(_Ai).sub(G.c).normalize();
+    let y = deg(Math.atan2(d.dot(G.r), d.dot(G.f))), p = deg(Math.asin(clamp(d.dot(G.u), -1, 1)));
+    exs[0] += (y - clamp(y, -EYE.yaw, EYE.yaw)) / C.eyes.length; exs[1] += (p - clamp(p, -EYE.down, EYE.up)) / C.eyes.length;
+    y = clamp(y + (C.gz ? C.gz.my : 0), -EYE.yaw, EYE.yaw); p = clamp(p + (C.gz ? C.gz.mp : 0), -EYE.down, EYE.up);
+    const k = 1 - Math.exp(-dt / 0.035); G.yaw += (y - G.yaw) * k; G.pitch += (p - G.pitch) * k;   // saccade-fast
+    const cy = Math.cos(rad(G.yaw)), sy = Math.sin(rad(G.yaw)), cp = Math.cos(rad(G.pitch)), sp = Math.sin(rad(G.pitch));
+    _v1.copy(G.f).multiplyScalar(cp * cy).addScaledVector(G.r, cp * sy).addScaledVector(G.u, sp).normalize();
+    _q.setFromUnitVectors(G.f, _v1); U.uEyeR.value.setFromMatrix4(_m4.makeRotationFromQuaternion(_q));
+  }
+  if (ws.length) C.eyesW = ws.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / ws.length);
+  C.eyeEx = exs;
 }
 
 // ---- emotion gain ----
@@ -531,23 +867,26 @@ $('snap').onclick = async () => {
   const r = await fetch('snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image, ...state }) });
   $('snapState').textContent = r.ok ? 'Saved at ' + t.toFixed(2) + ' s' : 'Snapshot failed';
 };
-window.lab = { get t() { return t; }, set t(v) { t = v; }, chars, L, setEmo, MR, get INST() { return INST; }, get SPEECH() { return SPEECH; }, SP, replan, prev, POSES, startPreview, stopPreview, syncMotionUI, LIGHT, applyLight, setCam, meta, cam: camera, ctl: controls, renderer, V3: THREE.Vector3, THREE };
+window.lab = { NECKFIX, SCEN, GZ, setScenario, layout, frame: (dt) => frame(dt), get t() { return t; }, set t(v) { t = v; }, chars, L, setEmo, MR, get INST() { return INST; }, get SPEECH() { return SPEECH; }, SP, replan, prev, POSES, startPreview, stopPreview, syncMotionUI, LIGHT, applyLight, setCam, meta, cam: camera, ctl: controls, renderer, V3: THREE.Vector3, THREE };
 
 function lineAt(time) { return meta.lines.find((l) => time >= l.start && time < l.start + l.dur); }
-function tick() {
-  const dt = Math.min(clock.getDelta(), 0.1);
+function tick() { frame(); requestAnimationFrame(tick); }
+
+function frame(dtForced) {   // one frame (window.lab.frame lets Claude step the lab while the pane is hidden)
+  const dt = dtForced ?? Math.min(clock.getDelta(), 0.1);
+  if (ARROW.dir && performance.now() - ARROW.since > 120) t = Math.min(T, Math.max(0, t + ARROW.dir * dt));   // held arrow: scrub at 1x
   if (playing) {
     t = clockRef === null ? tRef + (actx.currentTime - audioRef) : tRef + (performance.now() / 1000 - clockRef) * speed;
     if (t >= T) { t = T; pause(); }
   }
-  for (const id in chars) {
+  for (const id of activeIds()) {
     const C = chars[id];
     // undo last frame's additive head rotation: the mixer only rewrites a bone when its value changes (e.g. paused)
     for (const [b, q] of C.pre) b.quaternion.copy(q);
     posers[id].restore();  // and last frame's pose blend
     for (const [b, q, p] of C.damp) { b.quaternion.copy(q); b.position.copy(p); }  // and last frame's idle-sway damping
     C.damp.length = 0;
-    C.idle.setEffectiveWeight(L.body ? 1 : 0);  // weight 0 -> mixer falls back to the bind pose (Boss A-pose)
+    for (const a of Object.values(C.acts)) a.setEffectiveWeight(L.body && a === C.act ? 1 : 0);  // all 0 -> bind pose (Boss A-pose)
     C.mixer.update(L.body ? (playing ? dt * speed : prev.on ? dt : 0) : 0);  // the idle keeps breathing during a preview
     if (L.body) dampIdle(C, swayFor(id, t));
   }
@@ -557,21 +896,26 @@ function tick() {
     prev.tau += dt; const len = prev.lead + motionLength(INST) + prev.tail;
     if (prev.tau > len) { if (prev.loop) { prev.tau -= len; newTake(); } else stopPreview(); }
     const w = weightAt(INST, prev.tau - prev.lead);
-    if (prev.on) { for (const id in posers) posers[id].apply(INST.pose, w, INST.sway, INST.strength); scene.updateMatrixWorld(true); }  // profiles are for every character: preview on both
+    if (prev.on) { for (const id of activeIds()) posers[id].apply(INST.pose, w, INST.sway, INST.strength, SCEN.kind !== 'stand' && SCEN.kind !== 'group'); scene.updateMatrixWorld(true); }  // profiles are for every character: preview on both
     drawCurve(prev.tau - prev.lead);
   } else if (SP.on && L.body) {  // gestures placed on the dialogue (deterministic, follow the timeline / scrubbing)
     let any = false;
-    for (const ev of SPEECH) { const tt = t - ev.start; if (tt > 0 && tt < motionLength(ev.P)) { posers[ev.char].apply(ev.pose, weightAt(ev.P, tt), ev.P.sway, ev.P.strength); any = true; } }
+    for (const ev of SPEECH) { const tt = t - ev.start; if (tt > 0 && tt < motionLength(ev.P)) { posers[ev.char].apply(ev.pose, weightAt(ev.P, tt), ev.P.sway, ev.P.strength * chars[ev.char].amp, SCEN.kind !== 'stand' && SCEN.kind !== 'group'); any = true; } }
     if (any) scene.updateMatrixWorld(true);
   }
-  for (const id in chars) applyHead(chars[id]);
+  if (stoolPending && !--stoolPending) placeStool();
+  const act = activeIds();
+  for (const id of act) gazeHead(id, dt);
+  for (const id of act) applyHead(chars[id]);
+  for (const id of act) gazeEyes(chars[id], dt);
+  if (camPending && !--camPending) setCam(CURCAM);
   const l = lineAt(t);
   $('line').textContent = l ? (l.speaker === 'S1' ? 'Seller: ' : 'Customer: ') + l.english : '';
   $('time').textContent = t.toFixed(2) + ' s'; $('frame').textContent = 'f ' + Math.round(t * FPS);
   if (!$('scrub').matches(':active')) $('scrub').value = Math.round((t / T) * 1000);
   controls.update(); renderer.render(scene, camera);
-  requestAnimationFrame(tick);
 }
+setScenario(SCEN.kind);
 setCam('two');
 $('loading').remove();
 tick();
